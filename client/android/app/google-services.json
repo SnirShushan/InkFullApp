@@ -1,0 +1,119 @@
+{
+  "project_info": {
+    "project_number": "593891329507",
+    "project_id": "ink-flutter-app",
+    "storage_bucket": "ink-flutter-app.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:593891329507:android:57de5040b6eb5e88768cd6",
+        "android_client_info": {
+          "package_name": "com.itapp2u.ink"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "593891329507-5oq00851tmuad65bj14pug4tgm8ft9gr.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.itapp2u.ink",
+            "certificate_hash": "960a812697fb72b6b2f289015a2692d2ef71c650"
+          }
+        },
+        {
+          "client_id": "593891329507-7piilhvi68cr4u4n6ggp91qh20030ave.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.itapp2u.ink",
+            "certificate_hash": "04f6648832d5914a3450c4f73d599098c081b561"
+          }
+        },
+        {
+          "client_id": "593891329507-p8nuqlqtm6muccgcvfgutaf0oo5bgh95.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.itapp2u.ink",
+            "certificate_hash": "b568e5fbe30c3a726aff06b32357b13d6fc75400"
+          }
+        },
+        {
+          "client_id": "593891329507-po6c2sb41uk72nnero4gkqnerfp3td8j.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.itapp2u.ink",
+            "certificate_hash": "d8502e1d2c7bfdbc5e577a4c34d5891a86feb9ae"
+          }
+        },
+        {
+          "client_id": "593891329507-ppjm483bgvlu3qpr75f9gjvjmojompe1.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.itapp2u.ink",
+            "certificate_hash": "a30f9b0d9ea50415fa7817749991181fac634d2d"
+          }
+        },
+        {
+          "client_id": "593891329507-rindhrac8gn6o7ca0hj7hfmmninkll2k.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.itapp2u.ink",
+            "certificate_hash": "0191097c88e2e659fa81f20e20fc498030a06590"
+          }
+        },
+        {
+          "client_id": "593891329507-s8i5kopogv04sj8ve3bd8fdhdapnqovv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.itapp2u.ink",
+            "certificate_hash": "79f1bf9380990ae26479513efec1230e4b9c016b"
+          }
+        },
+        {
+          "client_id": "593891329507-v5qheqjo6i3k7glbbs6kf4bv8l7h0uqs.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.itapp2u.ink",
+            "certificate_hash": "186724cdf664be78286babaf595f7b43ae565ca7"
+          }
+        },
+        {
+          "client_id": "593891329507-vthudsk73hk27qsmvfqvntrpc2vmoakn.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.itapp2u.ink",
+            "certificate_hash": "e6bbcf9168740134e50cb9edc04f300c161b690b"
+          }
+        },
+        {
+          "client_id": "593891329507-98pdnv5tp6rr217es9ssjqmo2aqv64r0.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBeeJjcEcn3d1jutgAmmekrNlka2GtGoeg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "593891329507-98pdnv5tp6rr217es9ssjqmo2aqv64r0.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "593891329507-7uh2g880nski6gdp01bc88su1trbe1ru.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.itapp2u.inks",
+                "app_store_id": "6447420384"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

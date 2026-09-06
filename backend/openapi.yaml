@@ -1,0 +1,151 @@
+openapi: 3.0.3
+info:
+  title: Ink API (new)
+  description: |
+    New Ink backend (Node + MySQL + Cloudflare R2).
+    Replaces the legacy PHP API. Image URLs come from Firebase until R2 is configured,
+    then from `R2_PUBLIC_BASE`.
+  version: 1.0.0
+servers:
+  - url: http://127.0.0.1:3000
+    description: Local
+paths:
+  /health:
+    get:
+      tags: [System]
+      summary: Health check and DB counts
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  db: { type: boolean }
+                  counts:
+                    type: object
+                    properties:
+                      customers: { type: integer }
+                      posts: { type: integer }
+                  architecture: { type: string }
+                  assets: { type: object }
+
+  /v1/styles:
+    get:
+      tags: [Catalog]
+      summary: List tattoo styles
+      responses:
+        '200':
+          description: Style list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListResponse'
+
+  /v1/posts:
+    get:
+      tags: [Posts]
+      summary: List posts
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20, maximum: 100 }
+        - in: query
+          name: offset
+          schema: { type: integer, default: 0 }
+      responses:
+        '200':
+          description: Posts page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListResponse'
+
+  /v1/posts/{id}:
+    get:
+      tags: [Posts]
+      summary: Get post by id
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Post detail
+        '404':
+          description: Not found
+
+  /v1/users/{id}:
+    get:
+      tags: [Users]
+      summary: Get user/business profile by id
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: User profile
+        '404':
+          description: Not found
+
+  /v1/settings:
+    get:
+      tags: [System]
+      summary: App settings map (tbl_settings)
+      responses:
+        '200':
+          description: Settings key/value object
+
+  /v1/settings/stats:
+    get:
+      tags: [System]
+      summary: Quick table counts
+      responses:
+        '200':
+          description: Counts
+
+  /api:
+    get:
+      tags: [LegacyCompat]
+      summary: Legacy PHP-style action gateway (partial)
+      parameters:
+        - in: query
+          name: action
+          schema:
+            type: string
+            enum: [CheckServerStatus, GetStyleList, GetStyles]
+        - in: query
+          name: app_token
+          schema: { type: string }
+      responses:
+        '200':
+          description: Legacy JSON envelope
+    post:
+      tags: [LegacyCompat]
+      summary: Legacy PHP-style action gateway (partial)
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                action: { type: string }
+                app_token: { type: string }
+      responses:
+        '200':
+          description: Legacy JSON envelope
+
+components:
+  schemas:
+    ListResponse:
+      type: object
+      properties:
+        status: { type: integer }
+        data:
+          type: array
+          items: { type: object }

@@ -1,0 +1,12 @@
+# Flutter / Dart
+.dart_tool/
+build/
+ios/
+android/
+linux/
+macos/
+windows/
+.flutter-plugins
+.flutter-plugins-dependencies
+**/*.g.dart
+**/*.freezed.dart

@@ -1,0 +1,57 @@
+﻿# Codemagic — Ink Flutter client → TestFlight
+# Bundle ID: com.itapp2u.inks | Team: D6F46ZX5U6
+#
+# One-time in Codemagic UI:
+# 1. Teams → Integrations → Developer Portal → Add key named InkAppStoreKey
+#    (Key ID + Issuer ID + AuthKey_*.p8)
+# 2. Fetch Apple Distribution cert + App Store profile for com.itapp2u.inks
+# 3. Start workflow ios-testflight
+
+workflows:
+  ios-testflight:
+    name: iOS TestFlight
+    max_build_duration: 120
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: InkAppStoreKey
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.itapp2u.inks
+      vars:
+        XCODE_WORKSPACE: ios/Runner.xcworkspace
+        XCODE_SCHEME: Runner
+    scripts:
+      - name: Get Flutter packages
+        script: |
+          cd client
+          flutter pub get
+      - name: Install CocoaPods
+        script: |
+          cd client/ios && pod install
+      - name: Set up code signing
+        script: |
+          cd client
+          xcode-project use-profiles
+      - name: Build IPA
+        script: |
+          cd client
+          flutter build ipa --release \
+            --export-options-plist=/Users/builder/export_options.plist
+    artifacts:
+      - client/build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      email:
+        recipients:
+          - snir.shushan@gmail.com
+        notify:
+          success: true
+          failure: true
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        submit_to_app_store: false

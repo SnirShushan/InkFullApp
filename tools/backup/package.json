@@ -1,0 +1,11 @@
+{
+  "name": "ink-backup-tools",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.750.0",
+    "dotenv": "^16.6.1",
+    "google-auth-library": "^9.15.1",
+    "mysql2": "^3.23.3"
+  }
+}

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--<?xml version="1.0" encoding='utf-8' standalone='no'?>-->
+<resources>
+    <string name="app_name">אינק</string>
+<!--    <integer name="google_play_services_version">12451000</integer>-->
+
+    <string name="facebook_app_id">524314284050023</string>
+    <string name="fb_login_protocol_scheme">fb524314284050023</string>
+    <string name="facebook_client_token">e23a3766a612a74af32cb48822bd4911</string>
+
+    <!-- demo   -->
+    <!--<string name="facebook_app_id">1288475305567441</string>
+    <string name="fb_login_protocol_scheme">fb1288475305567441</string>
+    <string name="facebook_client_token">5efb93b7720b01454ead647661def837</string>-->
+
+<!--    <string name="facebook_client_token">5efb93b7720b01454ead647661def837</string>-->
+</resources>
