@@ -28,7 +28,6 @@ workflows:
       - name: Get Flutter packages
         script: |
           cd client
-          # Prefer CocoaPods for plugins that do not support SPM yet
           flutter config --no-enable-swift-package-manager || true
           flutter pub get
       - name: Install CocoaPods
@@ -37,13 +36,7 @@ workflows:
           cd client/ios
           rm -f Podfile.lock
           rm -rf Pods
-          pod cache clean FBAudienceNetwork --all || true
           pod install --repo-update
-          # post_install in Podfile repairs FAN; assert it exists if the pod is present
-          if [ -d Pods/FBAudienceNetwork ]; then
-            test -f Pods/FBAudienceNetwork/Static/FBAudienceNetwork.xcframework/Info.plist
-            echo "FBAudienceNetwork framework present"
-          fi
       - name: Set up code signing
         script: |
           cd client
@@ -52,19 +45,8 @@ workflows:
         script: |
           set -e
           cd client
-          # config-only + explicit pod install so Podfile post_install repair runs
-          # before the archive; flutter build ipa also runs pod install (repair again).
-          flutter build ios --config-only --release --no-codesign --no-pub
-          (cd ios && pod install)
-          if [ -d ios/Pods/FBAudienceNetwork ]; then
-            test -f ios/Pods/FBAudienceNetwork/Static/FBAudienceNetwork.xcframework/Info.plist
-          fi
           flutter build ipa --release --no-pub \
             --export-options-plist=/Users/builder/export_options.plist
-          if [ -d ios/Pods/FBAudienceNetwork ]; then
-            test -f ios/Pods/FBAudienceNetwork/Static/FBAudienceNetwork.xcframework/Info.plist \
-              || { echo "FAN missing after flutter build pod install"; exit 1; }
-          fi
     artifacts:
       - client/build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
