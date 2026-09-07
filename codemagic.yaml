@@ -1,8 +1,8 @@
-﻿# Codemagic — Ink Flutter client → TestFlight
+# Codemagic � Ink Flutter client ? TestFlight
 # Bundle ID: com.itapp2u.inks | Team: D6F46ZX5U6
 #
 # One-time in Codemagic UI:
-# 1. Teams → Integrations → Developer Portal → Add key named InkAppStoreKey
+# 1. Teams ? Integrations ? Developer Portal ? Add key named InkAppStoreKey
 #    (Key ID + Issuer ID + AuthKey_*.p8)
 # 2. Fetch Apple Distribution cert + App Store profile for com.itapp2u.inks
 # 3. Start workflow ios-testflight
@@ -16,7 +16,7 @@ workflows:
       app_store_connect: InkAppStoreKey
     environment:
       flutter: stable
-      xcode: latest
+      xcode: 16.2
       cocoapods: default
       ios_signing:
         distribution_type: app_store
@@ -37,6 +37,11 @@ workflows:
           rm -f Podfile.lock
           rm -rf Pods
           pod install --repo-update
+          # Fix gRPC vs newer Clang: Traits::template CallSeqFactory parse error
+          SEQ="Pods/gRPC-Core/src/core/lib/promise/detail/basic_seq.h"
+          if [ -f "$SEQ" ]; then
+            sed -i.bak 's/Traits::template CallSeqFactory(/Traits::CallSeqFactory(/g' "$SEQ" || true
+          fi
       - name: Set up code signing
         script: |
           cd client
