@@ -1,4 +1,4 @@
-# Codemagic — Ink Flutter client ? TestFlight
+ï»¿# Codemagic ï¿½ Ink Flutter client ? TestFlight
 # Bundle ID: com.itapp2u.inks | Team: D6F46ZX5U6
 #
 # One-time in Codemagic UI:
@@ -16,7 +16,7 @@ workflows:
       app_store_connect: InkAppStoreKey
     environment:
       flutter: stable
-      xcode: 16.2
+      xcode: latest
       cocoapods: default
       ios_signing:
         distribution_type: app_store
