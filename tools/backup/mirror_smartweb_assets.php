@@ -7,7 +7,7 @@ declare(strict_types=1);
 
 $base = 'https://smartweb-tech.com/apps/ink/assets';
 $outDir = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'backups' . DIRECTORY_SEPARATOR . 'smartweb' . DIRECTORY_SEPARATOR . 'assets';
-$localStyles = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'api' . DIRECTORY_SEPARATOR . 'inkapp-api-admin' . DIRECTORY_SEPARATOR . 'assets' . DIRECTORY_SEPARATOR . 'images' . DIRECTORY_SEPARATOR . 'styles';
+$localStyles = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'studio' . DIRECTORY_SEPARATOR . 'php-admin' . DIRECTORY_SEPARATOR . 'assets' . DIRECTORY_SEPARATOR . 'images' . DIRECTORY_SEPARATOR . 'styles';
 
 if (!is_dir($outDir)) {
     mkdir($outDir, 0775, true);

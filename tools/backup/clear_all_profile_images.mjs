@@ -9,7 +9,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: path.join(__dirname, '../../backend/.env') });
+dotenv.config({ path: path.join(__dirname, '../../app/api/.env') });
 
 const pool = mysql.createPool({
   host: process.env.DB_HOST,

@@ -1,31 +1,48 @@
-﻿# Secrets / env
+# Secrets / env
 **/.env
 !**/.env.example
 
 # Dependencies
 **/node_modules/
 **/vendor/
-admin/vendor/
-admin/admin/vendor/
+**/.dart_tool/
+**/.pub-cache/
+**/.pub/
 
-# Flutter
-client/.dart_tool/
-client/build/
-client/.flutter-plugins
-client/.flutter-plugins-dependencies
-client/android/.gradle/
-client/android/app/debug/
-client/android/app/profile/
-client/android/app/release/
-client/ios/Pods/
-client/ios/.symlinks/
+# Local data, dumps, and media (do not publish)
+backups/
+data/
+assets/uploads/
+assets/uploads.zip
+ink/
+studio/data/
+studio/php-admin/admin/sql/user_dump_import.sql
+studio/php-admin/assets/cache/
+studio/php-admin/composer.phar
+studio/php-admin/admin/ci_sessions/
+studio/php-admin/admin/application/cache/*
+!studio/php-admin/admin/application/cache/index.html
+studio/php-admin/admin/application/logs/*
+!studio/php-admin/admin/application/logs/index.html
+studio/php-admin/assets/uploads/*
+!studio/php-admin/assets/uploads/index.html
+
+# Flutter / Android / iOS build
+app/client/build/
+app/client/android/.gradle/
+app/client/android/build/
+app/client/android/app/debug/
+app/client/android/app/profile/
+app/client/android/app/release/
+app/client/ios/Pods/
+app/client/ios/.symlinks/
+app/client/ios/Flutter/.last_build_id
+**/*.iml
 
 # OS / IDE
 .DS_Store
 .idea/
 *.log
-
-client/android/.gradle/
-admin/composer.phar
 *.psd
 *.map
+error_log

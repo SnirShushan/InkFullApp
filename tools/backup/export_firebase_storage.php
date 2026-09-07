@@ -5,7 +5,7 @@
  */
 declare(strict_types=1);
 
-$root = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'api' . DIRECTORY_SEPARATOR . 'inkapp-api-admin';
+$root = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'studio' . DIRECTORY_SEPARATOR . 'php-admin';
 require $root . '/vendor/autoload.php';
 
 $outDir = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'backups' . DIRECTORY_SEPARATOR . 'firebase';

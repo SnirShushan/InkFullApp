@@ -1,0 +1,12 @@
+{
+  "type": "service_account",
+  "project_id": "fluttertestinapp",
+  "private_key_id": "b21b3bd7f5abb52d4adbccb5dbec880a38d6256e",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC8Wln+YSJtIT1/\nN5kf5gqNRZ7ClbFmDXXttwugtzXuisvjZnWM/8f9TqfIA9sTTHyz5NtWiiO9bj4H\nRXswobVHra/zRXNpTCk/oGM/1EOBvRo/kA8cNMYvCu+ZN5VBejrdKqF/ABdHy9gw\nN0TfBC802/C1BBcJ0q9/QJ+VKl0fMhoPHGkUcMFLgqR4AQG8VYU+LIdBF108J7Fy\nBS1fvmeelhapt/XvE25zstmOgez/cyYpADSzIg+CndLzOlWT69473ASsxhlknF1W\n5jBGPGM4Gu08DmyZY58zqJ00Fe9JnFbCzYwiZzDe8t9MaoGDeQfdHQQLBfxcJ+dB\n4hOFNdErAgMBAAECggEAQNplUTrV1TiUSaj1nu+g43q8yugrAGYTHGoh5VEgD0YY\nJPDi+c0aacQ67hoxxQfZikF7KmV/H9sFHZDVdW3AkvEhe8SGlBOGwmMxuUkXg2T+\n1DMAmOgs8wazcBCc4kI5YWyr1aRM38o24octPhLdRDiUvWcunZG/HrQ8HmrLTJFm\n8WEJmXqkP0LoG6Lhu+5h45x3Ou9q9hANr4skvjkM8QaN/lNgu+tdZoFKEcuYCJtk\nlx/+aDoxzUeXlsfC2iA20SpHu1kKlZgcMyze0gjb34WaD3lixVp8MI2HFxZDLZa1\nxOUgr8TamnPbTYCdee18n+Fv/AlPsVV5m6GMRHuuwQKBgQDiUF1gWid1FYHBg6fB\nGiqp1gDrCjv6SeYO9ScXgnaJJhXz0cNWXbbjMY/S6hk3NjjQEL7P5UrBSvL0qlS2\njbxm8YVzdorYpu1C7waOAXpfPzGUCfO06baRY9dpANOUXMPFhRwgTGqiBJXltB+R\nlFzVZWJMcvBP037g3uzH3U9rQQKBgQDVD0EltSlTW/eIxkoAPLLZQGFaI014c1TF\nPzpNu64PiTBO/MPbcp24vDoVU7kp0WFCBpLdoPuUfijGGtg6Kjik//ArsR7Ra0YE\n4DfIWp9y+IDeNNbMpJhNzSptwx+o8GXssJl7nhuGZFmQH9RT/ocwW+w0WkT5Kn3B\nuKM9dpW9awKBgBQARkBdt18Bp5YSrKDET0DzSOF85hAYt9xajjnlrdQxKX+C6mCX\np7Isjyl0xwW6JQs+b56wBQtQNGirJRF9NUljzweFUoATQKTJuyqRtt70Fs2ek4tJ\nnHj8+eytxgU2rZanTPUNy97FyPmkEaYsFohFjYp0HgjwCCaXjRWc2YgBAoGACZtN\nebDIczzDVYRzU71o5wjTGuhaluLEYLxwGY8r0wGBjx4wipWJbQn3qHyE7dDGDN8V\nAi8/CLwDhKMzOrQqp63um1m6JQEsQA4IFd2YMOvpi5tgUAvf3ioxDo/svoZQYjK4\nSO2hGhcuPqRgw4THfbO3W8jyMTXsQ67alWviZo8CgYEAukq8fw9Q/9kE1bg/9xOH\npQIBCMy2/oE6/4j7a12dVY74HDwfAQVR0SAXeaZMrEGtA3aIwNeWGGCPNTI24+YA\nZjvfzI8zxUvNOnMCkS6+QDklSHCXyZmxcnbRMrj/MnBv41a2v7t5+WcjOjXoBtY6\n79+U92Yr11zAgbgpU6gPHUI=\n-----END PRIVATE KEY-----\n",
+  "client_email": "davinkapp@fluttertestinapp.iam.gserviceaccount.com",
+  "client_id": "114639972426498457043",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/davinkapp%40fluttertestinapp.iam.gserviceaccount.com"
+}

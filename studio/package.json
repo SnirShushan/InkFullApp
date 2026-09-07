@@ -1,0 +1,21 @@
+{
+  "name": "ink-studio",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "INK Studio — admin, raw tables, and finance",
+  "scripts": {
+    "start": "node src/server.js",
+    "import": "node src/import-dump.js",
+    "dev": "node --watch src/server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.8.1",
+    "dotenv": "^17.4.2",
+    "express": "^4.21.2",
+    "mysql2": "^3.24.3"
+  }
+}

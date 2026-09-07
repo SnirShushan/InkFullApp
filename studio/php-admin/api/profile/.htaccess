@@ -1,0 +1,8 @@
+RewriteEngine On
+
+# If file or folder exists, load normally
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Capture: businessUserProfile/10
+RewriteRule ^([^/]+)/([0-9]+)$ index.php?type=$1&id=$2 [L,QSA]

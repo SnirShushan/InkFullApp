@@ -1,5 +1,5 @@
 /**
- * Parse inkisrael SQL dump → {id, profile_image} for files present in OldAssets.
+ * Parse inkisrael SQL dump → {id, profile_image} for files present in assets.
  * node tools/backup/parse_sql_profile_map.mjs
  */
 import fs from 'fs';
@@ -9,8 +9,8 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '../..');
-const sqlPath = path.join(repoRoot, 'inkisrael_Database/inkisrael_app.sql');
-const profileDir = path.join(repoRoot, 'OldAssets/uploads/profile_images');
+const sqlPath = path.join(repoRoot, 'data/inkisrael_app.sql');
+const profileDir = path.join(repoRoot, 'assets/uploads/profile_images');
 const outPath = path.join(repoRoot, 'backups/sql_profile_image_map.json');
 
 const disk = new Set(

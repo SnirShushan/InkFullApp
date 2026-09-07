@@ -1,5 +1,6 @@
-﻿# Codemagic — Ink Flutter client → TestFlight
+# Codemagic — Ink Flutter client → TestFlight
 # Bundle ID: com.itapp2u.inks | Team: D6F46ZX5U6
+# Project path in this monorepo: app/client
 
 workflows:
   ios-testflight:
@@ -21,13 +22,13 @@ workflows:
     scripts:
       - name: Get Flutter packages
         script: |
-          cd client
+          cd app/client
           flutter config --no-enable-swift-package-manager || true
           flutter pub get
       - name: Install CocoaPods
         script: |
           set -e
-          cd client/ios
+          cd app/client/ios
           rm -f Podfile.lock
           rm -rf Pods
           pod install --repo-update
@@ -37,12 +38,12 @@ workflows:
           done
       - name: Set up code signing
         script: |
-          cd client
+          cd app/client
           xcode-project use-profiles
       - name: Build IPA
         script: |
           set -e
-          cd client
+          cd app/client
           patch_grpc() {
             find ios/Pods -name 'basic_seq.h' -print0 2>/dev/null | while IFS= read -r -d '' SEQ; do
               sed -i.bak 's/Traits::template CallSeqFactory(/Traits::CallSeqFactory(/g' "$SEQ" || true
@@ -52,7 +53,7 @@ workflows:
           (cd ios && pod install)
           patch_grpc
           if ! flutter build ipa --release --no-pub \
-              --export-options-plist=/Users/builder/export_options.plist; then
+            --export-options-plist=/Users/builder/export_options.plist; then
             echo "Build failed — re-patch gRPC headers and retry once"
             (cd ios && pod install)
             patch_grpc
@@ -60,7 +61,7 @@ workflows:
               --export-options-plist=/Users/builder/export_options.plist
           fi
     artifacts:
-      - client/build/ios/ipa/*.ipa
+      - app/client/build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
     publishing:
       email:

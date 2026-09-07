@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "ink-flutter-app",
+  "private_key_id": "2ff19eb8244b15bd6790d60b613693c3bbf5986f",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCeQ1Dki2uaTrJh\nqfc35qV+basTrxTFo3EH3BU8kEhLOm+ZnpuLAguim1LifKwJacxBlXwk2RS3ORkt\nmX5nRGq+XlxqTU2s1eNMiZ6eIbGn1reEOKBmHLY4wCFkG3e9cufvusUuWTI2H0eD\nz2eJiUcZzHoHvPKCDcLaGjYCX6zcOM2bzZgjuXZUnJRsaLNSS5Vf4I83qBPHJcKo\nL/VgPuFUfEJ9rB+jxaM4F2O3jMXVzGmPmBuMb7+l3jI2SeNZs0B30+cgfmO5PFsv\nroUyrLxrzSHH3vqrLJY/TSnsr5mN07UyYQPPMdtX8EBadzaafuDTOZNuI8bThgxr\nyQ2mdUi5AgMBAAECggEAGGtyIKWbl45zi0rGxNcfq4uf9VRTS/CdaPVOSI9JvGPa\novU8cl1BLtixGBXdFMHAnNEEPApL3j6e8jCINsZxgwi70UI2zUeegCmO8j7oMunY\nXLxBEah1/Hk23cO4PODtRUoIEU/9hajbZ8z5oJjwQdyRar6+m48khPM86K5bFYqn\nEIH02o6WZwwmKVIhEFt0EDOaWmhlikoQgt9rO1g/L3Dv0+sNeopBuRHZ6kCR101y\nekdHvJ8jIj3j6vq2FgaQaEzpMddoip/zrPr4RV7zAqBnBlnICbXaEF7ZSKD/dOmE\nI0BMNGiHDvf6+uGm4P/jcYdvXhgzM+TRcVJCtYvbFQKBgQDSI4hU8cqpLeejAtzr\nzHPdy+lUGxt8bjGRRdijfBwvuV3HpeKJl9rekJ0stJvV8bvefYA5+83dyp3sKfQa\nHgJmHwZMefm6Mnxm5V4JtW0SsXsbYZ1VvzMo31SmYBMzbWcjS2NNpM4VmlKaCNi6\npAqmTCKHgK6Lg0TWaZYoRvnxjQKBgQDAzXoOSnv9IKrs4aspSVzZRpirJxy6avhC\n2ok9dGEb8/Y9Z7LEOgLf9jOQq9RsOfqwR3vyp9gFH9zZFfiIlutAfK4mORAHYKzL\nk+w87NqxnjwVwn5EC2z7EXsyVI+WQrpNCVcG5h0HNr6oEBKz3m9oS2K+WLGvSG5+\nEqlfkJFK3QKBgQDOSOFZee7Xe1/L71CODaukjLslvGKUGNyB3s4XVwuYceC0z4x+\nQ9sw50fUDgx4zo/9jrfks+LZGkFDB8BALzttooEdbBQRi+QBYqKY50gGtMHEFGRO\nO57uPaasmN3ge0JnLGd0XheMr2ztF0gimEx4CX9QA6vU+u0FiqtEKMDONQKBgCPq\nIsJmvZH5c92MbAXU1Kbkr6uyLXfMVVKewtHfy/cZCtWFa5eB9uchRZm9aGSAqGIN\n7tjUyzipJsqJfTJ0an4ou4gDOSkmqQmDFI6E0Hglsaub/0lNl49tQjWt6tFivLF8\n++kdFGszl3BXDiTTWo1i/ZHXk8HDDFIPx901YNtBAoGAPpS/eBKsNrrjVgHBxjfZ\nsvbTjKntSy5f6dvgFR6sW07yD5eMTgP50rTJAmqM8mSZSfWccJQWBT1L1a0IGdHu\ne2UlwuqtctQZNeBkloZaOWvO89Y8iWOeCBjls6NpKoOJDafKVfmWdQR6h8PXPetL\n9d/Pf0d1734sDjn++iKnG1M=\n-----END PRIVATE KEY-----\n",
+  "client_email": "inkapp@ink-flutter-app.iam.gserviceaccount.com",
+  "client_id": "107510697035314948407",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/inkapp%40ink-flutter-app.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

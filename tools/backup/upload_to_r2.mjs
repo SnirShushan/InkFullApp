@@ -11,7 +11,7 @@ import dotenv from 'dotenv';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '../..');
-dotenv.config({ path: path.join(repoRoot, 'backend/.env') });
+dotenv.config({ path: path.join(repoRoot, 'app/api/.env') });
 dotenv.config({ path: path.join(repoRoot, '.env') });
 
 const {
@@ -23,7 +23,7 @@ const {
 } = process.env;
 
 if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY || !R2_BUCKET) {
-  console.error('Missing R2_* env vars. Copy backend/.env.example -> backend/.env and fill them.');
+  console.error('Missing R2_* env vars. Copy app/api/.env.example -> app/api/.env and fill them.');
   process.exit(1);
 }
 

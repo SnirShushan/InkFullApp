@@ -1,5 +1,5 @@
 /**
- * Restore signature_image from SQL dump when file exists in OldAssets.
+ * Restore signature_image from SQL dump when file exists in assets.
  */
 import fs from 'fs';
 import readline from 'readline';
@@ -10,14 +10,14 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '../..');
-dotenv.config({ path: path.join(repoRoot, 'backend/.env') });
+dotenv.config({ path: path.join(repoRoot, 'app/api/.env') });
 
-const sigDir = path.join(repoRoot, 'OldAssets/uploads/signature_images');
+const sigDir = path.join(repoRoot, 'assets/uploads/signature_images');
 const disk = new Set(
   fs.readdirSync(sigDir).filter((f) => !f.startsWith('.') && f !== 'index.html')
 );
 
-const sqlPath = path.join(repoRoot, 'inkisrael_Database/inkisrael_app.sql');
+const sqlPath = path.join(repoRoot, 'data/inkisrael_app.sql');
 const fileRe =
   /'((?:20\d{2}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}-\d+\.png))'/gi;
 

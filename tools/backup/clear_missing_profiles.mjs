@@ -6,7 +6,7 @@ import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: path.join(__dirname, '../../backend/.env') });
+dotenv.config({ path: path.join(__dirname, '../../app/api/.env') });
 
 const client = new S3Client({
   region: 'auto',

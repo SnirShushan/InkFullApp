@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 import fs from 'fs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: path.join(__dirname, '../../backend/.env') });
+dotenv.config({ path: path.join(__dirname, '../../app/api/.env') });
 
 const pool = await mysql.createPool({
   host: process.env.DB_HOST,
@@ -27,11 +27,11 @@ const [sample] = await pool.query(
 console.log('with_profile', c[0].n);
 console.log(sample);
 
-// Compare local OldAssets size vs what we expect for restored files
+// Compare local assets size vs what we expect for restored files
 const map = JSON.parse(
   fs.readFileSync(path.join(__dirname, '../../backups/sql_profile_image_map.json'), 'utf8')
 );
-const dir = path.join(__dirname, '../../OldAssets/uploads/profile_images');
+const dir = path.join(__dirname, '../../assets/uploads/profile_images');
 let missingLocal = 0;
 for (const row of map) {
   const p = path.join(dir, row.file);

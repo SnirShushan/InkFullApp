@@ -9,7 +9,7 @@ import { GoogleAuth } from 'google-auth-library';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '../..');
-const keyPath = path.join(repoRoot, 'api/inkapp-api-admin/api/fcm.json');
+const keyPath = path.join(repoRoot, 'studio/php-admin/api/fcm.json');
 const outDir = path.join(repoRoot, 'backups/firebase');
 const manifestPath = path.join(repoRoot, 'backups/firebase_manifest.jsonl');
 const bucket = 'ink-flutter-app.appspot.com';

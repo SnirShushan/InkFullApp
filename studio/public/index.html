@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>INK Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/app.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="workspace-bar">
+      <a class="brand" href="#/tables">
+        <span class="brand-mark">INK</span>
+        <span>
+          <strong>INK Studio</strong>
+          <small>ניהול · נתונים · כספים · אפיון</small>
+        </span>
+      </a>
+      <nav class="workspace-tabs" aria-label="אזורי עבודה">
+        <a href="#/admin" id="tabAdmin">ניהול</a>
+        <a href="#/tables" id="tabTables">טבלאות</a>
+        <a href="#/finance" id="tabFinance">הכנסות והוצאות</a>
+        <a href="#/spec" id="tabSpec">אפיון</a>
+      </nav>
+    </header>
+
+    <div id="workspace" class="workspace">
+      <aside class="sidebar" id="adminChrome">
+        <p class="source-note">ניהול חי על Railway</p>
+        <nav id="adminNav" class="nav">
+          <h3>ניהול</h3>
+          <a href="#/admin" data-admin="home"><span>סקירה</span></a>
+          <a href="#/admin/users" data-admin="users"><span>משתמשים</span></a>
+          <a href="#/admin/users/business" data-admin="business"><span>עסקיים</span></a>
+          <a href="#/admin/reports/users" data-admin="report-users"><span>דיווחי משתמשים</span></a>
+          <a href="#/admin/reports/posts" data-admin="report-posts"><span>דיווחי פוסטים</span></a>
+          <a href="#/admin/requests" data-admin="requests"><span>בקשות</span></a>
+          <a href="#/admin/settings" data-admin="settings"><span>הגדרות</span></a>
+          <h3>גיבוי</h3>
+          <a href="#/admin/legacy" data-admin="legacy"><span>ממשק PHP ישן</span></a>
+        </nav>
+      </aside>
+      <aside class="sidebar" id="tablesChrome">
+        <div class="source-switch" role="group" aria-label="מקור נתונים">
+          <button type="button" id="srcMuseum" data-source="museum">ארכיון</button>
+          <button type="button" id="srcLive" data-source="live">חי</button>
+        </div>
+        <p class="source-note" id="sourceNote">צילום SQL · ינואר 2026</p>
+        <label class="side-search">
+          <input id="navSearch" type="search" placeholder="סינון טבלאות" autocomplete="off" />
+        </label>
+        <nav id="nav" class="nav"></nav>
+      </aside>
+
+      <main class="main" id="mainPanel">
+        <header class="top" id="mainHeader">
+          <div>
+            <p class="eyebrow" id="eyebrow">סקירה</p>
+            <h1 id="title">טבלאות</h1>
+          </div>
+          <div class="top-actions" id="topActions"></div>
+        </header>
+        <div id="view" class="view"></div>
+      </main>
+    </div>
+  </div>
+
+  <div id="drawer" class="drawer" hidden>
+    <div class="drawer-panel">
+      <header>
+        <h2>שורה</h2>
+        <button type="button" id="drawerClose" aria-label="סגירה">×</button>
+      </header>
+      <div id="drawerBody" class="drawer-body"></div>
+    </div>
+  </div>
+
+  <script src="/admin-ui.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>

@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 import fs from 'fs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: path.join(__dirname, '../../backend/.env') });
+dotenv.config({ path: path.join(__dirname, '../../app/api/.env') });
 
 const pool = await mysql.createPool({
   host: process.env.DB_HOST,
@@ -44,7 +44,7 @@ console.log(missing);
 
 // How many disk files are NOT in SQL map?
 const disk = fs
-  .readdirSync(path.join(__dirname, '../../OldAssets/uploads/profile_images'))
+  .readdirSync(path.join(__dirname, '../../assets/uploads/profile_images'))
   .filter((f) => !f.startsWith('.') && f !== 'index.html');
 const sqlFiles = new Set(map.rows.map((r) => r.file));
 const orphans = disk.filter((f) => !sqlFiles.has(f));

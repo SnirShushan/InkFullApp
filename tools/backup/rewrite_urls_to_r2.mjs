@@ -18,12 +18,12 @@ import dotenv from 'dotenv';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '../..');
-dotenv.config({ path: path.join(repoRoot, 'backend/.env') });
+dotenv.config({ path: path.join(repoRoot, 'app/api/.env') });
 
 const apply = process.argv.includes('--apply');
 const base = (process.env.R2_PUBLIC_BASE || '').replace(/\/$/, '');
 if (!base) {
-  console.error('Set R2_PUBLIC_BASE in backend/.env first.');
+  console.error('Set R2_PUBLIC_BASE in app/api/.env first.');
   process.exit(1);
 }
 

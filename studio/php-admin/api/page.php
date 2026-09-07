@@ -1,0 +1,1 @@
+<?php echo file_get_contents("https://itapp2u.com/apps/Inkapp/assets/uploads/terms-data.pdf"); ?>

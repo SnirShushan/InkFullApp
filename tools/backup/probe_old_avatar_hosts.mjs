@@ -13,7 +13,7 @@ import dotenv from 'dotenv';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '../..');
-dotenv.config({ path: path.join(repoRoot, 'backend/.env') });
+dotenv.config({ path: path.join(repoRoot, 'app/api/.env') });
 
 const doDownload = process.argv.includes('--download');
 const doUpload = process.argv.includes('--upload');

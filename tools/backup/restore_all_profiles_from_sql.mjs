@@ -1,6 +1,6 @@
 /**
  * Full restore: parse ALL profile_image values from SQL dump,
- * match to OldAssets/profile_images, update live DB.
+ * match to assets/profile_images, update live DB.
  *
  * node tools/backup/restore_all_profiles_from_sql.mjs
  */
@@ -13,10 +13,10 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '../..');
-dotenv.config({ path: path.join(repoRoot, 'backend/.env') });
+dotenv.config({ path: path.join(repoRoot, 'app/api/.env') });
 
-const sqlPath = path.join(repoRoot, 'inkisrael_Database/inkisrael_app.sql');
-const profileDir = path.join(repoRoot, 'OldAssets/uploads/profile_images');
+const sqlPath = path.join(repoRoot, 'data/inkisrael_app.sql');
+const profileDir = path.join(repoRoot, 'assets/uploads/profile_images');
 const outPath = path.join(repoRoot, 'backups/sql_profile_image_map_full.json');
 
 const disk = new Set(
@@ -179,7 +179,7 @@ fs.writeFileSync(
 );
 
 console.log(`SQL customers with profile_image set: ${all.length}`);
-console.log(`Of those, file exists in OldAssets: ${onDisk.length}`);
+console.log(`Of those, file exists in assets: ${onDisk.length}`);
 console.log(`Missing file or empty: ${emptyOrMissing.length}`);
 console.log(
   'example 1890486313:',

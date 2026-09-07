@@ -1,5 +1,5 @@
 /**
- * Restore OldAssets → Cloudflare R2 + match profile images to DB users.
+ * Restore assets → Cloudflare R2 + match profile images to DB users.
  *
  * Usage:
  *   node tools/backup/restore_old_assets_to_r2.mjs            # dry-run report
@@ -19,12 +19,12 @@ import dotenv from 'dotenv';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '../..');
-dotenv.config({ path: path.join(repoRoot, 'backend/.env') });
+dotenv.config({ path: path.join(repoRoot, 'app/api/.env') });
 
 const doUpload = process.argv.includes('--upload');
 const doRestoreDb = process.argv.includes('--restore-db');
 
-const oldRoot = path.join(repoRoot, 'OldAssets');
+const oldRoot = path.join(repoRoot, 'assets');
 const profileDir = path.join(oldRoot, 'uploads', 'profile_images');
 const bodyDir = path.join(oldRoot, 'uploads', 'body_images');
 const sigDir = path.join(oldRoot, 'uploads', 'signature_images');
@@ -116,7 +116,7 @@ report.oldAssets.uploadsRootImages = uploadRootFiles
 
 const diskProfileSet = new Set(profileFiles.map((p) => path.basename(p)));
 
-console.log('OldAssets inventory:');
+console.log('assets inventory:');
 console.log(`  profile_images: ${profileFiles.length}`);
 console.log(`  body_images:    ${bodyFiles.length}`);
 console.log(`  signatures:    ${sigFiles.length}`);
