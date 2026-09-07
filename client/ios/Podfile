@@ -1,4 +1,3 @@
-# Uncomment this line to define a global platform for your project
 platform :ios, '15.0'
 
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
@@ -28,58 +27,39 @@ require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelpe
 flutter_ios_podfile_setup
 
 target 'Runner' do
-
+  # Keep gRPC for Firestore; let FlutterFire / facebook_app_events manage Firebase & FBSDK.
   pod 'gRPC-C++'
-  pod 'FBSDKCoreKit', '~> 18.0'
-  pod 'Firebase/DynamicLinks'
-  pod 'Firebase/Core'
-  pod 'Firebase/Messaging'
-#   pod 'Firebase/Core' #, '~> 10.0.0'
-#   pod 'FirebaseAuth' #, '~> 10.0.0'
-
-# Specify stable gRPC versions
-#     pod 'gRPC-Core', '~> 1.69.0'
-#     pod 'gRPC-C++', '~> 1.69.0'
-#   pod 'gRPC', '1.69.0'
-
-#   $FirebaseSDKVersion = '11.10.0' #'10.22.0' #12-05-25
+  # Pin CoreKit so CocoaPods does not float onto a broken transitive FAN layout.
+  pod 'FBSDKCoreKit', '18.0.0'
 
   use_frameworks!
   use_modular_headers!
 
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
-
 end
 
 post_install do |installer|
-   installer.pods_project.targets.each do |target|
-     flutter_additional_ios_build_settings(target)
-     target.build_configurations.each do |config|
-           config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
-           # You can remove unused permissions here
-           # e.g. when you don't need camera permission, just add 'PERMISSION_CAMERA=0'
-           config.build_settings['SWIFT_VERSION'] = '5'
-           config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= [
-                '$(inherited)',
-                ## dart: PermissionGroup.camera
-                'PERMISSION_CAMERA=1',
-               ## dart: PermissionGroup.notification
-                'PERMISSION_NOTIFICATIONS=1',
-                ## dart: PermissionGroup.photos
-                'PERMISSION_PHOTOS=1',
-                 ## dart: [PermissionGroup.location, PermissionGroup.locationAlways, PermissionGroup.locationWhenInUse]
-                'PERMISSION_LOCATION=1',
-          ]
-       end
-     # Fix for BoringSSL-GRPC compiler flag issue
-         if target.name == 'BoringSSL-GRPC'
-           target.source_build_phase.files.each do |file|
-             if file.settings && file.settings['COMPILER_FLAGS']
-               flags = file.settings['COMPILER_FLAGS'].split
-               flags.reject! { |flag| flag == '-GCC_WARN_INHIBIT_ALL_WARNINGS' }
-               file.settings['COMPILER_FLAGS'] = flags.join(' ')
-             end
-           end
-       end
-   end
+  installer.pods_project.targets.each do |target|
+    flutter_additional_ios_build_settings(target)
+    target.build_configurations.each do |config|
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+      config.build_settings['SWIFT_VERSION'] = '5'
+      config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= [
+        '$(inherited)',
+        'PERMISSION_CAMERA=1',
+        'PERMISSION_NOTIFICATIONS=1',
+        'PERMISSION_PHOTOS=1',
+        'PERMISSION_LOCATION=1',
+      ]
+    end
+    if target.name == 'BoringSSL-GRPC'
+      target.source_build_phase.files.each do |file|
+        if file.settings && file.settings['COMPILER_FLAGS']
+          flags = file.settings['COMPILER_FLAGS'].split
+          flags.reject! { |flag| flag == '-GCC_WARN_INHIBIT_ALL_WARNINGS' }
+          file.settings['COMPILER_FLAGS'] = flags.join(' ')
+        end
+      end
+    end
+  end
 end

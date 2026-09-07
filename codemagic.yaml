@@ -28,12 +28,37 @@ workflows:
       - name: Get Flutter packages
         script: |
           cd client
+          # Prefer CocoaPods for plugins that do not support SPM yet
+          flutter config --no-enable-swift-package-manager || true
           flutter pub get
       - name: Install CocoaPods
         script: |
           cd client/ios
           rm -f Podfile.lock
+          rm -rf Pods
           pod install --repo-update
+          # Meta's FBAudienceNetwork CocoaPods zip often extracts incomplete on CI.
+          FAN_XC="Pods/FBAudienceNetwork/Static/FBAudienceNetwork.xcframework"
+          if [ -d "Pods/FBAudienceNetwork" ] && [ ! -f "$FAN_XC/Info.plist" ]; then
+            echo "Repairing incomplete FBAudienceNetwork.xcframework..."
+            curl -fL -o /tmp/FBAudienceNetwork.zip \
+              "https://developers.facebook.com/resources/FBAudienceNetwork-6.20.1.zip"
+            rm -rf /tmp/FAN_extract
+            mkdir -p /tmp/FAN_extract
+            unzip -q /tmp/FBAudienceNetwork.zip -d /tmp/FAN_extract
+            mkdir -p Pods/FBAudienceNetwork/Static
+            if [ -d /tmp/FAN_extract/Static/FBAudienceNetwork.xcframework ]; then
+              rm -rf Pods/FBAudienceNetwork/Static
+              cp -R /tmp/FAN_extract/Static Pods/FBAudienceNetwork/
+            else
+              SRC=$(find /tmp/FAN_extract -type d -name 'FBAudienceNetwork.xcframework' | head -n 1)
+              test -n "$SRC"
+              rm -rf "$FAN_XC"
+              cp -R "$SRC" Pods/FBAudienceNetwork/Static/
+            fi
+            test -f "$FAN_XC/Info.plist"
+            echo "FBAudienceNetwork repair OK"
+          fi
       - name: Set up code signing
         script: |
           cd client
@@ -42,6 +67,7 @@ workflows:
         script: |
           cd client
           flutter build ipa --release \
+            --no-pub \
             --export-options-plist=/Users/builder/export_options.plist
     artifacts:
       - client/build/ios/ipa/*.ipa
