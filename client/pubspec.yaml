@@ -74,7 +74,7 @@ dependencies:
   #notification
   flutter_local_notifications:
 
-  google_sign_in: ^6.2.1
+  google_sign_in: 6.2.2
 
   #apple
   sign_in_with_apple: ^6.1.0
@@ -105,6 +105,10 @@ dev_dependencies:
   flutter_lints: ^2.0.0
   flutter_launcher_icons: ^0.11.0
 
+# Keep GoogleSignIn iOS SDK on 7.x for Firebase iOS 10.25 compatibility
+# (GoogleSignIn 8 → AppCheckCore 11 conflicts on GoogleUtilities / RecaptchaInterop).
+dependency_overrides:
+  google_sign_in_ios: 5.8.1
 
 flutter_icons:
   android: "launcher_icon"

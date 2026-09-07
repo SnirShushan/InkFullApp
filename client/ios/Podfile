@@ -27,8 +27,8 @@ require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelpe
 flutter_ios_podfile_setup
 
 target 'Runner' do
-  # Keep gRPC for Firestore; let FlutterFire / facebook_app_events manage Firebase & FBSDK.
-  pod 'gRPC-C++'
+  # Do not pin gRPC-C++ here — Firestore requires ~> 1.62.0 and an unconstrained
+  # gRPC-C++ pod breaks CocoaPods resolution.
   # Pin CoreKit so CocoaPods does not float onto a broken transitive FAN layout.
   pod 'FBSDKCoreKit', '18.0.0'
 
