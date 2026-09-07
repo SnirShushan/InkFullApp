@@ -23,14 +23,56 @@ def flutter_root
 end
 
 require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelper'), flutter_root)
+require 'fileutils'
 
 flutter_ios_podfile_setup
 
+# Meta's CocoaPods FBAudienceNetwork zip is often incomplete on CI.
+# flutter build ipa re-runs pod install, so repair must live in post_install.
+def repair_fb_audience_network!
+  pods_root = File.join(__dir__, 'Pods', 'FBAudienceNetwork')
+  return unless Dir.exist?(pods_root)
+
+  xc = File.join(pods_root, 'Static', 'FBAudienceNetwork.xcframework')
+  info = File.join(xc, 'Info.plist')
+  return if File.exist?(info)
+
+  puts '>>> Repairing incomplete FBAudienceNetwork.xcframework'
+  zip = '/tmp/FBAudienceNetwork-6.20.1.zip'
+  extract = '/tmp/FAN_extract'
+  url = 'https://developers.facebook.com/resources/FBAudienceNetwork-6.20.1.zip'
+
+  FileUtils.rm_rf(extract)
+  FileUtils.mkdir_p(extract)
+
+  ok = system('curl', '-fL', '--retry', '3', '--retry-delay', '2', '-o', zip, url)
+  raise 'Failed to download FBAudienceNetwork zip' unless ok
+
+  ok = system('unzip', '-qo', zip, '-d', extract)
+  raise 'Failed to unzip FBAudienceNetwork' unless ok
+
+  static_src = File.join(extract, 'Static', 'FBAudienceNetwork.xcframework')
+  if File.directory?(static_src)
+    FileUtils.rm_rf(File.join(pods_root, 'Static'))
+    FileUtils.cp_r(File.join(extract, 'Static'), File.join(pods_root, 'Static'))
+  else
+    src = Dir.glob(File.join(extract, '**', 'FBAudienceNetwork.xcframework')).first
+    raise 'FBAudienceNetwork.xcframework missing inside downloaded zip' if src.nil?
+    FileUtils.mkdir_p(File.join(pods_root, 'Static'))
+    FileUtils.rm_rf(xc)
+    FileUtils.cp_r(src, File.join(pods_root, 'Static', 'FBAudienceNetwork.xcframework'))
+  end
+
+  raise 'FBAudienceNetwork repair failed (Info.plist still missing)' unless File.exist?(info)
+  puts '>>> FBAudienceNetwork repair OK'
+end
+
 target 'Runner' do
-  # Do not pin gRPC-C++ here — Firestore requires ~> 1.62.0 and an unconstrained
-  # gRPC-C++ pod breaks CocoaPods resolution.
-  # Pin CoreKit so CocoaPods does not float onto a broken transitive FAN layout.
+  # Pin Facebook SDK pieces that facebook_app_events needs, without floating onto
+  # a broken Audience Network CocoaPods layout when possible.
   pod 'FBSDKCoreKit', '18.0.0'
+  pod 'FBAEMKit', '18.0.0'
+  pod 'FBSDKCoreKit_Basics', '18.0.0'
 
   use_frameworks!
   use_modular_headers!
@@ -62,4 +104,6 @@ post_install do |installer|
       end
     end
   end
+
+  repair_fb_audience_network!
 end
