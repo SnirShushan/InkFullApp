@@ -1,11 +1,5 @@
-﻿# Codemagic � Ink Flutter client ? TestFlight
+﻿# Codemagic — Ink Flutter client → TestFlight
 # Bundle ID: com.itapp2u.inks | Team: D6F46ZX5U6
-#
-# One-time in Codemagic UI:
-# 1. Teams ? Integrations ? Developer Portal ? Add key named InkAppStoreKey
-#    (Key ID + Issuer ID + AuthKey_*.p8)
-# 2. Fetch Apple Distribution cert + App Store profile for com.itapp2u.inks
-# 3. Start workflow ios-testflight
 
 workflows:
   ios-testflight:
@@ -37,11 +31,10 @@ workflows:
           rm -f Podfile.lock
           rm -rf Pods
           pod install --repo-update
-          # Fix gRPC vs newer Clang: Traits::template CallSeqFactory parse error
-          SEQ="Pods/gRPC-Core/src/core/lib/promise/detail/basic_seq.h"
-          if [ -f "$SEQ" ]; then
+          find Pods -name 'basic_seq.h' -print0 | while IFS= read -r -d '' SEQ; do
             sed -i.bak 's/Traits::template CallSeqFactory(/Traits::CallSeqFactory(/g' "$SEQ" || true
-          fi
+            echo "patched $SEQ"
+          done
       - name: Set up code signing
         script: |
           cd client
@@ -50,8 +43,22 @@ workflows:
         script: |
           set -e
           cd client
-          flutter build ipa --release --no-pub \
-            --export-options-plist=/Users/builder/export_options.plist
+          patch_grpc() {
+            find ios/Pods -name 'basic_seq.h' -print0 2>/dev/null | while IFS= read -r -d '' SEQ; do
+              sed -i.bak 's/Traits::template CallSeqFactory(/Traits::CallSeqFactory(/g' "$SEQ" || true
+              echo "patched $SEQ"
+            done
+          }
+          (cd ios && pod install)
+          patch_grpc
+          if ! flutter build ipa --release --no-pub \
+              --export-options-plist=/Users/builder/export_options.plist; then
+            echo "Build failed — re-patch gRPC headers and retry once"
+            (cd ios && pod install)
+            patch_grpc
+            flutter build ipa --release --no-pub \
+              --export-options-plist=/Users/builder/export_options.plist
+          fi
     artifacts:
       - client/build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log

@@ -72,13 +72,11 @@ post_install do |installer|
   end
 
   # gRPC 1.62 + newer Clang: Traits::template CallSeqFactory parse error
-  seq = File.join(__dir__, 'Pods/gRPC-Core/src/core/lib/promise/detail/basic_seq.h')
-  if File.exist?(seq)
+  Dir.glob(File.join(__dir__, 'Pods/**/basic_seq.h')).each do |seq|
     contents = File.read(seq)
     patched = contents.gsub('Traits::template CallSeqFactory(', 'Traits::CallSeqFactory(')
-    if patched != contents
-      File.write(seq, patched)
-      puts '>>> Patched gRPC basic_seq.h for Clang template parsing'
-    end
+    next if patched == contents
+    File.write(seq, patched)
+    puts ">>> Patched #{seq} for Clang template parsing"
   end
 end
