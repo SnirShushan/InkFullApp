@@ -44,9 +44,9 @@ class WebService {
   //Live  isSandBox="" || debug isSandBox= ="1"
   static String isSandBox="";
 
-  /// Always-on local develop mode: skip OTP phone flow and open Home as this user.
-  /// Set to false before production/store builds.
-  static bool developerMode = true;
+  /// Local develop mode: skip OTP and auto-login `0544466912`.
+  /// Must stay false for App Store / TestFlight / production builds.
+  static bool developerMode = false;
   static const String devSkipPhone = "0544466912";
 
   /// Until Railway is redeployed with the new `/api` gateway, develop mode can
@@ -73,7 +73,7 @@ class WebService {
   // static const defaultImageUrl =
   //     "http://192.168.1.59/tattoo/assets/img/defult.png";
 
-  static String appVersion = Platform.isAndroid ? "1.0.67" : "1.0.84";
+  static String appVersion = Platform.isAndroid ? "1.0.67" : "1.0.87";
   static const appToken = "123456";
   static String deviceType = Platform.isAndroid ? "a" : "i";
   static double locationRadius = 100.0;
@@ -238,8 +238,29 @@ class WebService {
   static const String emailclient = "inkraelco@gmail.com";
   static const String phonenoclient = "0508821562";
 
-  //term and privacy url
-  // "https://itapp2u.com/apps/Inkapp/api/index.php?action=GetPages&page_name=terms";
+  static const String legalPublicBase =
+      "https://ink-api-production-2e1d.up.railway.app";
+  static String get privacyPolicyUrl => "$legalPublicBase/privacy";
+  static String get termsOfUseUrl => "$legalPublicBase/terms";
+
+  static Future<void> openLegalUrl(String url) async {
+    final uri = Uri.parse(url);
+    try {
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!launched) {
+        await launchUrl(uri);
+      }
+    } catch (e) {
+      displayMessageIcon(
+          message: e.toString(),
+          snackposition: SnackPosition.BOTTOM,
+          color: errorColor,
+          imageData: AppAssets.errorIcon);
+    }
+  }
   //qna
   // static const String questionAndAnswers = "${baseUrl}index.php?action=GetPages&page_name=question_answer";
 

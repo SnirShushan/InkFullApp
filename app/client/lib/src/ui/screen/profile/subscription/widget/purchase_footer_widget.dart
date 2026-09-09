@@ -1,8 +1,8 @@
+import 'dart:io';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:get/get.dart';
-import 'package:ink/src/ui/screen/profile/drawer/TAC/terme_of_use.dart';
 import 'package:ink/src/utils/assets.dart';
 import 'package:ink/src/utils/colors.dart';
 import 'package:ink/src/utils/webService.dart';
@@ -253,14 +253,28 @@ class PurchaseFooterWidget extends StatelessWidget {
                     color: const Color(0xFFC0BCC4),
                     fontWeight: FontWeight.w400))),
         SizedBox(height: size.height * 0.03),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: size.width * 0.04),
+          child: Text(
+            Platform.isIOS
+                ? "מנויים בתשלום מתחדשים אוטומטית לפי התקופה והמחיר שמוצגים ליד כפתור הרכישה. התשלום יחויב מחשבון ה‑Apple ID באישור הרכישה. החידוש יתבצע אלא אם תבטל לפחות 24 שעות לפני סוף התקופה. החיוב הבא מתבצע במהלך 24 השעות שלפני סיום התקופה. ניהול וביטול: הגדרות ← Apple ID ← מנויים. אם מוצעת תקופת ניסיון, יתרתה שאינה מנוצלת תפקע עם הרכישה."
+                : "מנויים בתשלום מתחדשים אוטומטית לפי התקופה והמחיר שמוצגים ליד כפתור הרכישה. התשלום יחויב מחשבון Google Play. ניתן לבטל בכל עת דרך Google Play ← מנויים.",
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontFamily: 'Arimo',
+              fontSize: 12,
+              height: 1.45,
+              color: Color(0xFFC0BCC4),
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+        ),
+        SizedBox(height: size.height * 0.02),
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             InkWell(
-              onTap: () => Get.to(() => const TermsOfUse(
-                    initialIndex: 0,
-                    isRegistrationScreen: true,
-                  )),
+              onTap: () => WebService.openLegalUrl(WebService.termsOfUseUrl),
               child: buildTextUnderline(
                 context,
                 "תנאי השימוש",
@@ -272,10 +286,8 @@ class PurchaseFooterWidget extends StatelessWidget {
                     color: const Color(0xFFC0BCC4),
                     fontWeight: FontWeight.w400)),
             InkWell(
-              onTap: () => Get.to(() => const TermsOfUse(
-                    initialIndex: 1,
-                    isRegistrationScreen: true,
-                  )),
+              onTap: () =>
+                  WebService.openLegalUrl(WebService.privacyPolicyUrl),
               child: buildTextUnderline(
                 context,
                 "מדיניות הפרטיות",

@@ -17,6 +17,7 @@ import {
 import { assetUrl } from '../assets.js';
 import { pool } from '../db.js';
 import * as extra from './actions_extra.js';
+import * as subs from './subscriptions.js';
 
 function params(req) {
   return { ...(req.query || {}), ...(req.body || {}) };
@@ -491,18 +492,23 @@ export async function handleLegacyAction(req) {
       case 'LoginWithGmail':
         return extra.handleLoginWithGmail(p);
       case 'FreePlanSubscription':
-        return extra.handleFreePlan(p);
+        return subs.handleFreePlan(p);
       case 'UserInterestToUpgrade':
         return extra.handleUserInterest(p);
       case 'GetPages':
         return ok({ content: '' }, 'Success');
       case 'CheckSubscription':
+        return subs.handleCheckSubscription(p);
       case 'AndroidSubscription':
+        return subs.handleAndroidSubscription(p);
       case 'GetSubscriptionPackageName':
+        return subs.handleGetSubscriptionPackageName(p);
       case 'SubscriptionIpnCall':
+        return subs.handleSubscriptionIpn(p);
       case 'IosSubscriptionIpnCall':
+        return subs.handleIosSubscriptionIpn(p);
       case 'SuccessPurchaseIphone':
-        return ok({ is_premium: '0', is_sub_active: '0', package_name: '' });
+        return subs.handleSuccessPurchaseIphone(p);
       case 'LikePost':
         return ok({ liked: '1' });
       case 'ResArtistReq':

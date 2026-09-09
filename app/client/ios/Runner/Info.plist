@@ -26,6 +26,8 @@
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -74,17 +76,13 @@
 		</dict>
 	</dict>
 	<key>NSCameraUsageDescription</key>
-	<string>We use your camera so you can take a profile picture for your account</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>This app needs access to location when open.</string>
-	<key>NSLocationAlwaysUsageDescription</key>
-	<string>This app needs access to location when in the background.</string>
+	<string>המצלמה משמשת לצילום תמונת פרופיל, תמונות קעקוע או סקיצות להעלאה באפליקציה.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>This app needs access to location when open.</string>
+	<string>המיקום משמש בזמן השימוש באפליקציה כדי להציג סטודיואים ומקעקעים לידך ולהשלים כתובת עסק. לא נאסף מיקום ברקע.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>Need photo library access to upload important documents</string>
+	<string>הגלריה משמשת לבחירת תמונת פרופיל, תמונות קעקוע או סקיצות להעלאה באפליקציה.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Need photo library access to upload important documents</string>
+	<string>הגלריה משמשת לבחירת תמונת פרופיל, תמונות קעקוע או סקיצות להעלאה באפליקציה.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>NSUserNotificationUsageDescription</key>
@@ -125,8 +123,10 @@
 	<key>FacebookDisplayName</key>
 	<string>Ink</string>
 	<key>FacebookAutoLogAppEventsEnabled</key>
-	<string>false</string>
+	<false/>
+	<key>FacebookAdvertiserIDCollectionEnabled</key>
+	<false/>
 	<key>NSUserTrackingUsageDescription</key>
-    <string>This will help us understand how users use the app for improvements.</string>
+	<string>אם תאשר, נשתמש בנתוני שימוש כדי לשפר את האפליקציה. המעקב אינו חובה ואינו נדרש כדי להשתמש בשירות או לרכוש מנוי.</string>
 </dict>
 </plist>

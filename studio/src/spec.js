@@ -116,11 +116,11 @@ export const SYSTEM_SPEC = {
   runningToday: [
     {
       title: 'CheckSubscription וכל רכישות החנות',
-      body: 'ה-API מחזיר תמיד is_premium=0, is_sub_active=0, package_name ריק. לא קורא את tbl_subscription ולא מעדכן אותו.',
+      body: 'CheckSubscription קורא את tbl_subscription. רכישת iOS/Android וחבילה חינמית נשמרות במסד. שחזור רכישה מפעיל מחדש את המנוי.',
     },
     {
       title: 'FreePlanSubscription',
-      body: 'מחזיר הצלחה (is_sub_active=1, is_premium=0) בלי לכתוב שורה במסד. לכן «התחילו בחינם» יכול להמשיך באפליקציה, אבל לא נוצרת חבילה חינמית אמיתית.',
+      body: 'כותב basic_free_plan במסד, מעדכן post_limit, ומחזיר is_sub_active=1.',
     },
     {
       title: 'המרה לעסק',
@@ -155,9 +155,9 @@ export const SYSTEM_SPEC = {
     {
       title: 'מה קורה בפועל באפליקציה החיה',
       items: [
-        'כל משתמש מקבל is_premium=0 מהשרת — פיצ׳רי פרימיום באפליקציה סגורים',
-        'במסד כולם מסומנים כפרימיום-מתנה, אבל האפליקציה לא רואה את זה',
-        'אין גבייה: 0 משלמים, אין IPN, אין בדיקת חנות',
+        'כל משתמש מקבל את מצב המנוי מהמסד — פרימיום נפתח רק למנוי פרימיום פעיל',
+        'במסד חלק מהעסקים מסומנים כפרימיום-מתנה; האפליקציה רואה את זה אחרי CheckSubscription',
+        'רכישת חנות ושמירת מנוי מחוברות ל-API',
       ],
     },
   ],

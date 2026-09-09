@@ -16,7 +16,6 @@ import 'package:ink/src/utils/colors.dart';
 import 'package:ink/src/utils/common.dart';
 import 'package:ink/src/utils/webService.dart';
 
-import '../profile/drawer/TAC/terme_of_use.dart';
 import 'widget/custom_registration_textformfield_widget.dart';
 
 class RegistrationScreen extends StatefulWidget {
@@ -444,10 +443,9 @@ class _RegistrationScreenState extends State<RegistrationScreen>
                                           fontWeight: FontWeight.w400,
                                           decoration: TextDecoration.underline),
                                       text: "תנאי השימוש",
-                                      recognizer: TapGestureRecognizer()..onTap = ()=>Get.to(() => const TermsOfUse(
-                                        initialIndex: 0,
-                                        isRegistrationScreen: true,
-                                      )),
+                                      recognizer: TapGestureRecognizer()
+                                        ..onTap = () => WebService.openLegalUrl(
+                                            WebService.termsOfUseUrl),
                                     ),
                                     TextSpan(text: tr("registration.terms_3")),
                                     TextSpan(
@@ -457,10 +455,9 @@ class _RegistrationScreenState extends State<RegistrationScreen>
                                           fontWeight: FontWeight.w400,
                                           decoration: TextDecoration.underline),
                                       text: " מדיניות הפרטיות",
-                                      recognizer: TapGestureRecognizer()..onTap = ()=>Get.to(() => const TermsOfUse(
-                                        initialIndex: 1,
-                                        isRegistrationScreen: true,
-                                      )),
+                                      recognizer: TapGestureRecognizer()
+                                        ..onTap = () => WebService.openLegalUrl(
+                                            WebService.privacyPolicyUrl),
                                     ),
                                   ]),
                                 ),

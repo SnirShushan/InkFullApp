@@ -659,12 +659,6 @@ export async function handleLoginWithGmail(p) {
   );
 }
 
-export async function handleFreePlan(p) {
-  const auth = await requireAuthLocal(p);
-  if (auth.error) return auth.error;
-  return ok({ is_premium: '0', is_sub_active: '1' }, 'Success');
-}
-
 export async function handleUserInterest(p) {
   return ok([], 'Success');
 }

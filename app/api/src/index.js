@@ -10,6 +10,7 @@ import { postsRouter } from './routes/posts.js';
 import { usersRouter } from './routes/users.js';
 import { settingsRouter } from './routes/settings.js';
 import { docsRouter } from './routes/docs.js';
+import { legalRouter } from './routes/legal.js';
 import { handleLegacyAction } from './legacy/gateway.js';
 
 const app = express();
@@ -31,6 +32,8 @@ app.get('/', (_req, res) => {
   <ul>
     <li><a href="/docs"><strong>Swagger docs</strong></a></li>
     <li><a href="/openapi.json">openapi.json</a></li>
+    <li><a href="/privacy"><strong>מדיניות פרטיות</strong></a></li>
+    <li><a href="/terms"><strong>תנאי שימוש</strong></a></li>
     <li><a href="/health">/health</a></li>
     <li><a href="/v1/styles">/v1/styles</a></li>
     <li><a href="/v1/posts?limit=10">/v1/posts</a></li>
@@ -41,6 +44,7 @@ app.get('/', (_req, res) => {
 });
 
 app.use(docsRouter);
+app.use(legalRouter);
 app.use(healthRouter);
 app.use('/v1/styles', stylesRouter);
 app.use('/v1/posts', postsRouter);

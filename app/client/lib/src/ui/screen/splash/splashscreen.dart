@@ -20,6 +20,7 @@ import 'package:ink/src/utils/assets.dart';
 import 'package:ink/src/utils/colors.dart';
 import 'package:ink/src/utils/common.dart';
 import 'package:ink/src/utils/shared_preference_helper.dart';
+import 'package:ink/src/utils/tracking_permission.dart';
 import 'package:ink/src/utils/webService.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -66,6 +67,9 @@ class _SplashScreenState extends State<SplashScreen> {
     try {
       await _initialization();
     } catch (_) {}
+    if (Platform.isIOS) {
+      Future.delayed(const Duration(seconds: 2), requestAppTrackingIfNeeded);
+    }
     final elapsed = DateTime.now().difference(started);
     final remaining = const Duration(milliseconds: 1200) - elapsed;
     if (remaining > Duration.zero) {

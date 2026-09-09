@@ -791,8 +791,8 @@ class _IOSPurchaseScreenState extends State<IOSPurchaseScreen> {
                           // title: "${isPremiumMonthly[0].price} לחודש ",
 
                           title: widget.checkstatus == "0"
-                              ? "${"₪99.90 לחודש"}\n חודש ראשון מתנה"
-                              : "₪99.90 לחודש",
+                              ? "${isPremiumMonthly.isNotEmpty ? isPremiumMonthly[0].price : "₪99.90"} לחודש\n חודש ראשון מתנה"
+                              : "${isPremiumMonthly.isNotEmpty ? isPremiumMonthly[0].price : "₪99.90"} לחודש",
                           subtitle: tr("purchases.premium_monthly_subtitle")
                           // subtitle: "חודש ראשון מתנה!",
                           // title: widget.checkstatus == "0"
@@ -801,6 +801,19 @@ class _IOSPurchaseScreenState extends State<IOSPurchaseScreen> {
                           //         isPremiumMonthly[0].price),
                           // subtitle: tr("purchases.premium_monthly_subtitle")
                           ),
+          Padding(
+            padding: const EdgeInsets.only(top: 8, left: 4, right: 4),
+            child: Text(
+              "מנוי חודשי מתחדש אוטומטית במחיר המוצג. החיוב מחשבון Apple ID. ביטול: הגדרות ← Apple ID ← מנויים, לפחות 24 שעות לפני סוף התקופה. תנאי שימוש ומדיניות פרטיות למטה.",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: Platform.isIOS ? 11 : 12,
+                height: 1.4,
+                color: const Color(0xFFC0BCC4),
+                fontFamily: 'Arimo',
+              ),
+            ),
+          ),
           SizedBox(height: MediaQuery.of(context).size.height * 0.01),
         ],
       ),
