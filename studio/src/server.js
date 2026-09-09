@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { spawn } from 'node:child_process';
+import { timingSafeEqual } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
 import { createSources } from './sources.js';
@@ -9,25 +10,77 @@ import { createAdminRouter } from './admin.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ADMIN_DIR = path.join(ROOT, 'php-admin');
-const PORT = Number(process.env.EXPLORER_PORT) || 4173;
-const HOST = process.env.HOST || '127.0.0.1';
-const ADMIN_PORT = Number(process.env.ADMIN_PORT) || 8080;
+const ON_RAILWAY = Boolean(process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PUBLIC_DOMAIN);
+const IS_PROD = process.env.NODE_ENV === 'production' || ON_RAILWAY;
+const PORT = Number(process.env.PORT || process.env.EXPLORER_PORT || 4173);
+const HOST = process.env.HOST || (IS_PROD ? '0.0.0.0' : '127.0.0.1');
+const ADMIN_PORT = Number(process.env.ADMIN_PORT || 8080);
 const ADMIN_URL = `http://${HOST}:${ADMIN_PORT}/admin/`;
 const COSTS_PATH = path.join(ROOT, 'data', 'operating-costs.json');
 let adminChild = null;
 
-const sources = createSources();
+const sources = await createSources();
 
 const app = express();
 app.disable('x-powered-by');
+app.set('trust proxy', 1);
 app.use(express.json({ limit: '200kb' }));
+
+function safeEqual(a, b) {
+  const left = Buffer.from(String(a));
+  const right = Buffer.from(String(b));
+  if (left.length !== right.length) return false;
+  return timingSafeEqual(left, right);
+}
+
+function requireStudioAuth(req, res, next) {
+  if (req.path === '/health') return next();
+  const user = process.env.STUDIO_USER || 'admin';
+  const pass = process.env.STUDIO_PASSWORD || '';
+  if (!pass) {
+    if (IS_PROD) {
+      res.status(503).type('text').send('STUDIO_PASSWORD is not set');
+      return;
+    }
+    return next();
+  }
+  const header = String(req.headers.authorization || '');
+  if (!header.startsWith('Basic ')) {
+    res.set('WWW-Authenticate', 'Basic realm="INK Studio"');
+    res.status(401).type('text').send('Authentication required');
+    return;
+  }
+  const decoded = Buffer.from(header.slice(6), 'base64').toString('utf8');
+  const sep = decoded.indexOf(':');
+  const givenUser = sep === -1 ? decoded : decoded.slice(0, sep);
+  const givenPass = sep === -1 ? '' : decoded.slice(sep + 1);
+  if (!safeEqual(givenUser, user) || !safeEqual(givenPass, pass)) {
+    res.set('WWW-Authenticate', 'Basic realm="INK Studio"');
+    res.status(401).type('text').send('Authentication required');
+    return;
+  }
+  next();
+}
+
+app.get('/health', (_req, res) => {
+  res.json({
+    ok: true,
+    liveConfigured: sources.liveConfigured,
+    museumAvailable: sources.museumAvailable,
+  });
+});
+
+app.use(requireStudioAuth);
 app.use(express.static(path.join(ROOT, 'public')));
 
 function pickSource(req) {
-  return sources.sourceOf(req.query.source === 'live' ? 'live' : 'museum');
+  if (req.query.source === 'museum') return sources.sourceOf('museum');
+  if (req.query.source === 'live') return sources.sourceOf('live');
+  return sources.sourceOf(sources.liveConfigured ? 'live' : 'museum');
 }
 
 async function adminReachable() {
+  if (IS_PROD) return false;
   try {
     const res = await fetch(ADMIN_URL, { redirect: 'manual', signal: AbortSignal.timeout(4000) });
     return res.status < 500;
@@ -37,6 +90,7 @@ async function adminReachable() {
 }
 
 async function ensureAdmin() {
+  if (IS_PROD) return false;
   if (await adminReachable()) return true;
   console.log('Starting the PHP admin for the Studio ניהול tab…');
   adminChild = spawn('php', ['-S', `${HOST}:${ADMIN_PORT}`, 'router.php'], {
@@ -61,6 +115,7 @@ app.get('/api/studio', async (_req, res) => {
     adminUrl: ADMIN_URL,
     adminUp: await adminReachable(),
     liveConfigured: sources.liveConfigured,
+    museumAvailable: sources.museumAvailable,
     nativeAdmin: true,
   });
 });
@@ -94,27 +149,12 @@ app.get('/api/tables/:name', async (req, res, next) => {
 app.get('/api/finance', async (req, res, next) => {
   try {
     let sourceId = req.query.source === 'museum' ? 'museum' : 'live';
-    let used = sourceId;
-    try {
-      const source = sources.sourceOf(sourceId);
-      const rows = await loadFinanceRows(source);
-      const costs = readCosts(COSTS_PATH);
-      res.json({ source: used, liveConfigured: sources.liveConfigured, ...summarizeFinance({ ...rows, costs }) });
-    } catch (err) {
-      if (sourceId === 'live') {
-        used = 'museum';
-        const rows = await loadFinanceRows(sources.sourceOf('museum'));
-        const costs = readCosts(COSTS_PATH);
-        res.json({
-          source: used,
-          liveConfigured: sources.liveConfigured,
-          fallbackReason: err.message,
-          ...summarizeFinance({ ...rows, costs }),
-        });
-        return;
-      }
-      throw err;
-    }
+    if (sourceId === 'museum' && !sources.museumAvailable) sourceId = 'live';
+    if (sourceId === 'live' && !sources.liveConfigured && sources.museumAvailable) sourceId = 'museum';
+    const source = sources.sourceOf(sourceId);
+    const rows = await loadFinanceRows(source);
+    const costs = readCosts(COSTS_PATH);
+    res.json({ source: sourceId, liveConfigured: sources.liveConfigured, ...summarizeFinance({ ...rows, costs }) });
   } catch (err) {
     next(err);
   }
@@ -123,20 +163,10 @@ app.get('/api/finance', async (req, res, next) => {
 app.get('/api/spec', async (req, res, next) => {
   try {
     let sourceId = req.query.source === 'museum' ? 'museum' : 'live';
-    try {
-      const source = sources.sourceOf(sourceId);
-      res.json(await buildSpec({ source, costsPath: COSTS_PATH, liveConfigured: sources.liveConfigured }));
-    } catch (err) {
-      if (sourceId === 'live') {
-        const source = sources.sourceOf('museum');
-        res.json({
-          fallbackReason: err.message,
-          ...(await buildSpec({ source, costsPath: COSTS_PATH, liveConfigured: sources.liveConfigured })),
-        });
-        return;
-      }
-      throw err;
-    }
+    if (sourceId === 'museum' && !sources.museumAvailable) sourceId = 'live';
+    if (sourceId === 'live' && !sources.liveConfigured && sources.museumAvailable) sourceId = 'museum';
+    const source = sources.sourceOf(sourceId);
+    res.json(await buildSpec({ source, costsPath: COSTS_PATH, liveConfigured: sources.liveConfigured }));
   } catch (err) {
     next(err);
   }
@@ -158,11 +188,16 @@ app.use((err, _req, res, _next) => {
   res.status(err.status || 500).json({ error: err.message || 'Server error' });
 });
 
-app.listen(PORT, HOST, async () => {
-  const adminUp = await ensureAdmin();
+const server = app.listen(PORT, HOST, async () => {
+  if (!IS_PROD) await ensureAdmin();
   console.log(`INK Studio → http://${HOST}:${PORT}`);
-  console.log(adminUp ? 'ניהול tab is ready' : 'ניהול tab: PHP admin did not start');
   console.log(sources.liveConfigured ? 'Live Railway source enabled' : 'Live Railway source not configured');
+  console.log(sources.museumAvailable ? 'Museum archive enabled' : 'Museum archive skipped');
+});
+
+server.on('error', (err) => {
+  console.error(err);
+  process.exit(1);
 });
 
 function stopAdmin() {

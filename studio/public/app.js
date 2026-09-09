@@ -283,7 +283,7 @@ async function renderFinance() {
     </section>
 
     <div class="section-card">
-      <h2>מנויים</h2>
+      <h2>הכנסות לפי תוכנית</h2>
       <p>
         <span class="pill-he">חדשים 7 ימים: ${fmt(s.newPaying7d)}</span>
         <span class="pill-he">חדשים 30 ימים: ${fmt(s.newPaying30d)}</span>
@@ -296,7 +296,7 @@ async function renderFinance() {
         <span class="pill-he">Android: ${fmt(s.androidPaying)}</span>
       </p>
       <table class="mix-table">
-        <thead><tr><th>תוכנית</th><th>משלמים</th><th>מחיר מחירון</th><th>הכנסה חודשית</th></tr></thead>
+        <thead><tr><th>סעיף</th><th>פירוט</th><th>סכום חודשי</th></tr></thead>
         <tbody>
           ${
             data.plans.length
@@ -304,21 +304,56 @@ async function renderFinance() {
                   .map(
                     (p) => `<tr>
                       <td>${esc(p.labelHe)}</td>
-                      <td>${fmt(p.count)}</td>
-                      <td>${ils(p.listPrice)}${p.period === 'year' ? ' לשנה' : p.period === 'month' ? ' לחודש' : ''}</td>
-                      <td>${ils(p.monthlyIls)}</td>
+                      <td>${fmt(p.count)} משלמים · ${ils(p.listPrice)}${p.period === 'year' ? ' לשנה' : p.period === 'month' ? ' לחודש' : ''}</td>
+                      <td class="num">${ils(p.monthlyIls)}</td>
                     </tr>`
                   )
                   .join('')
-              : '<tr><td colspan="4">אין כרגע מנויים משלמים פעילים</td></tr>'
+              : '<tr><td colspan="3">אין כרגע מנויים משלמים פעילים — אין הכנסה ממנויים</td></tr>'
           }
         </tbody>
+        <tfoot>
+          <tr><td>סה״כ ברוטו לפי מחירון</td><td></td><td class="num">${ils(m.listGrossMrr)}</td></tr>
+          <tr class="neg"><td>עמלת חנות (${m.storeFeePercent}%)</td><td>Apple / Google</td><td class="num">− ${ils(m.storeFeeMonthly)}</td></tr>
+          <tr class="total"><td>הכנסה נטו אחרי חנות</td><td></td><td class="num">${ils(m.netMrr)}</td></tr>
+        </tfoot>
       </table>
     </div>
 
     <div class="section-card">
-      <h2>הוצאות תפעול — כמה עולה האפליקציה עכשיו</h2>
-      <p class="notes">אפשר לערוך סכומים. זה נשמר אצלך מקומית בקובץ העלויות של הסטודיו, לא במסד החי.</p>
+      <h2>הוצאות לפי סעיף</h2>
+      <p class="notes">כל שורה היא הוצאה חודשית משוערת. עמלת החנות מופיעה גם בטבלת ההכנסות כי היא יורדת מהמכירות.</p>
+      <table class="mix-table">
+        <thead><tr><th>סעיף</th><th>פירוט</th><th>סכום חודשי</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>עמלת חנות (${m.storeFeePercent}%)</td>
+            <td>עמלה על מכירות בפועל</td>
+            <td class="num">${ils(m.storeFeeMonthly)}</td>
+          </tr>
+          ${
+            (data.costs.items || [])
+              .map(
+                (item) => `<tr>
+                  <td>${esc(item.label)}</td>
+                  <td class="notes">${esc(item.note || '')}</td>
+                  <td class="num">${ils(item.monthlyIls)}</td>
+                </tr>`
+              )
+              .join('')
+          }
+        </tbody>
+        <tfoot>
+          <tr><td>סה״כ תפעול (בלי עמלת חנות)</td><td></td><td class="num">${ils(m.operatingMonthly)}</td></tr>
+          <tr><td>סה״כ יוצא מהכיס</td><td>תפעול + עמלת חנות</td><td class="num">${ils(m.operatingMonthly + m.storeFeeMonthly)}</td></tr>
+          <tr class="total ${netClass}"><td>רווח / הפסד אחרי הכול</td><td>הכנסה נטו פחות תפעול</td><td class="num">${ils(m.netAfterCosts)}</td></tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <div class="section-card">
+      <h2>עריכת הוצאות תפעול</h2>
+      <p class="notes">אפשר לעדכן סכומים והערות. בפרודקשן השמירה נשארת עד הדיפלוי הבא.</p>
       <form id="costForm">
         <div class="cost-row">
           <label>עמלת חנות %</label>

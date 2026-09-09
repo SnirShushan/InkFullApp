@@ -3,18 +3,22 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
 import mysql from 'mysql2/promise';
-import Database from 'better-sqlite3';
-import { importDump, needsImport } from './import-dump.js';
 import { TABLE_GROUPS, friendlyName } from './catalog.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DUMP = path.resolve(ROOT, '..', 'data', 'inkisrael_app.sql');
 const DB_PATH = path.join(ROOT, 'data', 'inkisrael.sqlite');
+const ON_RAILWAY = Boolean(process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PUBLIC_DOMAIN);
 
+const savedPort = process.env.PORT;
 dotenv.config({
   path: path.resolve(ROOT, '..', 'app', 'api', '.env'),
 });
-delete process.env.PORT;
+if (ON_RAILWAY) {
+  if (savedPort) process.env.PORT = savedPort;
+} else {
+  delete process.env.PORT;
+}
 
 const IDENT = /^[A-Za-z0-9_]+$/;
 
@@ -30,10 +34,11 @@ function groupTables(tables) {
   return grouped;
 }
 
-function ensureMuseum() {
-  if (!fs.existsSync(DUMP)) {
-    throw new Error(`SQL dump not found: ${DUMP}`);
-  }
+async function loadMuseum() {
+  if (ON_RAILWAY || process.env.STUDIO_SKIP_MUSEUM === '1') return null;
+  if (!fs.existsSync(DUMP)) return null;
+  const { importDump, needsImport } = await import('./import-dump.js');
+  const { default: Database } = await import('better-sqlite3');
   if (needsImport(DUMP, DB_PATH)) {
     console.log('Importing inkisrael_app.sql into SQLite…');
     importDump(DUMP, DB_PATH);
@@ -54,20 +59,27 @@ function createLivePool() {
     password: process.env.DB_PASS,
     database: process.env.DB_NAME || 'inkisrael_app',
     waitForConnections: true,
-    connectionLimit: 4,
+    connectionLimit: 2,
     namedPlaceholders: true,
     charset: 'utf8mb4',
   });
 }
 
-export function createSources() {
-  const sqlite = ensureMuseum();
+function unavailable(message) {
+  const err = new Error(message);
+  err.status = 503;
+  throw err;
+}
+
+export async function createSources() {
+  const sqlite = await loadMuseum();
   const livePool = createLivePool();
 
   const museum = {
     id: 'museum',
     label: 'Museum dump',
     async listTables() {
+      if (!sqlite) return [];
       return sqlite
         .prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name != '_meta' ORDER BY name`)
         .all()
@@ -92,7 +104,7 @@ export function createSources() {
       return Object.fromEntries(rows.map((r) => [r.k, r.v]));
     },
     async ping() {
-      return true;
+      return Boolean(sqlite);
     },
   };
 
@@ -169,6 +181,7 @@ export function createSources() {
       label: source.label,
       meta: await source.meta(),
       liveAvailable: Boolean(livePool) && (await live.ping()),
+      museumAvailable: Boolean(sqlite),
       totalRows: tables.reduce((s, t) => s + t.rows, 0),
       tableCount: tables.length,
       groups: groupTables(tables),
@@ -228,7 +241,7 @@ export function createSources() {
   }
 
   async function compare() {
-    const museumNames = await museum.listTables();
+    const museumNames = sqlite ? await museum.listTables() : [];
     const liveOk = Boolean(livePool) && (await live.ping());
     const liveNames = liveOk ? await live.listTables() : [];
     const names = [...new Set([...museumNames, ...liveNames])].sort();
@@ -246,6 +259,7 @@ export function createSources() {
     }
     return {
       liveAvailable: liveOk,
+      museumAvailable: Boolean(sqlite),
       changed: tables.filter((t) => t.delta !== 0 && t.delta != null || t.museum == null || t.live == null),
       tables,
     };
@@ -253,13 +267,10 @@ export function createSources() {
 
   function sourceOf(id) {
     if (id === 'live') {
-      if (!livePool) {
-        const err = new Error('Live Railway database is not configured');
-        err.status = 503;
-        throw err;
-      }
+      if (!livePool) unavailable('Live Railway database is not configured');
       return live;
     }
+    if (!sqlite) unavailable('Museum archive is not available on this deploy');
     return museum;
   }
 
@@ -267,6 +278,7 @@ export function createSources() {
     museum,
     live,
     liveConfigured: Boolean(livePool),
+    museumAvailable: Boolean(sqlite),
     getLivePool: () => livePool,
     overviewFor,
     queryTable,

@@ -9,11 +9,68 @@ export const PLAN_CATALOG = {
   basic_free_plan: { ils: 0, period: 'none', labelHe: 'חינם' },
 };
 
+const DEFAULT_COST_ITEMS = [
+  {
+    id: 'railway',
+    label: 'Railway — API ומסד נתונים',
+    monthlyIls: 80,
+    note: 'שרת Node + MySQL בפרודקשן. עדכן לפי החשבונית האחרונה.',
+  },
+  {
+    id: 'studio',
+    label: 'Railway — Studio',
+    monthlyIls: 20,
+    note: 'ממשק הניהול החי. כמה דולרים בחודש בנוסף ל-API.',
+  },
+  {
+    id: 'r2',
+    label: 'Cloudflare R2 — אחסון מדיה',
+    monthlyIls: 15,
+    note: 'תמונות פרופיל, פוסטים ונכסים. לרוב זול מאוד.',
+  },
+  {
+    id: 'codemagic',
+    label: 'Codemagic — בנייה לחנויות',
+    monthlyIls: 0,
+    note: 'השאר 0 אם אתה על התוכנית החינמית.',
+  },
+  {
+    id: 'apple',
+    label: 'Apple Developer',
+    monthlyIls: 32,
+    note: 'כ-99 דולר לשנה, מחולק ל-12 חודשים.',
+  },
+  {
+    id: 'google',
+    label: 'Google Play Console',
+    monthlyIls: 8,
+    note: 'דמי הרשמה חד-פעמיים מחולקים על פני השנה.',
+  },
+  {
+    id: 'domain',
+    label: 'דומיין ו-DNS',
+    monthlyIls: 10,
+    note: 'inkisrael או דומיין ניהול.',
+  },
+  {
+    id: 'sms',
+    label: 'OTP / SMS',
+    monthlyIls: 0,
+    note: 'מלא אם יש ספק סמס פעיל.',
+  },
+  {
+    id: 'other',
+    label: 'אחר',
+    monthlyIls: 0,
+    note: 'עיצוב, כלים, מנויים נוספים.',
+  },
+];
+
 const DEFAULT_COSTS = {
   currency: 'ILS',
   storeFeePercent: 15,
   updatedAt: null,
-  items: [],
+  items: DEFAULT_COST_ITEMS,
 };
 
 function num(v) {
@@ -89,16 +146,18 @@ function firstPayingDate(subs, custId) {
 }
 
 export function readCosts(filePath) {
-  if (!fs.existsSync(filePath)) return structuredClone(DEFAULT_COSTS);
+  const defaults = structuredClone(DEFAULT_COSTS);
+  if (!fs.existsSync(filePath)) return defaults;
   try {
     const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    const items = Array.isArray(parsed.items) && parsed.items.length ? parsed.items : defaults.items;
     return {
-      ...DEFAULT_COSTS,
+      ...defaults,
       ...parsed,
-      items: Array.isArray(parsed.items) ? parsed.items : [],
+      items,
     };
   } catch {
-    return structuredClone(DEFAULT_COSTS);
+    return defaults;
   }
 }
 

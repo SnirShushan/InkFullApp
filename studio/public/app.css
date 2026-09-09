@@ -538,7 +538,23 @@ tbody tr.no-row-click { cursor: default; }
   padding: 8px 10px;
   border-bottom: 1px solid var(--line);
   text-align: start;
+  vertical-align: top;
 }
+.mix-table td.num, .mix-table th:last-child {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.mix-table tfoot td {
+  font-weight: 700;
+  border-bottom: 0;
+  padding-top: 10px;
+}
+.mix-table tfoot tr.neg td { color: var(--bad); font-weight: 600; }
+.mix-table tfoot tr.total td { font-size: 14px; }
+.mix-table tfoot tr.total.good td { color: var(--good); }
+.mix-table tfoot tr.total.bad td { color: var(--bad); }
+.mix-table td.notes { color: var(--muted); }
 .pill-he {
   display: inline-block;
   border: 1px solid var(--line);

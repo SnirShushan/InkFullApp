@@ -1,0 +1,8 @@
+node_modules
+php-admin
+data/*.sqlite
+data/*.sqlite-*
+data/*.db
+.git
+*.md
+npm-debug.log
