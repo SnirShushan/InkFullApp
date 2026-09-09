@@ -402,8 +402,163 @@ export async function handleGetSubscriptionPackageName(p) {
   return ok({ package_name: settings.package_name || '' }, 'Success');
 }
 
+function decodeAppleJws(token) {
+  if (!token || typeof token !== 'string') return null;
+  const parts = token.split('.');
+  if (parts.length < 2) return null;
+  try {
+    const json = Buffer.from(
+      parts[1].replace(/-/g, '+').replace(/_/g, '/'),
+      'base64'
+    ).toString('utf8');
+    return JSON.parse(json);
+  } catch {
+    return null;
+  }
+}
+
+function appleMsToSql(ms) {
+  const n = Number(ms);
+  if (!n) return sqlDate(new Date());
+  return sqlDate(new Date(n));
+}
+
 export async function handleIosSubscriptionIpn(p) {
-  return ok({ received: '1' }, 'Success');
+  const signedPayload = p.signedPayload || p.signed_payload;
+  if (!signedPayload) {
+    return ok({ received: '1' }, 'Success');
+  }
+
+  const notification = decodeAppleJws(signedPayload);
+  const tx = decodeAppleJws(notification?.data?.signedTransactionInfo);
+  if (!tx || !tx.originalTransactionId) {
+    return ok({ received: '1', parsed: '0' }, 'Success');
+  }
+
+  let productId = String(tx.productId || '');
+  if (tx.transactionReason === 'RENEWAL' && productId === 'monthly_basic_plan') {
+    productId = 'monthly_premium_plan';
+  }
+  const originalId = String(tx.originalTransactionId);
+  const expireDate = appleMsToSql(tx.expiresDate);
+  const now = sqlDate();
+
+  try {
+    const [existingIpn] = await pool.query(
+      `SELECT id FROM tbl_ios_subscription_ipn
+       WHERE original_transaction_id = :originalId
+       LIMIT 1`,
+      { originalId }
+    );
+    const ipnRow = {
+      signed_payload: String(signedPayload).slice(0, 65000),
+      date_added: now,
+      transcation_id: String(tx.transactionId || ''),
+      original_transaction_id: originalId,
+      web_order_line_item_id: String(tx.webOrderLineItemId || ''),
+      bundle_id: String(tx.bundleId || ''),
+      product_id: productId,
+      subscription_group_identifier: String(tx.subscriptionGroupIdentifier || ''),
+      purchase_date: appleMsToSql(tx.purchaseDate),
+      original_purchase_date: appleMsToSql(tx.originalPurchaseDate),
+      expires_date: expireDate,
+      quantity: String(tx.quantity ?? '1'),
+      type: String(tx.type || ''),
+      inapp_ownership_type: String(tx.inAppOwnershipType || ''),
+      signed_date: appleMsToSql(tx.signedDate),
+      environment: String(tx.environment || ''),
+      transaction_reason: String(tx.transactionReason || ''),
+      store_front: String(tx.storefront || ''),
+      store_front_id: String(tx.storefrontId || ''),
+    };
+    if (existingIpn[0]) {
+      await pool.query(
+        `UPDATE tbl_ios_subscription_ipn SET
+           signed_payload = :signed_payload,
+           transcation_id = :transcation_id,
+           web_order_line_item_id = :web_order_line_item_id,
+           product_id = :product_id,
+           expires_date = :expires_date,
+           purchase_date = :purchase_date,
+           transaction_reason = :transaction_reason,
+           environment = :environment,
+           signed_date = :signed_date
+         WHERE original_transaction_id = :original_transaction_id`,
+        ipnRow
+      );
+    } else {
+      await pool.query(
+        `INSERT INTO tbl_ios_subscription_ipn
+          (signed_payload, date_added, transcation_id, original_transaction_id,
+           web_order_line_item_id, bundle_id, product_id, subscription_group_identifier,
+           purchase_date, original_purchase_date, expires_date, quantity, type,
+           inapp_ownership_type, signed_date, environment, transaction_reason,
+           store_front, store_front_id)
+         VALUES
+          (:signed_payload, :date_added, :transcation_id, :original_transaction_id,
+           :web_order_line_item_id, :bundle_id, :product_id, :subscription_group_identifier,
+           :purchase_date, :original_purchase_date, :expires_date, :quantity, :type,
+           :inapp_ownership_type, :signed_date, :environment, :transaction_reason,
+           :store_front, :store_front_id)`,
+        ipnRow
+      );
+    }
+  } catch (e) {
+    console.error('ios ipn log table', e?.message || e);
+  }
+
+  try {
+    const [subs] = await pool.query(
+      `SELECT id, cust_id FROM tbl_subscription
+       WHERE is_delete = '0' AND transaction_id = :originalId
+       ORDER BY id DESC LIMIT 1`,
+      { originalId }
+    );
+    if (subs[0]) {
+      const uid = subs[0].cust_id;
+      await pool.query(
+        `UPDATE tbl_subscription
+         SET status = '2', is_sub_active = '2', date_updated = :now
+         WHERE cust_id = :uid AND is_delete = '0'`,
+        { uid, now }
+      );
+      await pool.query(
+        `DELETE FROM tbl_subscription
+         WHERE cust_id = :uid AND product_id = 'basic_free_plan' AND status = '2'`,
+        { uid }
+      );
+      await pool.query(
+        `UPDATE tbl_subscription SET
+           subscription_data = :data,
+           purchase_token = '',
+           device_type = '2',
+           product_id = :productId,
+           status = '1',
+           is_sub_active = '1',
+           expire_date = :expireDate,
+           date_updated = :now
+         WHERE id = :id`,
+        {
+          data: JSON.stringify(tx),
+          productId,
+          expireDate,
+          now,
+          id: subs[0].id,
+        }
+      );
+      await pool.query(
+        `UPDATE tbl_subscription
+         SET status = '1', is_sub_active = '1'
+         WHERE id = :id`,
+        { id: subs[0].id }
+      );
+      await touchCustomer(uid, subs[0].id);
+    }
+  } catch (e) {
+    console.error('ios ipn subscription update', e?.message || e);
+  }
+
+  return ok({ received: '1', original_id: originalId }, 'Success');
 }
 
 export async function handleSubscriptionIpn(p) {
