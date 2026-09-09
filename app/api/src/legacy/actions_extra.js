@@ -134,47 +134,75 @@ export async function handleGetPostDetail(p) {
   return ok({ detail });
 }
 
+function mapLinkedBusiness(row) {
+  return {
+    id: String(row.id),
+    name: row.name || '',
+    profile_image: row.profile_image && String(row.profile_image).trim()
+      ? assetUrl(row.profile_image, 'profile')
+      : publicBases().default_img_url,
+    business_type: String(row.business_type ?? ''),
+    user_type: String(row.user_type ?? ''),
+    styles: row.styles || '',
+  };
+}
+
 export async function handleGetBusinessDetail(p) {
   const auth = await requireAuthLocal(p);
   if (auth.error) return auth.error;
   const bid = p.bid;
   if (!bid) return fail('Missing bid');
-  const profile = await getUserProfile(bid, false);
-  if (!profile) return fail('Business not found');
-  profile.styles_he = await styleNamesHe(profile.styles);
-  profile.liked = await isLikedByMe(bid, auth.uid);
-  profile.followers = await followerCount(bid);
-  profile.artist = [];
-  profile.studio = [];
   try {
-    if (String(profile.business_type) === '1') {
-      const [artists] = await pool.query(
-        `SELECT c.id, c.name, c.profile_image, c.business_type, c.user_type, c.styles
-         FROM tbl_artist_business_map m
-         INNER JOIN tbl_customer c ON c.id = m.uid AND c.is_delete = '0'
-         WHERE m.bid = :bid AND m.req_status = '1'`,
-        { bid }
-      );
-      profile.artist = artists.map((a) => ({
-        ...a,
-        id: String(a.id),
-        profile_image: a.profile_image && String(a.profile_image).trim()
-          ? assetUrl(a.profile_image, 'profile')
-          : publicBases().default_img_url,
-      }));
+    const profile = await getUserProfile(bid, false);
+    if (!profile) return fail('Business not found');
+    try {
+      profile.styles_he = await styleNamesHe(profile.styles);
+    } catch (_) {
+      profile.styles_he = [];
     }
-  } catch (_) {}
-  const posts = await userPosts(bid, { start: 0, limit: 15 });
-  profile.posts = {
-    posts_images: posts.map((x) => ({
-      post_id: x.id,
-      image_url: x.image_name,
-      is_multiple_image: x.is_multiple_image,
-    })),
-    tatto: posts.filter((x) => String(x.img_type) !== '1'),
-    sketch: posts.filter((x) => String(x.img_type) === '1'),
-  };
-  return ok({ detail: profile });
+    profile.liked = await isLikedByMe(bid, auth.uid);
+    profile.followers = await followerCount(bid);
+    profile.artist = [];
+    profile.studio = [];
+    try {
+      if (String(profile.business_type) === '1') {
+        const [artists] = await pool.query(
+          `SELECT c.id, c.name, c.profile_image, c.business_type, c.user_type, c.styles
+           FROM tbl_artist_business_map m
+           INNER JOIN tbl_customer c ON c.id = m.uid AND c.is_delete = '0'
+           WHERE m.bid = :bid AND m.req_status = '1'`,
+          { bid }
+        );
+        profile.artist = artists.map(mapLinkedBusiness);
+      } else if (String(profile.business_type) === '2') {
+        const [studios] = await pool.query(
+          `SELECT c.id, c.name, c.profile_image, c.business_type, c.user_type, c.styles
+           FROM tbl_artist_business_map m
+           INNER JOIN tbl_customer c ON c.id = m.bid AND c.is_delete = '0'
+           WHERE m.uid = :bid AND m.req_status = '1'`,
+          { bid }
+        );
+        profile.studio = studios.map(mapLinkedBusiness);
+      }
+    } catch (_) {}
+    try {
+      const posts = await userPosts(bid, { start: 0, limit: 15 });
+      profile.posts = {
+        posts_images: posts.map((x) => ({
+          post_id: String(x.id),
+          image_url: x.image_name,
+          is_multiple_image: String(x.is_multiple_image ?? '0'),
+        })),
+        tatto: posts.filter((x) => String(x.img_type) !== '1'),
+        sketch: posts.filter((x) => String(x.img_type) === '1'),
+      };
+    } catch (_) {
+      profile.posts = { posts_images: [], tatto: [], sketch: [] };
+    }
+    return ok({ detail: profile });
+  } catch (e) {
+    return fail(e?.message || 'Business not found');
+  }
 }
 
 export async function handleGetBusinessList(p) {

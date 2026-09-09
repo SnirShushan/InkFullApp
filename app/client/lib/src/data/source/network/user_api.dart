@@ -1115,7 +1115,10 @@ class Network {
       response = await dio.post(WebService.baseUrl, data: formData);
       printMsg(response.data.toString());
 
-      final isDataNotEmpty = ApiResponse.checkResponseStatus(response);
+      // Snackbar here is shown as a GetX overlay; dismissing it can pop the
+      // newly pushed business-profile route back to home.
+      final isDataNotEmpty =
+          ApiResponse.checkResponseStatus(response, showSnackbar: false);
 
       if (isDataNotEmpty) {
         final responseData = response.data["data"];

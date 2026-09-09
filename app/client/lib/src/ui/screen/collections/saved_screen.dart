@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:easy_localization/easy_localization.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
@@ -53,28 +53,38 @@ class TattooGridScreen extends StatelessWidget {
 
   TattooGridScreen({super.key, required this.currentUserType});
 
-  final UserController userController = Get.find<UserController>();
+  final UserController userController = Get.put(UserController());
+
+  String _folderUid() {
+    final fromUser = userController.firebaseId.value.trim();
+    if (fromUser.isNotEmpty && fromUser != "null") return fromUser;
+    return FirebaseAuth.instance.currentUser?.uid ?? "";
+  }
 
   @override
   Widget build(BuildContext context) {
     var size = MediaQuery.of(context).size;
+    final uid = _folderUid();
+    if (uid.isEmpty) {
+      return NoCollectionWidget(
+          size: size,
+          onPressed: () => Get.to(const CreateNewCollection(
+              postModel: null, isRenameEnabled: null, name: null, fid: null)));
+    }
     return StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('folders')
-            .where('uid', isEqualTo: userController.firebaseId.value)
+            .where('uid', isEqualTo: uid)
             .snapshots(),
         builder: (BuildContext context,
             AsyncSnapshot<QuerySnapshot<Object?>> snapshot) {
-          if (snapshot.hasError) {
-            return Center(
-                child: const Text('alerts.something_went_wrong').tr());
-          }
-
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (snapshot.data!.docs.isEmpty) {
+          if (snapshot.hasError ||
+              !snapshot.hasData ||
+              snapshot.data!.docs.isEmpty) {
             return NoCollectionWidget(
                 size: size,
                 onPressed: () => Get.to(const CreateNewCollection(

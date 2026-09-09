@@ -49,9 +49,6 @@ class _ProfilescreenState extends State<Profilescreen>
         initialIndex: 0,
         animationDuration: Duration.zero);
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      scaffoldKey.currentState?.openEndDrawer();
-    });
     WidgetsBinding.instance.addObserver(this);
     myPostsController.getMyPosts();
 
@@ -632,8 +629,12 @@ class MoreInfoScreen extends StatelessWidget {
                               : const Text("alerts.no_studio_found").tr());
                     }
                     return InkWell(
-                      onTap: () => Get.to(() => BusinessProfileScreen(
-                          bId: artists!.id!, fromPost: false)),
+                      onTap: () {
+                        final id = artists.id?.toString() ?? "";
+                        if (id.isEmpty || id == "null") return;
+                        Get.to(() => BusinessProfileScreen(
+                            bId: id, fromPost: false));
+                      },
                       child: Column(
                         children: [
                           CachedNetworkImage(

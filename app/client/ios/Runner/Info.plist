@@ -79,6 +79,10 @@
 	<string>המצלמה משמשת לצילום תמונת פרופיל, תמונות קעקוע או סקיצות להעלאה באפליקציה.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>המיקום משמש בזמן השימוש באפליקציה כדי להציג סטודיואים ומקעקעים לידך ולהשלים כתובת עסק. לא נאסף מיקום ברקע.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>המיקום משמש בזמן השימוש באפליקציה כדי להציג סטודיואים ומקעקעים לידך ולהשלים כתובת עסק. האפליקציה אינה עוקבת אחרי המיקום ברקע.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>המיקום משמש בזמן השימוש באפליקציה כדי להציג סטודיואים ומקעקעים לידך ולהשלים כתובת עסק. האפליקציה אינה עוקבת אחרי המיקום ברקע.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>הגלריה משמשת לבחירת תמונת פרופיל, תמונות קעקוע או סקיצות להעלאה באפליקציה.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

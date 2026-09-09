@@ -52,7 +52,8 @@ class ApiResponse {
   //   return null;
   // }
 
-  static bool checkResponseStatus(Response response) {
+  static bool checkResponseStatus(Response response,
+      {bool showSnackbar = true}) {
     try {
       var status = response.data["status"].toString();
       final msg = response.data["msg"].toString();
@@ -68,7 +69,7 @@ class ApiResponse {
       if (status.toString() == "0") {
         WebService.isSessionExpire = false;
         // In develop mode avoid disruptive snackbars for recoverable API gaps
-        if (WebService.developerMode) {
+        if (WebService.developerMode || !showSnackbar) {
           WebService.printMsg('API status=0: $msg');
           return false;
         }

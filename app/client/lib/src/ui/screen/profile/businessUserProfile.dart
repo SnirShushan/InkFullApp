@@ -24,6 +24,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../controller/businessDetailControllor.dart';
 import '../sendTattoRquest/request_for_tattoo.dart';
 import 'businessStudioProfile.dart';
+import 'currentUserProfile.dart';
 import 'widgets/image_grid_widget.dart';
 import 'widgets/other_no_image_found.dart';
 import 'widgets/other_no_sketch_widget.dart';
@@ -48,10 +49,9 @@ class BusinessProfileScreen extends StatefulWidget {
 class _BusinessProfileScreenState extends State<BusinessProfileScreen>
     with TickerProviderStateMixin {
   var scaffoldKey = GlobalKey<ScaffoldState>();
-  final BusinessDetailController businessDetailsController =
-      Get.put(BusinessDetailController());
+  late final BusinessDetailController businessDetailsController;
   final TextEditingController commentTxtController = TextEditingController();
-  final userController = Get.find<UserController>();
+  late final UserController userController;
 
   late AnimationController animationController;
   late Animation<double> base;
@@ -62,6 +62,15 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen>
   @override
   void initState() {
     super.initState();
+    try {
+      if (Get.isRegistered<BusinessDetailController>()) {
+        Get.delete<BusinessDetailController>(force: true);
+      }
+    } catch (_) {}
+    businessDetailsController = Get.put(BusinessDetailController());
+    userController = Get.isRegistered<UserController>()
+        ? Get.find<UserController>()
+        : Get.put(UserController());
     businessDetailsController.startSketches = 0.obs;
 
     businessDetailsController.startTattos = 0.obs;
@@ -123,6 +132,7 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen>
   void dispose() {
     animationController.stop();
     animationController.dispose();
+    tabController?.dispose();
     super.dispose();
   }
 
@@ -135,10 +145,11 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen>
 
     return PopScope(
       canPop: true,
-      onPopInvoked: (bool didPop) => redirectTo,
-      child: DefaultTabController(
-          length: 3,
-          child: Scaffold(
+      onPopInvoked: (bool didPop) {
+        if (didPop) return;
+        redirectTo();
+      },
+      child: Scaffold(
               backgroundColor: bgBlack,
               key: scaffoldKey,
               bottomNavigationBar: userTypes == "2"
@@ -162,9 +173,36 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen>
                     ),
                   ),
                   Expanded(
-                    child: Obx(() => businessDetailsController.isLoading.value
-                        ? const Center(child: CircularProgressIndicator())
-                        : Padding(
+                    child: Obx(() {
+                      if (businessDetailsController.isLoading.value) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      if (businessDetailsController.loadError.value.isNotEmpty &&
+                          businessDetailsController.id.value.isEmpty) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  businessDetailsController.loadError.value,
+                                  textAlign: TextAlign.center,
+                                  style: textTheme.titleMedium?.copyWith(
+                                    color: titleTextWhiteColor,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                TextButton(
+                                  onPressed: () => _loadBusinessInfo(),
+                                  child: const Text('נסה שוב'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
+                      return Padding(
                             padding: EdgeInsets.symmetric(
                                 horizontal: size.width * 0.035),
                             child: Column(
@@ -305,6 +343,7 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen>
                                 ),
                               ),
                               TabBar(
+                                controller: tabController,
                                 padding: EdgeInsets.zero,
                                 labelPadding: EdgeInsets.zero,
 
@@ -374,6 +413,7 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen>
                           SizedBox(height: size.height * 0.01),
                           Expanded(
                               child: TabBarView(
+                            controller: tabController,
                             children: [
                               businessDetailsController.tattoo.isEmpty
                                   ? const OtherNoImageFoundWidget()
@@ -402,13 +442,12 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen>
                           ))
                         ],
                       ),
-                    ),
+                    );
+                    }),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ),
     );
   }
 
@@ -965,16 +1004,16 @@ class UserInfo extends StatelessWidget {
 
                   return InkWell(
                     onTap: () async {
+                      final artistId = artists.id?.toString() ?? "";
+                      if (artistId.isEmpty || artistId == "null") return;
                       AppUser user = await WebService.getCurrentUser();
-                      if ((user.profile!.id == artists.id!)) {
-                        Get.offAll(
-                            () => BusinessDashBoard(
-                                  initialIndex: 4,
-                                ),
-                            binding: BusinessDashBoardBinding());
+                      final myId = user.profile?.id?.toString() ?? "";
+                      if (myId.isNotEmpty && myId == artistId) {
+                        Get.to(() =>
+                            const Profilescreen(isDrawerOpened: false));
                       } else {
                         Get.to(() => StudioProfileScreen(
-                            bId: artists.id!, fromPost: true));
+                            bId: artistId, fromPost: true));
                       }
                     },
                     child: Column(

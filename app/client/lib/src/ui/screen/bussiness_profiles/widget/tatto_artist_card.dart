@@ -23,18 +23,10 @@ class TattooArtistCard extends StatelessWidget {
   Widget build(BuildContext context) {
     var size = MediaQuery.of(context).size;
     return InkWell(
-      onTap: () async {
-        AppUser user = await WebService.getCurrentUser();
-        if ((user.profile!.id == businessUserListModel.id)) {
-          Get.offAll(
-                  () => BusinessDashBoard(
-                initialIndex: 4,
-              ),
-              binding: BusinessDashBoardBinding());
-        } else {
-          Get.to(BusinessProfileScreen(
-              bId: businessUserListModel.id!, fromPost: false));
-        }
+      onTap: () {
+        final id = businessUserListModel.id?.toString() ?? "";
+        if (id.isEmpty || id == "null") return;
+        Get.to(() => BusinessProfileScreen(bId: id, fromPost: false));
       },
       child: Card(
         color: cardBgColor,

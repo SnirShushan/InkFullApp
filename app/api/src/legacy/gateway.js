@@ -18,6 +18,7 @@ import { assetUrl } from '../assets.js';
 import { pool } from '../db.js';
 import * as extra from './actions_extra.js';
 import * as subs from './subscriptions.js';
+import { handleSendSms } from './sms.js';
 
 function params(req) {
   return { ...(req.query || {}), ...(req.body || {}) };
@@ -409,7 +410,7 @@ export async function handleLegacyAction(req) {
       case 'CheckPhoneExists':
         return handleCheckPhone(p);
       case 'SendSms':
-        return ok({ sent: 1 }, 'Success');
+        return handleSendSms(p);
       case 'LoginFailDBLog':
         return ok([], 'Logged');
       case 'GetHomeData':

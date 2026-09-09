@@ -23,6 +23,7 @@ import '../../../controller/userController.dart';
 import '../sendTattoRquest/request_for_tattoo.dart';
 import 'businessUserProfile.dart';
 import 'controller/studioDetailControllor.dart';
+import 'currentUserProfile.dart';
 import 'widgets/image_grid_widget.dart';
 import 'widgets/other_no_image_found.dart';
 import 'widgets/other_no_sketch_widget.dart';
@@ -1078,21 +1079,22 @@ class businessStudioProfileInfo extends StatelessWidget {
 
                   return InkWell(
                     onTap: () async {
+                      final artistId = artists.id?.toString() ?? "";
+                      if (artistId.isEmpty || artistId == "null") return;
                       AppUser user = await WebService.getCurrentUser();
-                      if ((user.profile!.id == artists.id!)) {
-                        Get.offAll(
-                            () => BusinessDashBoard(
-                                  initialIndex: 4,
-                                ),
-                            binding: BusinessDashBoardBinding());
+                      final myId = user.profile?.id?.toString() ?? "";
+                      if (myId.isNotEmpty && myId == artistId) {
+                        Get.to(() =>
+                            const Profilescreen(isDrawerOpened: false));
                       } else {
-                        Get.off(() => BusinessProfileScreen(
-                            bId: artists.id!, fromPost: true));
+                        Get.to(() => BusinessProfileScreen(
+                            bId: artistId, fromPost: true));
                       }
                     },
                     child: Column(
                       children: [
-                        artists.profileImage!.toString() == ""
+                        (artists.profileImage == null ||
+                                artists.profileImage.toString().isEmpty)
                             ? Container(
                                 height: size.width * 0.15,
                                 width: size.width * 0.15,

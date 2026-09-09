@@ -1,14 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:ink/src/data/model/currentUser.dart';
-import 'package:ink/src/ui/screen/business_user/dashboard/business_dashboard.dart';
-import 'package:ink/src/ui/screen/business_user/dashboard/bussinessdashboard_binding.dart';
 import 'package:ink/src/ui/screen/home/controller/home_screen_controller.dart';
 import 'package:ink/src/ui/screen/profile/businessUserProfile.dart';
 import 'package:ink/src/ui/widgets/shimmer_effect.dart';
 import 'package:ink/src/utils/colors.dart';
 import 'package:ink/src/utils/common.dart';
-import 'package:ink/src/utils/webService.dart';
 
 class NewUserWidget extends StatelessWidget {
   final HomeScreenController homeScreenController;
@@ -70,18 +66,11 @@ class NewUserWidget extends StatelessWidget {
 
                   if (index < homeScreenController.newUserLists.length) {
                     return InkWell(
-                      onTap: () async {
-                        AppUser user = await WebService.getCurrentUser();
-                        if (user.profile!.id.toString() == data.id!) {
-                          Get.offAll(
-                              () => BusinessDashBoard(
-                                    initialIndex: 4,
-                                  ),
-                              binding: BusinessDashBoardBinding());
-                        } else {
-                          Get.to(() => BusinessProfileScreen(
-                              bId: data.id!, fromPost: true));
-                        }
+                      onTap: () {
+                        final id = data.id?.toString() ?? "";
+                        if (id.isEmpty || id == "null") return;
+                        Get.to(() => BusinessProfileScreen(
+                            bId: id, fromPost: true));
                       },
                       child: Padding(
                         padding: EdgeInsets.only(left: size.width * 0.03),

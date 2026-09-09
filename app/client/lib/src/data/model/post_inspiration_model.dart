@@ -16,14 +16,12 @@ class PostInspirationModel {
   });
 
   PostInspirationModel.fromJson(Map<String, dynamic> json) {
-    id = json['id'].toString() ?? "";
-    uid = json['uid'].toString() ?? "";
-
-    styles = json['style_name'].toString() ?? "";
-
-    imageName = json['image_name'].toString() ?? "";
-    imageId = json['image_id'].toString() ?? "";
-    isMultipleImages = json['is_multiple_image'].toString();
+    id = json['id']?.toString() ?? "";
+    uid = json['uid']?.toString() ?? "";
+    styles = json['style_name']?.toString() ?? json['styles']?.toString() ?? "";
+    imageName = json['image_name']?.toString() ?? "";
+    imageId = json['image_id']?.toString() ?? "";
+    isMultipleImages = json['is_multiple_image']?.toString() ?? "0";
   }
 
   Map<String, dynamic> toJson() {

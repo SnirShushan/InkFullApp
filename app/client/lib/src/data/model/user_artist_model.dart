@@ -47,28 +47,28 @@ class UserArtistModel {
       this.isEmailSend});
 
   UserArtistModel.fromJson(Map<String, dynamic> json) {
-    id = json['id'];
-    name = json['name'];
-    status = json['status'];
-    email = json['email'];
-    phone = json['phone'];
-    cntCode = json['cnt_code'];
-    lang = json['lang'];
-    profileImage = json['profile_image'];
-    styles = json['styles'];
-    businessType = json['business_type'];
-    userType = json['user_type'];
-    loginType = json['login_type'];
-    address = json['address'];
-    addressLat = json['address_lat'];
-    addressLng = json['address_lng'];
-    addressPlaceId = json['address_place_id'];
-    cityName = json['city_name'];
-    aboutText = json['about_text'];
-    postLimit = json['post_limit'];
-    isRegister = json['is_register'];
-    isEmailSendPlanUpgrade = json['is_email_send_plan_upgrade'];
-    isEmailSend = json['is_email_send'];
+    id = json['id']?.toString();
+    name = json['name']?.toString();
+    status = json['status']?.toString();
+    email = json['email']?.toString();
+    phone = json['phone']?.toString();
+    cntCode = json['cnt_code']?.toString();
+    lang = json['lang']?.toString();
+    profileImage = json['profile_image']?.toString();
+    styles = json['styles']?.toString();
+    businessType = json['business_type']?.toString();
+    userType = json['user_type']?.toString();
+    loginType = json['login_type']?.toString();
+    address = json['address']?.toString();
+    addressLat = json['address_lat']?.toString();
+    addressLng = json['address_lng']?.toString();
+    addressPlaceId = json['address_place_id']?.toString();
+    cityName = json['city_name']?.toString();
+    aboutText = json['about_text']?.toString();
+    postLimit = json['post_limit']?.toString();
+    isRegister = json['is_register']?.toString();
+    isEmailSendPlanUpgrade = json['is_email_send_plan_upgrade']?.toString();
+    isEmailSend = json['is_email_send']?.toString();
   }
 
   Map<String, dynamic> toJson() {

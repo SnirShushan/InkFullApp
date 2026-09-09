@@ -145,15 +145,17 @@ class MyPostsController extends GetxController {
           }
 
           final artistList = valueUser['artist'];
-          if (artistList != null && artistList.toString() != "[]") {
-            userArtistList.addAll(List.from(artistList)
-                .map((doc) => UserArtistModel.fromJson(doc)));
+          if (artistList is List && artistList.isNotEmpty) {
+            userArtistList.addAll(artistList.whereType<Map>().map(
+                (doc) => UserArtistModel.fromJson(
+                    Map<String, dynamic>.from(doc))));
           }
 
           final studioList = valueUser['studio'];
-          if (studioList != null && studioList.toString() != "[]") {
-            userStudioList.addAll(List.from(studioList)
-                .map((doc) => UserArtistModel.fromJson(doc)));
+          if (studioList is List && studioList.isNotEmpty) {
+            userStudioList.addAll(studioList.whereType<Map>().map(
+                (doc) => UserArtistModel.fromJson(
+                    Map<String, dynamic>.from(doc))));
           }
         });
       });

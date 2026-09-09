@@ -37,7 +37,7 @@ class StudioDetailController extends GetxController {
   RxString followers = "".obs;
   RxList<Artist> artistsList = <Artist>[].obs;
   RxList<Artist> studiosList = <Artist>[].obs;
-  RxBool isLoading = false.obs;
+  RxBool isLoading = true.obs;
   RxList<String> stylesHe = <String>[].obs;
   RxBool animationLoading = false.obs;
   final postDetailsController = Get.put(PostDetailsController());
@@ -150,12 +150,16 @@ class StudioDetailController extends GetxController {
           stylesHe.refresh();
           if (data['artist'] is List) {
             for (final v in data['artist']) {
-              artistsList.add(Artist.fromJson(v));
+              if (v is Map) {
+                artistsList.add(Artist.fromJson(Map<String, dynamic>.from(v)));
+              }
             }
           }
           if (data['studio'] is List) {
             for (final v in data['studio']) {
-              studiosList.add(Artist.fromJson(v));
+              if (v is Map) {
+                studiosList.add(Artist.fromJson(Map<String, dynamic>.from(v)));
+              }
             }
           }
           tattoo.clear();
@@ -181,10 +185,16 @@ class StudioDetailController extends GetxController {
           }
 
           for (final v in newListTattoo) {
-            tattoo.add(PostInspirationModel.fromJson(v));
+            if (v is Map) {
+              tattoo.add(PostInspirationModel.fromJson(
+                  Map<String, dynamic>.from(v)));
+            }
           }
           for (final v in newListSketches) {
-            sketch.add(PostInspirationModel.fromJson(v));
+            if (v is Map) {
+              sketch.add(PostInspirationModel.fromJson(
+                  Map<String, dynamic>.from(v)));
+            }
           }
         }
       });

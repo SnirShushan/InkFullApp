@@ -158,19 +158,11 @@ class BusinessCardWidget extends StatelessWidget {
                     child: SizedBox(
                       width: size.width * 0.82,
                       child: InkWell(
-                        onTap: () async {
-                          AppUser user = await WebService.getCurrentUser();
-
-                          if (user.profile!.id.toString() == data.id!) {
-                            Get.offAll(
-                                () => BusinessDashBoard(
-                                      initialIndex: 4,
-                                    ),
-                                binding: BusinessDashBoardBinding());
-                          } else {
-                            Get.to(() => BusinessProfileScreen(
-                                bId: data.id!, fromPost: true));
-                          }
+                        onTap: () {
+                          final id = data.id?.toString() ?? "";
+                          if (id.isEmpty || id == "null") return;
+                          Get.to(() => BusinessProfileScreen(
+                              bId: id, fromPost: true));
                         },
                         child: Card(
                           elevation: 0,

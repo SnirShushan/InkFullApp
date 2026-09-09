@@ -41,24 +41,25 @@ class Artist {
       this.isSelected = false});
 
   Artist.fromJson(Map<String, dynamic> json) {
-    id = json['id'].toString();
-    name = json['name'].toString();
-    email = json['email'].toString();
-    phone = json['phone'].toString();
-    cntCode = json['cnt_code'];
-    lang = json['lang'].toString();
-    profileImage = json['profile_image'].toString();
-    loginToken = json['login_token'].toString();
-    styles = json['styles'].toString();
-    businessType = json['business_type'].toString();
-    userType = json['user_type'].toString();
-    loginType = json['login_type'].toString();
-    address = json['address'].toString();
-    addressLat = json['address_lat'].toString();
-    addressLng = json['address_lng'].toString();
-    addressPlaceId = json['address_place_id'].toString();
-    aboutText = json['about_text'].toString();
-    isRequestSent = json['is_request_sent'].toString();
+    String s(dynamic v) => v == null ? "" : v.toString();
+    id = s(json['id']);
+    name = s(json['name']);
+    email = s(json['email']);
+    phone = s(json['phone']);
+    cntCode = s(json['cnt_code']);
+    lang = s(json['lang']);
+    profileImage = s(json['profile_image']);
+    loginToken = s(json['login_token']);
+    styles = s(json['styles']);
+    businessType = s(json['business_type']);
+    userType = s(json['user_type']);
+    loginType = s(json['login_type']);
+    address = s(json['address']);
+    addressLat = s(json['address_lat']);
+    addressLng = s(json['address_lng']);
+    addressPlaceId = s(json['address_place_id']);
+    aboutText = s(json['about_text']);
+    isRequestSent = s(json['is_request_sent']);
     isSelected = false;
   }
 

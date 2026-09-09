@@ -36,8 +36,9 @@ class BusinessDetailController extends GetxController {
   RxString followers = "".obs;
   RxList<Artist> artistsList = <Artist>[].obs;
   RxList<Artist> studiosList = <Artist>[].obs;
-  RxBool isLoading = false.obs;
+  RxBool isLoading = true.obs;
   RxBool animationLoading = false.obs;
+  RxString loadError = "".obs;
 
   RxList<String> stylesHe = <String>[].obs;
   RxString idProfile = "".obs;
@@ -107,93 +108,98 @@ class BusinessDetailController extends GetxController {
     _businessId.value = bid;
     startSketches.value = 0;
     startTattos.value = 0;
+    hasMoreSketches.value = true;
+    hasMoreTattos.value = true;
+    loadError.value = "";
     isLoading.value = true;
     try {
-      if (stylesHe.isNotEmpty) stylesHe.clear();
-      if (artistsList.isNotEmpty) artistsList.clear();
-      if (studiosList.isNotEmpty) studiosList.clear();
-      if (tattoo.isNotEmpty) tattoo.clear();
-      if (sketch.isNotEmpty) sketch.clear();
+      stylesHe.clear();
+      artistsList.clear();
+      studiosList.clear();
+      tattoo.clear();
+      sketch.clear();
 
-      await Network.getBusinessDetails(bid).then((responseData) async {
-        if (responseData != false && responseData != null) {
-          isLoading.value = false;
-          var data = responseData["detail"];
-          if (data == null) {
-            isLoading.value = false;
-            return;
-          }
+      final responseData = await Network.getBusinessDetails(bid);
+      if (responseData == false || responseData == null) {
+        loadError.value = "לא ניתן לטעון את הפרופיל";
+        return;
+      }
 
-          String s(dynamic v) => v == null ? "" : v.toString();
+      final rawDetail = responseData["detail"];
+      if (rawDetail is! Map) {
+        loadError.value = "לא ניתן לטעון את הפרופיל";
+        return;
+      }
+      final data = Map<String, dynamic>.from(rawDetail);
 
-          id.value = s(data["id"]);
-          name.value = s(data["name"]);
-          email.value = s(data["email"]);
-          phone.value = s(data["phone"]);
-          address.value = s(data["address"]);
-          about_text.value = s(data["about_text"]);
-          address_lat.value = s(data["address_lat"]);
-          address_lng.value = s(data["address_lng"]);
-          user_type.value = s(data["user_type"]);
-          business_type.value = s(data["business_type"]);
-          profile_image.value =
-              WebService.resolveImageUrl(s(data["profile_image"]));
-          liked.value = s(data["liked"]);
-          followers.value = s(data["followers"]);
+      String s(dynamic v) => v == null ? "" : v.toString();
 
-          final stylesRaw = data['styles_he'];
-          if (stylesRaw is List) {
-            stylesHe.addAll(stylesRaw.map((e) => e.toString()));
-          }
+      id.value = s(data["id"]);
+      name.value = s(data["name"]);
+      email.value = s(data["email"]);
+      phone.value = s(data["phone"]);
+      address.value = s(data["address"]);
+      about_text.value = s(data["about_text"]);
+      address_lat.value = s(data["address_lat"]);
+      address_lng.value = s(data["address_lng"]);
+      user_type.value = s(data["user_type"]);
+      business_type.value = s(data["business_type"]);
+      profile_image.value =
+          WebService.resolveImageUrl(s(data["profile_image"]));
+      liked.value = s(data["liked"]);
+      followers.value = s(data["followers"]);
 
-          if (data['artist'] is List) {
-            artistsList.addAll(
-                (data['artist'] as List).map((v) => Artist.fromJson(v)));
-          }
-          if (data['studio'] is List) {
-            studiosList.addAll(
-                (data['studio'] as List).map((v) => Artist.fromJson(v)));
-          }
+      final stylesRaw = data['styles_he'];
+      if (stylesRaw is List) {
+        stylesHe.addAll(stylesRaw.map((e) => e.toString()));
+      }
 
-          final posts = data["posts"];
-          final sketchList =
-              posts is Map ? List.from(posts["sketch"] ?? []) : <dynamic>[];
-          final tattoList =
-              posts is Map ? List.from(posts["tatto"] ?? []) : <dynamic>[];
+      if (data['artist'] is List) {
+        artistsList.addAll((data['artist'] as List).whereType<Map>().map(
+            (v) => Artist.fromJson(Map<String, dynamic>.from(v))));
+      }
+      if (data['studio'] is List) {
+        studiosList.addAll((data['studio'] as List).whereType<Map>().map(
+            (v) => Artist.fromJson(Map<String, dynamic>.from(v))));
+      }
 
-          sketch.addAll(
-              sketchList.map((v) => PostInspirationModel.fromJson(v)));
-          tattoo
-              .addAll(tattoList.map((v) => PostInspirationModel.fromJson(v)));
+      final posts = data["posts"];
+      final sketchList =
+          posts is Map ? List.from(posts["sketch"] ?? []) : <dynamic>[];
+      final tattoList =
+          posts is Map ? List.from(posts["tatto"] ?? []) : <dynamic>[];
 
-          if (sketchList.isEmpty || sketchList.length < _limitSketches) {
-            hasMoreSketches.value = false;
-          } else {
-            startSketches += _limitSketches;
-          }
+      sketch.addAll(sketchList.whereType<Map>().map((v) =>
+          PostInspirationModel.fromJson(Map<String, dynamic>.from(v))));
+      tattoo.addAll(tattoList.whereType<Map>().map((v) =>
+          PostInspirationModel.fromJson(Map<String, dynamic>.from(v))));
 
-          if (tattoList.isEmpty || tattoList.length < _limitTattos) {
-            hasMoreTattos.value = false;
-          } else {
-            startTattos += _limitTattos;
-          }
+      if (sketchList.isEmpty || sketchList.length < _limitSketches) {
+        hasMoreSketches.value = false;
+      } else {
+        startSketches += _limitSketches;
+      }
 
-          AppUser user = await WebService.getCurrentUser();
-          userTypeProfile.value = user.profile!.userType!.toString();
-          idProfile.value = user.profile!.id.toString();
-          isLoading.value = false;
-          tattoo.refresh();
-          sketch.refresh();
-          stylesHe.refresh();
-          artistsList.refresh();
-          studiosList.refresh();
-        } else {
-          isLoading.value = false;
-        }
-      });
+      if (tattoList.isEmpty || tattoList.length < _limitTattos) {
+        hasMoreTattos.value = false;
+      } else {
+        startTattos += _limitTattos;
+      }
+
+      try {
+        final user = await WebService.getCurrentUser();
+        userTypeProfile.value = user.profile?.userType?.toString() ?? "";
+        idProfile.value = user.profile?.id?.toString() ?? "";
+      } catch (_) {}
+
+      tattoo.refresh();
+      sketch.refresh();
+      stylesHe.refresh();
+      artistsList.refresh();
+      studiosList.refresh();
     } catch (e) {
       print("errorerrorerrorerrorerrorerrorerror $e");
-      isLoading.value = false;
+      loadError.value = "לא ניתן לטעון את הפרופיל";
     } finally {
       isLoading.value = false;
     }
@@ -215,7 +221,9 @@ class BusinessDetailController extends GetxController {
           }
 
           for (var doc in _newListSketches) {
-            final post = PostInspirationModel.fromJson(doc);
+            if (doc is! Map) continue;
+            final post = PostInspirationModel.fromJson(
+                Map<String, dynamic>.from(doc));
             if (!sketch.any((p) => p.id == post.id)) sketch.add(post);
           }
           sketch.refresh();
@@ -246,9 +254,10 @@ class BusinessDetailController extends GetxController {
           }
 
           for (var doc in _newListTattos) {
-            final post = PostInspirationModel.fromJson(doc);
+            if (doc is! Map) continue;
+            final post = PostInspirationModel.fromJson(
+                Map<String, dynamic>.from(doc));
             if (!tattoo.any((p) => p.id == post.id)) {
-              print("post ${post.id}");
               tattoo.add(post);
             }
           }
