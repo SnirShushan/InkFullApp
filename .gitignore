@@ -11,7 +11,7 @@
 
 # Local data, dumps, and media (do not publish)
 backups/
-data/
+/data/
 assets/uploads/
 assets/uploads.zip
 ink/
