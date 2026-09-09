@@ -30,20 +30,10 @@ flutter_ios_podfile_setup
 
 target 'Runner' do
 
-  pod 'gRPC-C++'
+  # Keep Google Sign-In on SDK 7.x so it matches Firebase iOS 10.25
+  # (GoogleSignIn 8 pulls AppCheckCore 11 / GoogleUtilities 8 / RecaptchaInterop 101).
+  pod 'GoogleSignIn', '~> 7.1'
   pod 'FBSDKCoreKit', '~> 18.0'
-  pod 'Firebase/DynamicLinks'
-  pod 'Firebase/Core'
-  pod 'Firebase/Messaging'
-#   pod 'Firebase/Core' #, '~> 10.0.0'
-#   pod 'FirebaseAuth' #, '~> 10.0.0'
-
-# Specify stable gRPC versions
-#     pod 'gRPC-Core', '~> 1.69.0'
-#     pod 'gRPC-C++', '~> 1.69.0'
-#   pod 'gRPC', '1.69.0'
-
-#   $FirebaseSDKVersion = '11.10.0' #'10.22.0' #12-05-25
 
   use_frameworks!
   use_modular_headers!

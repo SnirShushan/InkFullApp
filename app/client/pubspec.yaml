@@ -74,7 +74,8 @@ dependencies:
   #notification
   flutter_local_notifications:
 
-  google_sign_in: ^6.2.1
+  # 6.3+ pulls GoogleSignIn iOS 8, which conflicts with Firebase 10.25
+  google_sign_in: 6.2.2
 
   #apple
   sign_in_with_apple: ^6.1.0
@@ -97,6 +98,10 @@ dependencies:
   #easy_localization: ^3.0.1
   #  uuid:
   #  intl:
+
+dependency_overrides:
+  # Last google_sign_in_ios that depends on GoogleSignIn ~> 7.1
+  google_sign_in_ios: 5.7.8
 
 dev_dependencies:
   flutter_test:

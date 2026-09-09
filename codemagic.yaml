@@ -29,8 +29,8 @@ workflows:
         script: |
           set -e
           cd app/client/ios
-          rm -f Podfile.lock
           rm -rf Pods
+          rm -f Podfile.lock
           pod install --repo-update
           find Pods -name 'basic_seq.h' -print0 | while IFS= read -r -d '' SEQ; do
             sed -i.bak 's/Traits::template CallSeqFactory(/Traits::CallSeqFactory(/g' "$SEQ" || true
