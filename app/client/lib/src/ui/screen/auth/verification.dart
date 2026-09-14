@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:ink/src/controller/google_signin_controller.dart';
+import 'package:ink/src/controller/userController.dart';
 import 'package:ink/src/data/model/currentUser.dart';
 import 'package:ink/src/data/source/network/user_api.dart';
 import 'package:ink/src/ui/screen/auth/login.dart';
@@ -32,13 +33,19 @@ class CodeVerification extends StatefulWidget {
   final String strVerificationId;
   dynamic strResendToken;
   bool isUpSendVerification;
+  final bool isSocialRegistration;
+  final String registrationName;
+  final String registrationEmail;
 
   CodeVerification(
       {Key? key,
       required this.phoneNumber,
       required this.strVerificationId,
       this.isUpSendVerification = false,
-      required this.strResendToken})
+      required this.strResendToken,
+      this.isSocialRegistration = false,
+      this.registrationName = "",
+      this.registrationEmail = ""})
       : super(key: key);
 
   @override
@@ -175,6 +182,11 @@ class _CodeVerificationState extends State<CodeVerification>
                                           children: [
                                             InkWell(
                                                 onTap: () async {
+                                                  if (widget
+                                                      .isSocialRegistration) {
+                                                    Get.back();
+                                                    return;
+                                                  }
                                                   final GoogleSignInController
                                                       googleSignInController =
                                                       GoogleSignInController();
@@ -431,7 +443,31 @@ class _CodeVerificationState extends State<CodeVerification>
     }
     _startLoading();
     try {
-      final phoneNumber = widget.phoneNumber.replaceAll('-', '');
+      final phoneNumber = normalizeLocalPhone(widget.phoneNumber);
+      final demoOtp = demoOtpFor(phoneNumber);
+
+      // App Review demo accounts: always accept the published OTP.
+      // Never send these numbers through Firebase SMS.
+      if (demoOtp != null) {
+        if (enteredCode != demoOtp) {
+          _showError(tr("code_verification.code_enter_incorrect"));
+          return;
+        }
+        await _anonymousLogin();
+        return;
+      }
+
+      if (widget.isSocialRegistration) {
+        if (enteredCode != WebService.generateTmpOTP) {
+          _showError("הקוד אינו תקין, אנא נסה שוב.");
+          return;
+        }
+        await Get.put(UserController()).userRegistration(
+            name: widget.registrationName,
+            phone: phoneNumber,
+            email: widget.registrationEmail);
+        return;
+      }
 
       if (isupSendAuth == true) {
         // 🔐 Manual OTP verification
@@ -439,15 +475,6 @@ class _CodeVerificationState extends State<CodeVerification>
           _showError("הקוד אינו תקין, אנא נסה שוב.");
           return;
         }
-        if (phoneNumber.length != 10) {
-          displayMessageIcon(
-              message: tr("alerts.something_went_wrong"),
-              color: errorColor,
-              snackposition: SnackPosition.BOTTOM,
-              imageData: AppAssets.errorIcon);
-          return;
-        }
-
         await _anonymousLogin();
       } else {
         // Firebase Auth OTP Verification
@@ -527,7 +554,7 @@ class _CodeVerificationState extends State<CodeVerification>
     }
 
     final ok = await Network.login(
-      widget.phoneNumber.replaceAll('-', ''),
+      normalizeLocalPhone(widget.phoneNumber),
       firebaseUser,
     );
     if (ok) {
@@ -538,7 +565,7 @@ class _CodeVerificationState extends State<CodeVerification>
   }
 
   Future<void> _firebaseLogin(User user) async {
-    await Network.login(widget.phoneNumber.replaceAll('-', ''), user)
+    await Network.login(normalizeLocalPhone(widget.phoneNumber), user)
         .then((value) => _navigatePostLogin());
   }
 
@@ -603,6 +630,12 @@ class _CodeVerificationState extends State<CodeVerification>
 
 //resend code
   Future _resendVerificationCode() async {
+    if (widget.isSocialRegistration ||
+        isupSendAuth ||
+        isTestNumber(widget.phoneNumber)) {
+      await _upSendSMS();
+      return;
+    }
     otpController.startTimer();
     otpController.isResendLoading.value = false;
     otpController.countDownTime.value = 60;
@@ -701,38 +734,36 @@ class _CodeVerificationState extends State<CodeVerification>
   }
 
   Future<void> _upSendSMS() async {
-    var phoneNumbers = '${widget.phoneNumber.replaceAll('-', '')}';
+    var phoneNumbers = normalizeLocalPhone(widget.phoneNumber);
 
-    WebService.generateTmpOTP = "";
-    String otp = generateOtp(phoneNumber: phoneNumbers);
-    Network.checkPhoneExistFetchEmail(phoneNumbers).then((value) async {
-      String email = "";
+    WebService.generateTmpOTP = generateOtp(phoneNumber: phoneNumbers);
+    String email = widget.registrationEmail;
+    if (email.isEmpty && !isTestNumber(phoneNumbers)) {
+      final value = await Network.checkPhoneExistFetchEmail(phoneNumbers);
+      if (value != false &&
+          value is Map &&
+          value['email'] != null &&
+          value['email'].toString() != "" &&
+          value['email'].toString() != "null") {
+        email = value['email'].toString();
+      }
+    }
 
-      if (value['email'].toString() != "" &&
-          value['email'].toString() != "null") email = value['email'];
-
-      WebService.generateTmpOTP = await otp;
-      Network.fetchOTPApi('${WebService.countryCode}$phoneNumbers', otp, email)
-          .then((value2) async {
-        try {
-          final data = value2['res']?['data'];
-          final requestId = data?['RequestId'];
-
-          if (requestId != null && requestId.toString().isNotEmpty) {
-            isupSendAuth = true;
-            otpController.isResendLoading.value = false;
-            otpController.countDownTime.value = 60;
-            otpController.isResendEnabled.value = false;
-            otpController.isLoading.value = false;
-            otpController.messageCode.value = "";
-            otpController.textEditingController.text = "";
-            otpController.errorMsg.value = "";
-            otpController.startTimer();
-            animationController.stop();
-          }
-        } catch (e) {}
-      });
-    });
+    final otp = WebService.generateTmpOTP;
+    if (!isTestNumber(phoneNumbers)) {
+      await Network.fetchOTPApi(
+          '${WebService.countryCode}$phoneNumbers', otp, email);
+    }
+    isupSendAuth = true;
+    otpController.isResendLoading.value = false;
+    otpController.countDownTime.value = 60;
+    otpController.isResendEnabled.value = false;
+    otpController.isLoading.value = false;
+    otpController.messageCode.value = "";
+    otpController.textEditingController.text = "";
+    otpController.errorMsg.value = "";
+    otpController.startTimer();
+    animationController.stop();
   }
 
   @override

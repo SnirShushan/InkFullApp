@@ -332,31 +332,19 @@ class _LoginScreenState extends State<LoginScreen>
   //login method
   _startLogin() async {
     FocusScope.of(context).unfocus();
-    if (loginvalidation == "") {
-      if (Platform.isIOS) {
-        Future.delayed(const Duration(milliseconds: 300), () {
-          setState(() {
-            isLoading = true;
-            _hasError1 = false;
-            animationController.repeat();
-          });
-          Future.delayed(const Duration(milliseconds: 300), () {
-            _upSendSMS();
-          });
-        });
-      } else {
-        setState(() {
-          isLoading = true;
-          _hasError1 = false;
-          animationController.repeat();
-        });
-        Future.delayed(const Duration(milliseconds: 300), () {
-          _upSendSMS();
-        });
-      }
-    } else {
+    if (loginvalidation != "") {
       _validateInputs();
+      return;
     }
+    if (isLoading == true) {
+      return;
+    }
+    setState(() {
+      isLoading = true;
+      _hasError1 = false;
+      animationController.repeat();
+    });
+    await _upSendSMS();
   }
 
   void _validateInputs() {
@@ -655,6 +643,11 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Future<void> phoneNumberVerification() async {
+    final localPhone = normalizeLocalPhone(phoneController.text);
+    if (isTestNumber(localPhone)) {
+      await _upSendSMS();
+      return;
+    }
     try {
       // FirebaseAuth.instance.setSettings(appVerificationDisabledForTesting: true);
       // FirebaseAppCheck.instance.setTokenAutoRefreshEnabled(true);
@@ -760,13 +753,13 @@ class _LoginScreenState extends State<LoginScreen>
         }
         return;
       }
-      var phoneNumbers = phoneController.text.replaceAll('-', '');
-      WebService.generateTmpOTP = "";
-      String otp;
+      var phoneNumbers = normalizeLocalPhone(phoneController.text);
       if (isTestNumber(phoneNumbers)) {
-        otp = generateOtp(phoneNumber: phoneNumbers);
-
-        WebService.generateTmpOTP = await otp;
+        WebService.generateTmpOTP = generateOtp(phoneNumber: phoneNumbers);
+        if (!_isDisposed) {
+          animationController.stop();
+          setState(() => isLoading = false);
+        }
         Get.to(
             CodeVerification(
               phoneNumber: phoneController.text,
@@ -775,9 +768,11 @@ class _LoginScreenState extends State<LoginScreen>
               isUpSendVerification: true,
             ),
             binding: OTPBinding());
-      } else {
-        otp = generateOtp(phoneNumber: phoneNumbers);
+        return;
       }
+
+      WebService.generateTmpOTP = "";
+      String otp = generateOtp(phoneNumber: phoneNumbers);
 
       final value = await Network.checkPhoneExistFetchEmail(phoneNumbers);
       if (value != false) {
@@ -819,7 +814,9 @@ class _LoginScreenState extends State<LoginScreen>
             imageData: AppAssets.errorIcon);
       }
     } catch (e) {
-      phoneNumberVerification();
+      if (!isTestNumber(normalizeLocalPhone(phoneController.text))) {
+        phoneNumberVerification();
+      }
       if (!_isDisposed) {
         animationController.stop();
       }

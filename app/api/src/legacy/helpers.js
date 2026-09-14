@@ -39,6 +39,31 @@ export function newLoginToken() {
   return crypto.randomBytes(64).toString('hex');
 }
 
+function defaultForColumn(col) {
+  if (col.Default !== null && col.Default !== undefined) return col.Default;
+  const type = String(col.Type || '').toLowerCase();
+  if (type.includes('int') || type.includes('decimal') || type.includes('float') || type.includes('double')) {
+    return 0;
+  }
+  if (type.includes('date') || type.includes('time')) return new Date();
+  return '';
+}
+
+/** Insert a customer row filling every NOT NULL column that has no default. */
+export async function insertCustomer(fields) {
+  const [cols] = await pool.query('SHOW COLUMNS FROM tbl_customer');
+  const row = {};
+  for (const col of cols) {
+    if (col.Field === 'id' || String(col.Extra || '').includes('auto_increment')) continue;
+    row[col.Field] = fields[col.Field] !== undefined ? fields[col.Field] : defaultForColumn(col);
+  }
+  const keys = Object.keys(row);
+  const sql = `INSERT INTO tbl_customer (${keys.join(', ')})
+    VALUES (${keys.map((k) => `:${k}`).join(', ')})`;
+  const [result] = await pool.query(sql, row);
+  return result.insertId;
+}
+
 export async function getSettings() {
   const [rows] = await pool.query(
     `SELECT * FROM tbl_settings ORDER BY id ASC LIMIT 1`
@@ -55,6 +80,20 @@ export async function getStyleList() {
     ...r,
     image_url: assetUrl(r.image_name, 'styles'),
   }));
+}
+
+export const RETIRED_STYLE_SLUGS = new Set(['tribal', 'bold-line']);
+
+/** Drop retired slugs; tag sketches so inspiration can filter them. */
+export function normalizePostStyles(styles, imgType) {
+  const parts = String(styles || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter((s) => s && !RETIRED_STYLE_SLUGS.has(s));
+  if (String(imgType) === '1' && !parts.includes('sketch')) {
+    parts.push('sketch');
+  }
+  return parts.join(',');
 }
 
 export async function getStyleMap() {
@@ -138,6 +177,13 @@ export async function styleNamesHe(stylesCsv) {
     .map((slug) => hw[slug] || slug);
 }
 
+function searchWordsFromQuery(search) {
+  return String(search || '')
+    .split(/[\s,]+/u)
+    .map((s) => s.replace(/[%_'"]/g, '').trim())
+    .filter((s) => s.length >= 2);
+}
+
 /** Posts for home / inspiration — prefer active subscribers, fall back to any live posts. */
 export async function queryPosts({
   styles = '',
@@ -145,6 +191,7 @@ export async function queryPosts({
   limit = 6,
   isRandom = false,
   uidOnly = null,
+  search = '',
 } = {}) {
   const offset = Math.max(Number(start) || 0, 0);
   const take = Math.min(Math.max(Number(limit) || 6, 1), 50);
@@ -153,17 +200,42 @@ export async function queryPosts({
     .map((s) => s.trim())
     .filter(Boolean);
 
+  const wantsSketch = styleList.includes('sketch');
   const styleClause =
     styleList.length > 0
-      ? `AND (${styleList.map((_, i) => `FIND_IN_SET(:s${i}, p.styles) > 0`).join(' OR ')})`
+      ? `AND (${styleList
+          .map((_, i) => `FIND_IN_SET(:s${i}, p.styles) > 0`)
+          .join(' OR ')}${wantsSketch ? ` OR p.img_type = '1'` : ''})`
       : '';
   const styleParams = {};
   styleList.forEach((s, i) => {
     styleParams[`s${i}`] = s;
   });
 
+  const words = searchWordsFromQuery(search);
+  const searchParams = {};
+  const searchClause =
+    words.length > 0
+      ? `AND (${words
+          .map((_, i) => {
+            searchParams[`q${i}`] = `%${words[i]}%`;
+            return `(
+              p.description LIKE :q${i}
+              OR p.styles LIKE :q${i}
+              OR c.name LIKE :q${i}
+              OR EXISTS (
+                SELECT 1 FROM tbl_styles st
+                WHERE FIND_IN_SET(st.slug, p.styles) > 0
+                  AND (st.name LIKE :q${i} OR st.name_en LIKE :q${i} OR st.slug LIKE :q${i})
+              )
+            )`;
+          })
+          .join(' OR ')})`
+      : '';
+
   const uidClause = uidOnly ? 'AND p.uid = :uidOnly' : '';
   const order = isRandom ? 'ORDER BY RAND()' : 'ORDER BY p.id DESC';
+  const queryParams = { ...styleParams, ...searchParams, uidOnly };
 
   const sqlPremium = `
     SELECT p.id, p.uid, p.image_name, p.image_id, p.styles, p.img_type, p.view_count, p.date_added
@@ -176,12 +248,13 @@ export async function queryPosts({
       LIMIT 1
     )
     ${styleClause}
+    ${searchClause}
     ${uidClause}
     ${order}
     LIMIT ${take} OFFSET ${offset}
   `;
 
-  const [premium] = await pool.query(sqlPremium, { ...styleParams, uidOnly });
+  const [premium] = await pool.query(sqlPremium, queryParams);
   if (premium.length) return premium;
 
   const sqlAny = `
@@ -190,11 +263,12 @@ export async function queryPosts({
     INNER JOIN tbl_customer c ON c.id = p.uid AND c.is_delete = '0'
     WHERE p.status = '1'
     ${styleClause}
+    ${searchClause}
     ${uidClause}
     ${order}
     LIMIT ${take} OFFSET ${offset}
   `;
-  const [any] = await pool.query(sqlAny, { ...styleParams, uidOnly });
+  const [any] = await pool.query(sqlAny, queryParams);
   return any;
 }
 

@@ -3,9 +3,8 @@ description: A new Flutter project.
 
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
-# iOS App Store / TestFlight: bump +build every upload (must be higher than last build on ASC)
-#version: 1.0.87+88 #ios (TestFlight upload with location-when-in-use only)
-version: 1.0.87+89
+# iOS App Store / TestFlight: marketing version and build number stay aligned.
+version: 1.0.90+90
 
 environment:
 

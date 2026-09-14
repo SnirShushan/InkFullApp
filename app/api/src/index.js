@@ -52,9 +52,13 @@ app.use('/v1/users', usersRouter);
 app.use('/v1/settings', settingsRouter);
 
 // Flutter PHP-compatible action gateway (trailing slash required by client baseUrl)
-const legacyHandler = async (req, res) => {
-  const payload = await handleLegacyAction(req);
-  return res.json(payload);
+const legacyHandler = async (req, res, next) => {
+  try {
+    const payload = await handleLegacyAction(req);
+    return res.json(payload);
+  } catch (err) {
+    return next(err);
+  }
 };
 app.all(['/api', '/api/'], formData, legacyHandler);
 

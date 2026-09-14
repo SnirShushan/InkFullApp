@@ -9,6 +9,7 @@ import {
   validateToken,
   styleNamesHe,
   newLoginToken,
+  insertCustomer,
   queryPosts,
   mapPostsForClient,
   getBusinessCards,
@@ -42,6 +43,23 @@ async function requireAuth(p) {
   return { uid, token, row };
 }
 
+const REVIEW_DEMO_ACCOUNTS = {
+  '0999999999': {
+    name: 'Apple Review',
+    email: 'review-regular@ink.app',
+    user_type: '1',
+    business_type: '0',
+    styles: 'realism,fineline,lettering',
+  },
+  '0111111111': {
+    name: 'Apple Review Alt',
+    email: 'review-alt@ink.app',
+    user_type: '1',
+    business_type: '0',
+    styles: 'realism,fineline,lettering',
+  },
+};
+
 async function handleLogin(p) {
   const loginType = String(p.login_type || '1');
   const settings = await getSettings();
@@ -57,12 +75,14 @@ async function handleLogin(p) {
   const phone = String(p.phone || '').trim();
   if (!phone) return fail('Missing phone');
 
+  const demo = REVIEW_DEMO_ACCOUNTS[phone.replace(/\D/g, '')];
   let user = await getUserByPhone(phone);
   const loginToken = newLoginToken();
   const now = new Date();
 
   if (user) {
-    const isRegister = !user.email || user.email === '' ? '1' : '0';
+    const isRegister =
+      demo || (user.email && user.email !== '') ? '0' : '1';
     await pool.query(
       `UPDATE tbl_customer SET
          device_type = :device_type,
@@ -71,6 +91,12 @@ async function handleLogin(p) {
          app_version = :app_version,
          login_date = :login_date,
          is_register = :is_register
+         ${
+           demo
+             ? `, name = :name, email = :email, user_type = :user_type,
+                business_type = :business_type, styles = :styles, status = '1', is_delete = '0'`
+             : ''
+         }
        WHERE id = :id`,
       {
         device_type: p.device_type || 'a',
@@ -80,26 +106,28 @@ async function handleLogin(p) {
         login_date: now,
         is_register: isRegister,
         id: user.id,
+        ...(demo || {}),
       }
     );
   } else {
-    const [result] = await pool.query(
-      `INSERT INTO tbl_customer
-        (phone, cnt_code, device_type, login_type, app_version, register_date,
-         date_added, date_updated, post_limit, is_register, status, user_type)
-       VALUES
-        (:phone, :cnt_code, :device_type, '1', :app_version, :now,
-         :now, :now, :post_limit, '1', '1', '1')`,
-      {
-        phone,
-        cnt_code: p.cnt_code || '972',
-        device_type: p.device_type || 'a',
-        app_version: p.app_version || '',
-        now,
-        post_limit: postLimit,
-      }
-    );
-    const newId = result.insertId;
+    const newId = await insertCustomer({
+      phone,
+      cnt_code: p.cnt_code || '972',
+      device_type: p.device_type || 'a',
+      login_type: '1',
+      app_version: p.app_version || '',
+      register_date: now,
+      date_added: now,
+      date_updated: now,
+      post_limit: postLimit,
+      is_register: demo ? '0' : '1',
+      status: '1',
+      user_type: demo?.user_type || '1',
+      name: demo?.name || '',
+      email: demo?.email || '',
+      styles: demo?.styles || '',
+      business_type: demo?.business_type || '0',
+    });
     await pool.query(
       `UPDATE tbl_customer SET udid = :udid, login_token = :login_token, login_date = :login_date
        WHERE id = :id`,
@@ -177,6 +205,24 @@ async function handleGetHomeData(p) {
     /* table may differ */
   }
 
+  let unread_request_count = '0';
+  try {
+    const userType = String(profile?.user_type ?? '1');
+    const [reqCount] = await pool.query(
+      userType === '1'
+        ? `SELECT COUNT(*) AS c FROM tbl_request r
+           INNER JOIN tbl_customer cus ON r.uid = cus.id AND cus.is_delete = '0'
+           WHERE r.uid = :uid AND r.is_read = '2' AND IFNULL(r.business_id, '0') != '0'`
+        : `SELECT COUNT(*) AS c FROM tbl_request r
+           INNER JOIN tbl_customer cus ON r.uid = cus.id AND cus.is_delete = '0'
+           WHERE r.business_id = :uid AND r.is_read = '2'`,
+      { uid: auth.uid }
+    );
+    unread_request_count = String(reqCount[0]?.c ?? 0);
+  } catch (_) {
+    /* table may differ */
+  }
+
   const [countRows] = await pool.query(
     `SELECT COUNT(*) AS total FROM tbl_post WHERE status = '1'`
   );
@@ -186,6 +232,7 @@ async function handleGetHomeData(p) {
     new_user_list,
     business,
     is_new_notification,
+    unread_request_count,
     total_post_count: String(countRows[0]?.total ?? 0),
   });
 }
@@ -273,6 +320,7 @@ async function handleGetPostsNew(p) {
     limit: p.limit || 20,
     isRandom: !isMy && String(p.is_random) === '1',
     uidOnly: isMy ? auth.uid : null,
+    search: String(p.search_txt || '').trim(),
   });
   const styleName = style.includes(',')
     ? ''
