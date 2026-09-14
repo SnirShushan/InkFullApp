@@ -457,6 +457,60 @@ buildOwnerProfileImage(
                           fit: BoxFit.cover)),
                 ));
 
+/// Full-screen viewer for an artist/studio profile photo (ClickUp 8696u2t15).
+void showProfileImageViewer({required String imageUrl}) {
+  if (WebService.isMissingProfileImage(imageUrl)) return;
+  final url = WebService.resolveProfileImage(imageUrl);
+  Get.dialog(
+    barrierColor: Colors.black.withOpacity(0.92),
+    useSafeArea: false,
+    SizedBox(
+      width: Get.width,
+      height: Get.height,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => Get.back(),
+            ),
+          ),
+          Center(
+            child: InteractiveViewer(
+              minScale: 1,
+              maxScale: 4,
+              child: SizedBox(
+                width: Get.width,
+                height: Get.height * 0.85,
+                child: CachedNetworkImage(
+                  imageUrl: url,
+                  fit: BoxFit.contain,
+                  placeholder: (_, __) => const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                  errorWidget: (_, __, ___) => Image.asset(
+                    AppAssets.userPlaceHolder,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          SafeArea(
+            child: Align(
+              alignment: AlignmentDirectional.topStart,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 28),
+                onPressed: () => Get.back(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
 buildTabIcon(
         {required bool isFill,
         required Size size,
@@ -1170,4 +1224,30 @@ void getBack(BuildContext context) {
       }
     });
   }
+}
+
+DateTime? tryParsePostDate(String? raw) {
+  if (raw == null) return null;
+  final s = raw.trim();
+  if (s.isEmpty || s == 'null' || s == 'undefined') return null;
+  final iso = DateTime.tryParse(s);
+  if (iso != null) return iso;
+  final sql = DateTime.tryParse(s.replaceFirst(' ', 'T'));
+  if (sql != null) return sql;
+  final n = int.tryParse(s);
+  if (n != null) {
+    if (n > 1000000000000) {
+      return DateTime.fromMillisecondsSinceEpoch(n);
+    }
+    if (n > 1000000000) {
+      return DateTime.fromMillisecondsSinceEpoch(n * 1000);
+    }
+  }
+  return null;
+}
+
+String formatPostOverlayDate(String? raw) {
+  final dt = tryParsePostDate(raw);
+  if (dt == null) return '';
+  return DateFormat('dd.MM.yyyy').format(dt.toLocal());
 }

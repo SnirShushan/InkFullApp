@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:ink/src/ui/screen/splash/splashscreen.dart';
+import 'package:ink/src/ui/widgets/ink_page_transition.dart';
 
 import 'utils/colors.dart';
 import 'utils/utils.dart';
@@ -22,12 +23,20 @@ class _MyAppState extends State<MyApp> {
       key: Utils.navigationKey,
       debugShowCheckedModeBanner: false,
       color: Colors.black,
-      defaultTransition: Transition.noTransition,
+      defaultTransition: Transition.cupertino,
+      customTransition: InkPageTransition(),
+      transitionDuration: const Duration(milliseconds: 280),
       theme: ThemeData(
           useMaterial3: false,
           primarySwatch: appPrimaryColor,
           scaffoldBackgroundColor: scaffoldBg,
           fontFamily: 'Arimo',
+          pageTransitionsTheme: const PageTransitionsTheme(
+            builders: {
+              TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+              TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+            },
+          ),
           appBarTheme: const AppBarTheme(
             elevation: 0,
             systemOverlayStyle: SystemUiOverlayStyle.light,

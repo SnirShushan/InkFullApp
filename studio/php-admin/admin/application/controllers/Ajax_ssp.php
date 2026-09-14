@@ -1406,6 +1406,10 @@ class ajax_ssp extends CI_Controller
             c.`sub_id` AS sub_id,
             c.`post_limit` AS post_limit,
             c.`signature_image` AS signature_image,
+            COALESCE(
+                NULLIF(c.`register_date`, '0000-00-00 00:00:00'),
+                NULLIF(c.`date_added`, '0000-00-00 00:00:00')
+            ) AS register_date,
             (
             SELECT
                 sc.`product_id` AS product_id
@@ -1552,6 +1556,9 @@ class ajax_ssp extends CI_Controller
                     }
                     $html = '<a href="javascript:void(0);" class="post-limit" data-id="'.$row['id'].'" data-form="emp_app" data-val="'.$row['id'].'" data-value="'.$d.'" id="'.$row['id'].'" data-type="text" data-pk="'.$row['id'].'" data-title="Enter Post Limit" ><span>'.$d.'</span></a>';
                     return $html;
+                }),
+                array('db' => 'c.register_date', 'dt' => $col++, 'field' => 'register_date', 'formatter' => function ($d, $row) {
+                    return GetDateFormat($d);
                 }),
                 array('db' => 'c.signature_image', 'dt' => $col++, 'field' => 'signature_image', 'formatter' => function ($d, $row) {
                     $html = "";

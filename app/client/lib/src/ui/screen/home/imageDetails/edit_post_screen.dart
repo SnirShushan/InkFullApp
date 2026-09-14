@@ -999,19 +999,15 @@ class _EditPostScreenState extends State<EditPostScreen>
               imageFile2.path.isEmpty &&
               imageFile3.path.isEmpty) {
             return;
-          } else if (selectedList.length == 0) {
-            // if (selectedList.length > 3) {
-            //   displayMessageIcon(
-            //       message: 'ניתן לבחור עד 3 סגנונות.',
-            //       color: errorColor,
-            //       snackposition: SnackPosition.BOTTOM,
-            //       imageData: AppAssets.errorIcon);
-            // }
+          } else if (aboutTextController.text.trim().isEmpty) {
             FocusScope.of(context).unfocus();
+            displayMessageIcon(
+                message: 'יש להזין תיאור',
+                color: errorColor,
+                snackposition: SnackPosition.TOP,
+                imageData: AppAssets.errorIcon);
             return;
-          } else if (aboutTextController.text
-              .trim()
-              .isEmpty) {
+          } else if (selectedList.length == 0) {
             FocusScope.of(context).unfocus();
             return;
           } else {

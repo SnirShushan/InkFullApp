@@ -21,6 +21,7 @@ class RequestListTile extends StatelessWidget {
   final String imgUrl;
   final NotificationController notificationController;
   final TattooRequest tattooRequest;
+  final bool markAsRead;
 
   RequestListTile(
       {Key? key,
@@ -28,7 +29,8 @@ class RequestListTile extends StatelessWidget {
       required this.tattooSize,
       required this.imgUrl,
       required this.tattooRequest,
-      required this.notificationController})
+      required this.notificationController,
+      this.markAsRead = true})
       : super(key: key);
 
   final StartupController startupController = Get.put(StartupController());
@@ -42,7 +44,7 @@ class RequestListTile extends StatelessWidget {
       children: [
         ListTile(
             onTap: () async {
-              if (tattooRequest.isread == "2") {
+              if (markAsRead && tattooRequest.isread == "2") {
                 await notificationController.readMessageController(
                     requestId: tattooRequest.id, isRead: "1");
               }
@@ -60,8 +62,7 @@ class RequestListTile extends StatelessWidget {
                         Get.to(() => RequestDetailPage(
                               tattooRequest: tattooRequest,
                               controller: notificationController,
-                              readRequest:
-                                  tattooRequest.isread == "2" ? true : false,
+                              readRequest: markAsRead && tattooRequest.isread == "2"
                             ));
                       }
                     }
@@ -70,14 +71,14 @@ class RequestListTile extends StatelessWidget {
                   Get.to(() => RequestDetailPage(
                         tattooRequest: tattooRequest,
                         controller: notificationController,
-                        readRequest: tattooRequest.isread == "2" ? true : false,
+                        readRequest: markAsRead && tattooRequest.isread == "2"
                       ));
                 }
               } else {
                 Get.to(() => RequestDetailPage(
                       tattooRequest: tattooRequest,
                       controller: notificationController,
-                      readRequest: tattooRequest.isread == "2" ? true : false,
+                      readRequest: markAsRead && tattooRequest.isread == "2"
                     ));
               }
             },
@@ -121,8 +122,7 @@ class RequestListTile extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                    formatDate(DateTime.parse(
-                                        tattooRequest.dateAdded!)),
+                                    _requestDateLabel(tattooRequest.dateAdded),
                                     // formatDate(
                                     //     DateTime.parse(tattooRequest.dateAdded!)),
                                     maxLines: 1,
@@ -151,7 +151,7 @@ class RequestListTile extends StatelessWidget {
                                 ),
                               ),
                               onPressed: () async {
-                                if (tattooRequest.isread == "2") {
+                                if (markAsRead && tattooRequest.isread == "2") {
                                   await notificationController
                                       .readMessageController(
                                           requestId: tattooRequest.id,
@@ -176,10 +176,9 @@ class RequestListTile extends StatelessWidget {
                                               controller:
                                                   notificationController,
                                               tattooRequest: tattooRequest,
-                                              readRequest:
-                                                  tattooRequest.isread == "2"
-                                                      ? true
-                                                      : false));
+                                              readRequest: markAsRead &&
+                                                  tattooRequest.isread ==
+                                                      "2"));
                                         }
                                       }
                                     });
@@ -188,17 +187,14 @@ class RequestListTile extends StatelessWidget {
                                     Get.to(() => RequestDetailPage(
                                         controller: notificationController,
                                         tattooRequest: tattooRequest,
-                                        readRequest: tattooRequest.isread == "2"
-                                            ? true
-                                            : false));
+                                        readRequest: markAsRead && tattooRequest.isread == "2"));
                                   }
                                 } else {
                                   Get.to(() => RequestDetailPage(
                                       controller: notificationController,
                                       tattooRequest: tattooRequest,
-                                      readRequest: tattooRequest.isread == "2"
-                                          ? true
-                                          : false));
+                                      readRequest: markAsRead &&
+                                          tattooRequest.isread == "2"));
                                 }
                               },
                               child: const Text(
@@ -215,6 +211,12 @@ class RequestListTile extends StatelessWidget {
         SizedBox(height: size.height * 0.015)
       ],
     );
+  }
+
+  String _requestDateLabel(String? raw) {
+    final dt = tryParsePostDate(raw);
+    if (dt == null) return '';
+    return formatDate(dt);
   }
 
   String formatDate(DateTime inputDate) {

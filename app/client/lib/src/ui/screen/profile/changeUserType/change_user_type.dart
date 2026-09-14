@@ -744,6 +744,26 @@ class _ScreenChangeUserTypeState extends State<ScreenChangeUserType>
                       return;
                     }
 
+                    if (changeUserTypeController.selectedStyles.isEmpty) {
+                      displayMessageIcon(
+                          message: "alerts.select_style",
+                          snackposition: SnackPosition.BOTTOM,
+                          color: errorColor,
+                          imageData: AppAssets.errorIcon);
+                      return;
+                    }
+
+                    if (changeUserTypeController.aboutController.text
+                        .trim()
+                        .isEmpty) {
+                      displayMessageIcon(
+                          message: "alerts.enter_description",
+                          snackposition: SnackPosition.BOTTOM,
+                          color: errorColor,
+                          imageData: AppAssets.errorIcon);
+                      return;
+                    }
+
                     if (changeUserTypeController.signController.isEmpty) {
                       displayMessageIcon(
                           message: "alerts.no_sign",

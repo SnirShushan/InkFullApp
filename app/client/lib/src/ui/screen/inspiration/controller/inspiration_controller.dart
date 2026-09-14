@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -30,6 +31,9 @@ class InspirationController extends GetxController {
   //Random Pagination
   RxBool isRandomPagination = true.obs;
   RxBool isRandomAutoLoad = true.obs;
+  Timer? _searchDebounce;
+  RxBool showSearchBar = true.obs;
+  double _lastHideOffset = 0;
 
   final List<String> options = [
     "מומלצים עבורכם",
@@ -54,6 +58,21 @@ class InspirationController extends GetxController {
 
     searchController.addListener(_searchListener);
     scrollControllerPosts.addListener(requestListener);
+    scrollControllerPosts.addListener(_hideShowSearchBar);
+  }
+
+  void _hideShowSearchBar() {
+    if (!scrollControllerPosts.hasClients) return;
+    final offset = scrollControllerPosts.offset;
+    final delta = offset - _lastHideOffset;
+    if (offset <= 8) {
+      if (!showSearchBar.value) showSearchBar.value = true;
+    } else if (delta > 10) {
+      if (showSearchBar.value) showSearchBar.value = false;
+    } else if (delta < -10) {
+      if (!showSearchBar.value) showSearchBar.value = true;
+    }
+    _lastHideOffset = offset;
   }
 
   void _initialized() async {
@@ -70,15 +89,20 @@ class InspirationController extends GetxController {
   }
 
   _searchListener() {
-    if (searchController.text.length > 3) {
+    _searchDebounce?.cancel();
+    final text = searchController.text.trim();
+    if (text.isEmpty) {
+      startInspiration.value = 0;
       postsInspiration.clear();
       getInspirationController();
+      return;
     }
-
-    if (searchController.text.isEmpty) {
+    if (text.length < 2) return;
+    _searchDebounce = Timer(const Duration(milliseconds: 450), () {
+      startInspiration.value = 0;
       postsInspiration.clear();
       getInspirationController();
-    }
+    });
   }
 
   //scroll Pagination
@@ -320,6 +344,7 @@ class InspirationController extends GetxController {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     isRandomAutoLoad.value = false;
     searchController.clear();
     isRecommanded.value = false;
@@ -327,6 +352,7 @@ class InspirationController extends GetxController {
     isMostViewed.value = false;
     searchController.text = "";
     styleList.clear();
+    scrollControllerPosts.removeListener(_hideShowSearchBar);
     super.dispose();
   }
 

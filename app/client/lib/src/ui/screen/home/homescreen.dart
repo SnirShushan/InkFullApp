@@ -135,16 +135,89 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     return Scaffold(
       key: _key,
       backgroundColor: scaffoldBg,
-      appBar: buildAppBar(context),
-      body: SingleChildScrollView(
+      body: CustomScrollView(
         controller: _homeScreenController.scrollController,
-        child: Padding(
-          padding: EdgeInsets.only(
-              left: size.width * 0.045,
-              right: size.width * 0.045,
-              bottom: 12.0,
-              top: 4),
-          child: Column(
+        slivers: [
+          SliverAppBar(
+            floating: true,
+            snap: true,
+            pinned: false,
+            elevation: 0,
+            backgroundColor: scaffoldBg,
+            automaticallyImplyLeading: false,
+            toolbarHeight: 52,
+            titleSpacing: size.width * 0.04,
+            title: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                InkWell(
+                  onTap: () {
+                    if (!WebService.isSplashHomeScreen) {
+                      WebService.isSplashHomeScreen = true;
+                    }
+                    _homeScreenController.scrollController.animateTo(
+                      0,
+                      duration: const Duration(seconds: 1),
+                      curve: Curves.easeInOut,
+                    );
+
+                    _homeScreenController.scrollController.jumpTo(0.0);
+                    _homeScreenController.stylePosts.clear();
+                    _homeScreenController.getHomeController();
+                  },
+                  child: SvgPicture.asset(
+                    AppAssets.homeLogoSVG,
+                    height: 36,
+                    width: 36,
+                  ),
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Obx(() => _headerActionIcon(
+                          icon: SvgPicture.asset(
+                            _hasUnreadRequests
+                                ? AppAssets.mailFilled
+                                : AppAssets.mail,
+                            height: 28,
+                            width: 28,
+                            color: titleTextWhiteColor,
+                          ),
+                          badge: _homeScreenController.unreadRequestCount.value,
+                          onTap: () => _openInbox(isRequest: true),
+                        )),
+                    const SizedBox(width: 14),
+                    Obx(() => _headerActionIcon(
+                          icon: SvgPicture.asset(
+                            _homeScreenController.isNewNotification.value ==
+                                        "0" ||
+                                    _homeScreenController
+                                            .isNewNotification.value ==
+                                        "2" ||
+                                    _homeScreenController
+                                            .isNewNotification.value ==
+                                        ""
+                                ? AppAssets.bellInactiveIcon
+                                : AppAssets.bellActiveIcon,
+                            height: 28,
+                            width: 28,
+                          ),
+                          onTap: () => _openInbox(isRequest: false),
+                        )),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          SliverPadding(
+            padding: EdgeInsets.only(
+                left: size.width * 0.045,
+                right: size.width * 0.045,
+                bottom: 12.0,
+                top: 4),
+            sliver: SliverToBoxAdapter(
+              child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               buildtitlebackbold(
@@ -207,71 +280,68 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
               HomePostGridWidget(homeScreenController: _homeScreenController)
             ],
+              ),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
 
-  PreferredSize buildAppBar(BuildContext context) {
-    return PreferredSize(
-      preferredSize: Size.fromHeight(MediaQuery.of(context).size.height * 0.12),
-      child: AppBar(
-          elevation: 0,
-          backgroundColor: scaffoldBg,
-          flexibleSpace: Padding(
-            padding: EdgeInsets.symmetric(
-                horizontal: MediaQuery.of(context).size.width * 0.04),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(height: MediaQuery.of(context).size.height * 0.03),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    InkWell(
-                      onTap: () {
-                        if (!WebService.isSplashHomeScreen) {
-                          WebService.isSplashHomeScreen = true;
-                        }
-                        _homeScreenController.scrollController.animateTo(
-                          0,
-                          duration: const Duration(seconds: 1),
-                          curve: Curves.easeInOut,
-                        );
+  bool get _hasUnreadRequests {
+    final count = _homeScreenController.unreadRequestCount.value;
+    return count.isNotEmpty && count != "0" && count != "null";
+  }
 
-                        _homeScreenController.scrollController.jumpTo(0.0);
-                        _homeScreenController.stylePosts.clear();
-                        _homeScreenController.getHomeController();
-                      },
-                      child: SvgPicture.asset(
-                        AppAssets.homeLogoSVG,
-                        height: MediaQuery.of(context).size.height * 0.08,
-                        width: MediaQuery.of(context).size.height * 0.08,
-                      ),
-                    ),
-                    InkWell(
-                      onTap: () => Get.to(const NotificationScreen()),
-                      child: Obx(() => SvgPicture.asset(
-                          _homeScreenController.isNewNotification.value ==
-                                      "0" ||
-                                  _homeScreenController
-                                          .isNewNotification.value ==
-                                      "2" ||
-                                  _homeScreenController
-                                          .isNewNotification.value ==
-                                      ""
-                              ? AppAssets.bellInactiveIcon
-                              : AppAssets.bellActiveIcon,
-                          height: MediaQuery.of(context).size.height * 0.04,
-                          width: MediaQuery.of(context).size.height * 0.04)),
-                    ),
-                  ],
+  Future<void> _openInbox({required bool isRequest}) async {
+    await Get.to(() => NotificationScreen(isRequest: isRequest));
+    _homeScreenController.unreadRequestCount.value =
+        WebService.unreadMessage.isEmpty ? "0" : WebService.unreadMessage;
+    if (WebService.unreadnotification == "0") {
+      _homeScreenController.isNewNotification.value = "2";
+    } else if (WebService.unreadnotification.isNotEmpty &&
+        WebService.unreadnotification != "null") {
+      _homeScreenController.isNewNotification.value = "1";
+    }
+  }
+
+  Widget _headerActionIcon({
+    required Widget icon,
+    String badge = "",
+    required VoidCallback onTap,
+  }) {
+    final showBadge =
+        badge.isNotEmpty && badge != "0" && badge != "null";
+    return InkWell(
+      onTap: onTap,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          icon,
+          if (showBadge)
+            Positioned(
+              top: -6,
+              right: -8,
+              child: Container(
+                constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: appLinearGradient,
                 ),
-              ],
+                alignment: Alignment.center,
+                child: Text(
+                  badge,
+                  style: const TextStyle(
+                    color: whiteTxtColor,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
             ),
-          )),
+        ],
+      ),
     );
   }
 

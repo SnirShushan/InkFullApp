@@ -11,6 +11,7 @@ import 'package:ink/src/ui/screen/dashboard/dashboard.dart';
 import 'package:ink/src/ui/screen/dashboard/dashboard_binding.dart';
 import 'package:ink/src/ui/widgets/bottomenu/business_dashboard_bottomenu.dart';
 import 'package:ink/src/ui/widgets/bottomenu/dashboard_bottomenu.dart';
+import 'package:ink/src/ui/widgets/button/animation_loader_button_widget.dart';
 import 'package:ink/src/ui/widgets/button/custom_gradient_btn_widget.dart';
 import 'package:ink/src/ui/widgets/button/gradient_tab_Indicator_widget.dart';
 import 'package:ink/src/utils/assets.dart';
@@ -225,6 +226,10 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen>
 
                                         return GestureDetector(
                                           onTap: () async {
+                                            if (businessDetailsController
+                                                .isFollowLoading.value) {
+                                              return;
+                                            }
                                             await businessDetailsController
                                                 .followUser(
                                               bid: businessDetailsController
@@ -241,7 +246,10 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen>
                                               color: signInButtonColor,
                                             ),
                                             child: Center(
-                                              child: isLiked
+                                              child: businessDetailsController
+                                                      .isFollowLoading.value
+                                                  ? const InkSpinningLoader()
+                                                  : isLiked
                                                   ? Row(
                                                       mainAxisAlignment:
                                                           MainAxisAlignment
@@ -454,7 +462,10 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen>
   Row buildtitleRow(Size size, TextTheme textTheme) {
     return Row(
       children: [
-        CircleAvatar(
+        GestureDetector(
+          onTap: () => showProfileImageViewer(
+              imageUrl: businessDetailsController.profile_image.value),
+          child: CircleAvatar(
             backgroundColor: Colors.white,
             radius: size.height * 0.042,
             child: WebService.isMissingProfileImage(
@@ -495,7 +506,9 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen>
                               image: DecorationImage(
                                   image: AssetImage(AppAssets.userPlaceHolder),
                                   fit: BoxFit.cover)),
-                        ))),
+                        )),
+          ),
+        ),
         SizedBox(
           width: size.width * 0.03,
         ),

@@ -86,3 +86,45 @@ class _AnimationLoaderButtonWidgetState
     );
   }
 }
+
+class InkSpinningLoader extends StatefulWidget {
+  final double size;
+
+  const InkSpinningLoader({super.key, this.size = 22});
+
+  @override
+  State<InkSpinningLoader> createState() => _InkSpinningLoaderState();
+}
+
+class _InkSpinningLoaderState extends State<InkSpinningLoader>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return RotationTransition(
+      turns: _controller,
+      child: Image.asset(
+        AppAssets.loadingIcon,
+        width: widget.size,
+        height: widget.size,
+        color: Colors.white,
+      ),
+    );
+  }
+}

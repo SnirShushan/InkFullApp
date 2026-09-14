@@ -45,9 +45,11 @@ void main() async {
   }
 
   runApp(EasyLocalization(
-      supportedLocales: const [Locale('he', 'HE')],
+      supportedLocales: const [Locale('he', 'HE'), Locale('en', 'EN')],
       path: 'assets/resources',
       fallbackLocale: const Locale('he', 'HE'),
+      startLocale: const Locale('he', 'HE'),
+      useFallbackTranslations: true,
       child: const MyApp()));
 }
 

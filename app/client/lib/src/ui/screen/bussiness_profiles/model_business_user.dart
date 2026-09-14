@@ -26,6 +26,7 @@ class BusinessUserListModel {
   Posts? posts;
   List<Artist>? artist;
   List<BusinessImg>? businessImg;
+  String? isPromoted;
 
   BusinessUserListModel(
       {this.id,
@@ -52,7 +53,8 @@ class BusinessUserListModel {
       this.followers,
       this.posts,
       this.artist,
-      this.businessImg});
+      this.businessImg,
+      this.isPromoted});
 
   BusinessUserListModel.fromJson(Map<String, dynamic> json) {
     id = json['id'].toString();
@@ -98,6 +100,7 @@ class BusinessUserListModel {
         businessImg!.add(new BusinessImg.fromJson(v));
       });
     }
+    isPromoted = json['is_promoted']?.toString();
   }
 
   Map<String, dynamic> toJson() {
@@ -135,6 +138,7 @@ class BusinessUserListModel {
     if (this.businessImg != null && businessImg!.isNotEmpty) {
       data['business_img'] = this.businessImg!.map((v) => v.toJson()).toList();
     }
+    data['is_promoted'] = this.isPromoted;
     return data;
   }
 }

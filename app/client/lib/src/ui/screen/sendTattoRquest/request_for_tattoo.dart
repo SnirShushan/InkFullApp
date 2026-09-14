@@ -24,6 +24,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:screenshot/screenshot.dart';
 
 import '../../widgets/appbar_back_widget.dart';
+import 'select_saved_request_images.dart';
 import 'widget/dashed_border_widget.dart';
 
 class ScreenTattooRequest extends StatefulWidget {
@@ -449,17 +450,17 @@ class _ScreenTattooRequestState extends State<ScreenTattooRequest>
               isImageSelected1
                   ? buildimgrounded(size, 1)
                   : InkWell(
-                      onTap: () => _pickImagefromGallery(type: 1),
+                      onTap: () => _showImageSourceSheet(type: 1),
                       child: builddotted(size)),
               isImageSelected2
                   ? buildimgrounded(size, 2)
                   : InkWell(
-                      onTap: () => _pickImagefromGallery(type: 2),
+                      onTap: () => _showImageSourceSheet(type: 2),
                       child: builddotted(size)),
               isImageSelected3
                   ? buildimgrounded(size, 3)
                   : InkWell(
-                      onTap: () => _pickImagefromGallery(type: 3),
+                      onTap: () => _showImageSourceSheet(type: 3),
                       child: builddotted(size)),
             ],
           )
@@ -515,6 +516,134 @@ class _ScreenTattooRequestState extends State<ScreenTattooRequest>
           ),
         ),
       ],
+    );
+  }
+
+  int _emptyImageSlots() {
+    var filled = 0;
+    if (isImageSelected1) filled++;
+    if (isImageSelected2) filled++;
+    if (isImageSelected3) filled++;
+    return 3 - filled;
+  }
+
+  void _assignPickedFiles(List<File> files, int type) {
+    if (files.isEmpty) return;
+    var index = 0;
+    void fill(int slot, File file) {
+      if (slot == 3) {
+        imageFile3 = file;
+        isImageSelected3 = true;
+      } else if (slot == 2) {
+        imageFile2 = file;
+        isImageSelected2 = true;
+      } else {
+        imageFile1 = file;
+        isImageSelected1 = true;
+      }
+    }
+
+    fill(type, files[index++]);
+    for (var slot = 1; slot <= 3 && index < files.length; slot++) {
+      if (slot == type) continue;
+      final taken = slot == 1
+          ? isImageSelected1
+          : slot == 2
+              ? isImageSelected2
+              : isImageSelected3;
+      if (!taken) {
+        fill(slot, files[index++]);
+      }
+    }
+  }
+
+  Future<void> _pickFromSavedImages({required int type}) async {
+    final maxCount = _emptyImageSlots();
+    if (maxCount <= 0) return;
+    final result = await Get.to(() => SelectSavedRequestImages(maxCount: maxCount));
+    if (result is List<File> && result.isNotEmpty) {
+      setState(() => _assignPickedFiles(result, type));
+    }
+  }
+
+  Future<void> _showImageSourceSheet({required int type}) async {
+    final size = MediaQuery.of(context).size;
+    await showModalBottomSheet<void>(
+      context: context,
+      useRootNavigator: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(sheetContext).viewInsets.bottom +
+                (Platform.isIOS ? 102.0 : 62.0),
+          ),
+          child: Container(
+            decoration: const BoxDecoration(
+              color: signInButtonColor,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(height: size.height * 0.03),
+                Container(
+                  width: size.width * 0.2,
+                  height: size.height * 0.007,
+                  decoration: BoxDecoration(
+                    color: textEditingColor,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                SizedBox(height: size.height * 0.02),
+                InkWell(
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    _pickImagefromGallery(type: type);
+                  },
+                  child: _imageSourceRow(
+                    title: "גלריית הטלפון",
+                    imageName: AppAssets.photoIcon,
+                  ),
+                ),
+                InkWell(
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    _pickFromSavedImages(type: type);
+                  },
+                  child: _imageSourceRow(
+                    title: "תמונות שמורות באפליקציה",
+                    imageName: AppAssets.postSavedIcon,
+                  ),
+                ),
+                SizedBox(height: size.height * 0.03),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _imageSourceRow({required String title, required String imageName}) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      width: double.infinity,
+      color: signInButtonColor,
+      height: MediaQuery.of(context).size.height * 0.08,
+      child: Row(
+        children: [
+          SvgPicture.asset(imageName),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: const TextStyle(color: titleTextWhiteColor, fontSize: 18),
+          ),
+        ],
+      ),
     );
   }
 

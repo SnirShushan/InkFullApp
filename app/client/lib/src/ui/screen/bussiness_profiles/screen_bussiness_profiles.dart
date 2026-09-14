@@ -40,26 +40,14 @@ class BusinessProfiles extends StatelessWidget {
                               controller:
                                   controller.scrollControllerBusinessProfile,
                               shrinkWrap: true,
-                              itemCount: controller.businessList.length + 1,
+                              itemCount: controller.businessList.length,
                               itemBuilder: (context, index) {
-                                if (index < controller.businessList.length) {
-                                  return Padding(
-                                      padding:
-                                          const EdgeInsets.only(bottom: 10),
-                                      child: TattooArtistCard(
-                                          businessUserListModel:
-                                              controller.businessList[index]));
-                                } else {
-                                  return Padding(
-                                    padding: const EdgeInsets.all(10.0),
-                                    child: Obx(() => Center(
-                                        child: controller
-                                                .hasMoreBusinessProfileLoading
-                                                .value
-                                            ? const CircularProgressIndicator()
-                                            : const SizedBox())),
-                                  );
-                                }
+                                return Padding(
+                                    padding:
+                                        const EdgeInsets.only(bottom: 10),
+                                    child: TattooArtistCard(
+                                        businessUserListModel:
+                                            controller.businessList[index]));
                               },
                             ),
                 ),

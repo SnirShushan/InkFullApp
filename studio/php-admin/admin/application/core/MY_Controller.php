@@ -162,6 +162,7 @@ class MY_Controller extends CI_Controller
 			"plan_status"=>"Plan Status",
 			"image_limit"=>"Image Limit",
 			"view_signature"=>"View Signature",
+			"cust_created_date"=>"Registration Date",
 		);
 
 

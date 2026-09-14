@@ -257,6 +257,7 @@
   "sideDrawer": {
     "reserved": "שמורים",
     "follow_up_tatto": "מקעקעים במעקב",
+    "sent_requests": "פניות ששלחתי למקעקעים",
     "account_operation": "פעולות בחשבון",
     "editing_details": "עריכת פרטים",
     "change_favourite_style": "שינוי סגנונות מועדפים",
@@ -280,7 +281,11 @@
     "delete_account_subtitle1": "איזה מבאס. זאת החלטה סופית?",
     "delete_account_subtitle2": "חשוב לנו ליידע אותך שמחיקת החשבון תביא \nלמחיקת כל המידע והנתונים על המשתמש ללא \nאפשרות שחזור.",
     "delete_account_delete_btn": "מחיקת החשבון",
-    "delete_account_cancel_btn": "ביטול"
+    "delete_account_cancel_btn": "ביטול",
+    "language": "שפה",
+    "language_title": "בחירת שפה",
+    "language_hebrew": "עברית",
+    "language_english": "English"
   },
   "no_premium_plan": {
     "no_premium_plan_title": "צפייה בפנייה חסומה",

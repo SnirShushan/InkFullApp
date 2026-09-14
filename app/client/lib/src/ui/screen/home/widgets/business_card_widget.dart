@@ -3,18 +3,15 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
-import 'package:ink/src/data/model/currentUser.dart';
-import 'package:ink/src/ui/screen/business_user/dashboard/business_dashboard.dart';
-import 'package:ink/src/ui/screen/business_user/dashboard/bussinessdashboard_binding.dart';
-import 'package:ink/src/ui/screen/dashboard/dashboard.dart';
-import 'package:ink/src/ui/screen/dashboard/dashboard_binding.dart';
 import 'package:ink/src/ui/screen/home/controller/home_screen_controller.dart';
 import 'package:ink/src/ui/screen/profile/businessUserProfile.dart';
 import 'package:ink/src/ui/widgets/build_custom_catched_image.dart';
+import 'package:ink/src/ui/widgets/promoted_badge.dart';
 import 'package:ink/src/ui/widgets/shimmer_effect.dart';
 import 'package:ink/src/utils/assets.dart';
 import 'package:ink/src/utils/colors.dart';
 import 'package:ink/src/utils/common.dart';
+import 'package:ink/src/utils/open_inspiration_style.dart';
 import 'package:ink/src/utils/webService.dart';
 
 class BusinessCardWidget extends StatelessWidget {
@@ -152,6 +149,7 @@ class BusinessCardWidget extends StatelessWidget {
                 cacheExtent: 1000,
                 itemBuilder: (BuildContext context, int index) {
                   var data = homeScreenController.businessList![index];
+                  final promoted = isPromotedFlag(data.isPromoted);
 
                   return Padding(
                     padding: const EdgeInsets.only(left: 8.0),
@@ -168,8 +166,14 @@ class BusinessCardWidget extends StatelessWidget {
                           elevation: 0,
                           color: cardBgColor,
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8)),
-                          child: Padding(
+                              borderRadius: BorderRadius.circular(8),
+                              side: promoted
+                                  ? const BorderSide(
+                                      color: promotedBorderColor, width: 1.5)
+                                  : BorderSide.none),
+                          child: Stack(
+                            children: [
+                              Padding(
                             padding: const EdgeInsets.symmetric(
                                 vertical: 4.0, horizontal: 12.0),
                             child: Column(
@@ -319,35 +323,24 @@ class BusinessCardWidget extends StatelessWidget {
                                       return style == ""
                                           ? const SizedBox()
                                           : ElevatedButton(
-                                              onPressed: () async {
-                                                final isBusiness =
-                                                    await WebService
-                                                        .getIsBusiness();
-                                                AppUser user = await WebService
-                                                    .getCurrentUser();
-                                                WebService.selectstylelist = [];
-                                                user.stylesList
-                                                    ?.forEach((stylesList) {
-                                                  if (stylesList.name ==
-                                                      style) {
-                                                    WebService.selectstylelist
-                                                        .add(stylesList);
-                                                  }
-                                                });
-                                                print("stylesList $isBusiness");
-                                                if (isBusiness) {
-                                                  Get.offAll(
-                                                      BusinessDashBoard(
-                                                          initialIndex: 1),
-                                                      binding:
-                                                          BusinessDashBoardBinding());
-                                                } else {
-                                                  Get.offAll(
-                                                      const DashBoard(
-                                                          initialIndex: 1),
-                                                      binding:
-                                                          DashBoardBinding());
-                                                }
+                                              onPressed: () {
+                                                final slugs = (data.styles ?? '')
+                                                    .split(',')
+                                                    .map((s) => s.trim())
+                                                    .where((s) => s.isNotEmpty)
+                                                    .toList();
+                                                final names = data.stylesHe!
+                                                    .where((s) => s.isNotEmpty)
+                                                    .take(5)
+                                                    .toList();
+                                                final index = names.indexOf(style);
+                                                openInspirationForStyle(
+                                                  slug: index >= 0 &&
+                                                          index < slugs.length
+                                                      ? slugs[index]
+                                                      : null,
+                                                  label: style,
+                                                );
                                               },
                                               style: ElevatedButton.styleFrom(
                                                 padding:
@@ -379,6 +372,14 @@ class BusinessCardWidget extends StatelessWidget {
                                 SizedBox(height: size.height * 0.01),
                               ],
                             ),
+                              ),
+                              if (promoted)
+                                const PositionedDirectional(
+                                  top: 8,
+                                  end: 8,
+                                  child: PromotedBadge(),
+                                ),
+                            ],
                           ),
                         ),
                       ),

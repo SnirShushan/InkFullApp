@@ -31,6 +31,7 @@
                         <th><?= $this->settings['hebrew_text']['exp_date']; ?></th>
                         <th><?= $this->settings['hebrew_text']['plan_status']; ?></th>
                         <th><?= $this->settings['hebrew_text']['image_limit']; ?></th>
+                        <th><?= $this->settings['hebrew_text']['cust_created_date']; ?></th>
                         <th><?= $this->settings['hebrew_text']['view_signature']; ?></th>
                         <th style="display:none;"></th>
                     </tr>
@@ -177,7 +178,7 @@
                     [10, 25, 50, "All"]
                 ],
                 order: [
-                    [12, "desc"]
+                    [13, "desc"]
                 ],
                 columnDefs: [
                     {

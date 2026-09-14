@@ -12,6 +12,8 @@ import 'package:in_app_purchase_storekit/in_app_purchase_storekit.dart';
 import 'package:in_app_purchase_storekit/store_kit_wrappers.dart';
 import 'package:ink/src/controller/StartupController.dart';
 import 'package:ink/src/data/source/network/user_api.dart';
+import 'package:ink/src/ui/screen/dashboard/dashboard.dart';
+import 'package:ink/src/ui/screen/dashboard/dashboard_binding.dart';
 import 'package:ink/src/ui/screen/profile/drawer/controller/business_profile_menu_controller.dart';
 import 'package:ink/src/ui/screen/profile/subscription/consumable_store.dart';
 import 'package:ink/src/ui/screen/profile/subscription/widget/purchase_elevated_button.dart';
@@ -109,6 +111,14 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
     super.initState();
     WebService.isTempPremiumPlanPurchase = false;
     WebService.isTempPremiumPlanPurchaseLoading = false;
+  }
+
+  void _exitOpeningProcess() {
+    if (WebService.isTempPremiumPlanPurchaseLoading) return;
+    Get.offAll(
+      () => const DashBoard(initialIndex: 3),
+      binding: DashBoardBinding(),
+    );
   }
 
   initData() {
@@ -276,11 +286,23 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
                                   width: size.width,
                                   height: size.height * 0.5,
                                   fit: BoxFit.fitWidth),
-                              // Positioned(
-                              //     top: size.height * 0.08,
-                              //     left: 20,
-                              //     child: SvgPicture.asset(AppAssets.closeIcon,
-                              //         width: 20, height: 20)),
+                              if (widget.fromRegistration)
+                                Positioned(
+                                  top: size.height * 0.08,
+                                  left: 20,
+                                  child: InkWell(
+                                    onTap: _exitOpeningProcess,
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(8),
+                                      child: SvgPicture.asset(
+                                        AppAssets.closeIcon,
+                                        width: 20,
+                                        height: 20,
+                                        color: titleTextColor,
+                                      ),
+                                    ),
+                                  ),
+                                ),
                               Positioned(
                                 top: size.height * 0.08,
                                 right: 20,

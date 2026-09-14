@@ -49,6 +49,8 @@ class _NotificationListWidgetState extends State<NotificationListWidget> {
                 }
                 final notificationType = widget.notificationModelNew.notiType;
                 switch (notificationType) {
+                  case NotificationType.newFollow:
+                    break;
                   case NotificationType.requestArtist:
                     Get.to(() =>
                         BusinessProfileScreen(
@@ -180,7 +182,34 @@ class _NotificationListWidgetState extends State<NotificationListWidget> {
 
     // print(msg);
 
-    return (type == NotificationType.newPost ||
+    return type == NotificationType.newFollow
+        ? Row(
+      children: [
+        SizedBox(
+          width: MediaQuery.of(context).size.width * 0.65,
+          child: RichText(
+            textAlign: TextAlign.right,
+            text: TextSpan(
+              children: [
+                buildNotificationNameTextSpan(index, context),
+                TextSpan(
+                  text: " הוסיף אותך למעקב. ",
+                  style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                    color: titleTextWhiteColor,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+                buildNotificationDateTextSpan(index, context),
+                if (notificationindex.isread.toString() == "2")
+                  buildDottedTextSpan(context),
+              ],
+            ),
+          ),
+        ),
+      ],
+    )
+        : (type == NotificationType.newPost ||
         type == NotificationType.postMention)
         ? Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,

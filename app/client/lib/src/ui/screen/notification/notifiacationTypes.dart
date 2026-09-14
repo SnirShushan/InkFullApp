@@ -8,4 +8,5 @@ class NotificationType {
   static const home = "home";
   static const giftnotification = "gift_notification";
   static const infonotification = "info_notification";
+  static const newFollow = "new_follow";
 }

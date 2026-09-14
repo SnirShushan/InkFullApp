@@ -5,9 +5,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
+import 'package:ink/src/data/model/currentUser.dart';
 import 'package:ink/src/data/model/folderImage.dart';
 import 'package:ink/src/data/model/postDetails.dart';
+import 'package:ink/src/data/model/post_inspiration_model.dart';
 import 'package:ink/src/data/source/network/firebase_api.dart';
+import 'package:ink/src/data/source/network/user_api.dart';
 import 'package:ink/src/ui/screen/home/imageDetails/post_details.dart';
 import 'package:ink/src/ui/widgets/appbar_action_widget.dart';
 import 'package:ink/src/ui/widgets/bottomenu/business_dashboard_bottomenu.dart';
@@ -296,7 +299,7 @@ void deleteCollectionAlertDialog(BuildContext context, String fid) {
   );
 }
 
-class ImageGridScreen extends StatelessWidget {
+class ImageGridScreen extends StatefulWidget {
   final currentUserType;
   final String fName;
   final String imageUrls;
@@ -311,19 +314,107 @@ class ImageGridScreen extends StatelessWidget {
       : super(key: key);
 
   @override
+  State<ImageGridScreen> createState() => _ImageGridScreenState();
+}
+
+class _ImageGridScreenState extends State<ImageGridScreen> {
+  static const int _suggestBelowCount = 6;
+  List<PostInspirationModel> _suggestions = [];
+  int _lastSavedCount = -1;
+  bool _loadingSuggestions = false;
+
+  Stream<List<FolderImage>> _readPosts() => FirebaseFirestore.instance
+      .collection('foldersImages')
+      .snapshots()
+      .map((snapshots) => snapshots.docs
+          .map((doc) => FolderImage.fromJson(doc.data()))
+          .where((doc) => doc.fid == widget.fid)
+          .toList());
+
+  Future<void> _loadSuggestions(List<FolderImage> saved) async {
+    if (saved.length >= _suggestBelowCount) {
+      if (_suggestions.isNotEmpty && mounted) {
+        setState(() => _suggestions = []);
+      }
+      return;
+    }
+    if (_loadingSuggestions) return;
+    _loadingSuggestions = true;
+    try {
+      final AppUser user = await WebService.getCurrentUser();
+      final styles = user.profile?.styles ?? "";
+      final data = await Network.getHomePostsApi(
+        isRandom: "1",
+        start: 0,
+        limit: 12,
+        postIds: "",
+        styles: styles,
+      );
+      if (data == false || data == null) return;
+      final raw = data["posts"];
+      if (raw is! List) return;
+      final savedIds = saved.map((e) => e.pId).toSet();
+      final list = <PostInspirationModel>[];
+      for (final item in raw) {
+        if (item is! Map) continue;
+        final post = PostInspirationModel.fromJson(
+            Map<String, dynamic>.from(item));
+        if ((post.id ?? "").isEmpty || savedIds.contains(post.id)) continue;
+        list.add(post);
+        if (list.length >= 6) break;
+      }
+      if (mounted) setState(() => _suggestions = list);
+    } finally {
+      _loadingSuggestions = false;
+    }
+  }
+
+  void _maybeLoadSuggestions(List<FolderImage> saved) {
+    if (saved.length == _lastSavedCount) return;
+    _lastSavedCount = saved.length;
+    _loadSuggestions(saved);
+  }
+
+  Widget _roundedTile({
+    required Size size,
+    required String imageUrl,
+    required bool isMultiple,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            CachedNetworkImage(
+              imageUrl: WebService.resolveImageUrl(imageUrl),
+              fit: BoxFit.cover,
+              errorWidget: (context, url, error) => Image.asset(
+                "assets/images/placeholder.png",
+                fit: BoxFit.cover,
+              ),
+            ),
+            if (isMultiple)
+              Positioned(
+                top: 10,
+                right: 10,
+                child: SvgPicture.asset(AppAssets.multiImageicon,
+                    width: 20, height: 20),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     var size = MediaQuery.of(context).size;
 
-    Stream<List<FolderImage>> readPosts() => FirebaseFirestore.instance
-        .collection('foldersImages')
-        .snapshots()
-        .map((snapshots) => snapshots.docs
-            .map((doc) => FolderImage.fromJson(doc.data()))
-            .where((doc) => doc.fid == fid)
-            .toList());
-
     return StreamBuilder<List<FolderImage>>(
-        stream: readPosts(),
+        stream: _readPosts(),
         builder:
             (BuildContext context, AsyncSnapshot<List<FolderImage>> snapshot) {
           if (snapshot.hasError) {
@@ -360,19 +451,26 @@ class ImageGridScreen extends StatelessWidget {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          final users = snapshot.data!;
+          final users = snapshot.data ?? [];
           WebService.folderList.clear();
           WebService.folderList = users;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _maybeLoadSuggestions(users);
+          });
 
-          if (snapshot.data!.isEmpty) {
-            FireBaseApi.removeImageFromSpecificFolders(fid: fid);
+          if (users.isEmpty) {
+            FireBaseApi.removeImageFromSpecificFolders(fid: widget.fid);
           }
-          return snapshot.data!.isEmpty
-              ? Center(
+
+          return ListView(
+            children: [
+              if (users.isEmpty)
+                Padding(
+                  padding: EdgeInsets.only(bottom: size.height * 0.03),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      SizedBox(height: size.height * 0.04),
+                      SizedBox(height: size.height * 0.02),
                       Container(
                         padding: const EdgeInsets.all(16),
                         clipBehavior: Clip.antiAlias,
@@ -396,64 +494,85 @@ class ImageGridScreen extends StatelessWidget {
                     ],
                   ),
                 )
-              : GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3, // Number of columns
-                    crossAxisSpacing: 4.0,
-                    mainAxisSpacing: 4.0,
+              else
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate:
+                      const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
                   ),
-                  itemCount: WebService.folderList.length,
+                  itemCount: users.length,
                   itemBuilder: (context, index) {
-                    final imageData = WebService.folderList[index].imageUrl;
-                    bool isMultipleImages = imageData is String &&
-                        imageData.contains(',') &&
+                    final folder = users[index];
+                    final imageData = folder.imageUrl;
+                    final isMultiple = imageData.contains(',') &&
                         imageData.startsWith('[') &&
                         imageData.endsWith(']');
-                    return InkWell(
+                    return _roundedTile(
+                      size: size,
+                      imageUrl: FireBaseApi().getFirstImageUrl(imageData) ??
+                          WebService.tempImageUrl,
+                      isMultiple: isMultiple,
                       onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
                               builder: (_) => PostDetails(
-                                  postId: WebService.folderList[index].pId,
-                                  foldersid: WebService.folderList[index].fid,
-                                  fidCollection: fid,
-                                  currentUserTypeCollection: currentUserType,
-                                  fNameCollection: fName,
-                                  isCollectionMultipleImages: isMultipleImages,
-                                  imageUrlsCollection: imageUrls,
+                                  postId: folder.pId,
+                                  foldersid: folder.fid,
+                                  fidCollection: widget.fid,
+                                  currentUserTypeCollection:
+                                      widget.currentUserType,
+                                  fNameCollection: widget.fName,
+                                  isCollectionMultipleImages: isMultiple,
+                                  imageUrlsCollection: widget.imageUrls,
                                   isArtist: false))),
-                      child: Stack(
-                        children: [
-                          CachedNetworkImage(
-                              width: size.width * 0.28,
-                              imageUrl: FireBaseApi().getFirstImageUrl(
-                                      WebService.folderList[index].imageUrl) ??
-                                  WebService.tempImageUrl,
-                              fit: BoxFit.cover,
-                              errorWidget: (context, url, error) => Container(
-                                  width: Get.width * 0.9,
-                                  height: Get.height * 0.5,
-                                  alignment: Alignment.center,
-                                  decoration: const BoxDecoration(
-                                      image: DecorationImage(
-                                          image: AssetImage(
-                                              "assets/images/placeholder.png"),
-                                          fit: BoxFit.cover)))
-                              //   height: size.width * 0.1,
-                              // width: size.width * 0.1,
-                              ),
-                          if (isMultipleImages)
-                            Positioned(
-                              top: 10,
-                              right: 10,
-                              child: SvgPicture.asset(AppAssets.multiImageicon,
-                                  width: 20, height: 20),
-                            )
-                        ],
-                      ),
                     );
                   },
-                );
+                ),
+              if (users.length < _suggestBelowCount &&
+                  _suggestions.isNotEmpty) ...[
+                const SizedBox(height: 24),
+                const Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    'הצעות לאוסף',
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                      color: Color(0xFFDFDCE3),
+                      fontSize: 16,
+                      fontFamily: 'Arimo',
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate:
+                      const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                  ),
+                  itemCount: _suggestions.length,
+                  itemBuilder: (context, index) {
+                    final post = _suggestions[index];
+                    return _roundedTile(
+                      size: size,
+                      imageUrl: post.imageName ?? "",
+                      isMultiple: post.isMultipleImages == "1",
+                      onTap: () => Get.to(() => PostDetails(
+                          postId: post.id ?? "", isArtist: false)),
+                    );
+                  },
+                ),
+              ],
+            ],
+          );
         });
   }
 }

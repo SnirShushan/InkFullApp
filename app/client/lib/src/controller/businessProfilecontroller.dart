@@ -49,7 +49,7 @@ class BusinessProfileController extends GetxController
   RxBool hasMoreBusinessProfile = true.obs;
   RxBool hasMoreBusinessProfileLoading = false.obs;
   RxInt startBusinessProfile = 0.obs;
-  int limitBusinessProfile = 5;
+  int limitBusinessProfile = 100;
 
   //'is_recommended': isRecommended,
 
@@ -99,7 +99,6 @@ class BusinessProfileController extends GetxController
 
     // Initialize search and scroll listeners
     searchController.addListener(_searchListener);
-    scrollControllerBusinessProfile.addListener(requestListener);
 
     Future.microtask(() {
       getBusinessList();
@@ -120,9 +119,10 @@ class BusinessProfileController extends GetxController
   // 0=popular 1=close to me 2=personal style 3=new one
   Future getBusinessList() async {
     isOkButton = false.obs;
-    isLoading.value = true;
     if (isApiLoading) return;
     isApiLoading = true;
+    final showFullSpinner = businessList.isEmpty;
+    isLoading.value = showFullSpinner;
 
     try {
       String styles = "";
@@ -151,6 +151,7 @@ class BusinessProfileController extends GetxController
               radius: radius,
               searchText: searchController.text)
           .then((res) {
+        bool shouldLoadMore = false;
         if (res != false) {
           final List newList = List.from(res);
           if (res.toString() == "[]" || res == []) {
@@ -160,6 +161,7 @@ class BusinessProfileController extends GetxController
               hasMoreBusinessProfile.value = false;
             } else {
               startBusinessProfile += limitBusinessProfile;
+              shouldLoadMore = true;
             }
           }
           hasMoreBusinessProfileLoading.value = false;
@@ -175,14 +177,16 @@ class BusinessProfileController extends GetxController
           }
         }
         isLoading.value = false;
-        // }
+        if (shouldLoadMore && hasMoreBusinessProfile.value) {
+          Future.microtask(() => getBusinessList());
+        }
       });
     } catch (e) {
       hasMoreBusinessProfileLoading.value = false;
       hasMoreBusinessProfile.value = false;
     } finally {
       isApiLoading = false;
-      hasMoreBusinessProfileLoading = false.obs;
+      hasMoreBusinessProfileLoading.value = false;
     }
   }
 
@@ -511,17 +515,6 @@ class BusinessProfileController extends GetxController
           Navigator.of(context).pop();
         }
       }
-    }
-  }
-
-  void requestListener() {
-    if (scrollControllerBusinessProfile.position.maxScrollExtent ==
-            scrollControllerBusinessProfile.offset &&
-        hasMoreBusinessProfile.value) {
-      hasMoreBusinessProfileLoading.value = true;
-      getBusinessList();
-    } else {
-      hasMoreBusinessProfileLoading = false.obs;
     }
   }
 

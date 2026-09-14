@@ -21,6 +21,7 @@ import 'package:ink/src/ui/widgets/bottomenu/dashboard_bottomenu.dart';
 import 'package:ink/src/ui/widgets/button/custom_gradient_btn_widget.dart';
 import 'package:ink/src/utils/assets.dart';
 import 'package:ink/src/utils/common.dart';
+import 'package:ink/src/utils/open_inspiration_style.dart';
 import 'package:ink/src/utils/share_data.dart';
 import 'package:ink/src/utils/utils.dart';
 import 'package:ink/src/utils/webService.dart';
@@ -163,11 +164,13 @@ class _PostDetailsState extends State<PostDetails>
         .size;
     return PopScope(
       canPop: true,
-      onPopInvoked: (bool didPop) =>
-          redirectTo(
-              foldersid: widget.foldersid,
-              postId: widget.postId,
-              contexts: context),
+      onPopInvoked: (bool didPop) {
+        if (didPop) return;
+        redirectTo(
+            foldersid: widget.foldersid,
+            postId: widget.postId,
+            contexts: context);
+      },
       child: SafeArea(
           child: Scaffold(
               backgroundColor: bgColor,
@@ -461,22 +464,32 @@ class _PostDetailsState extends State<PostDetails>
               fontWeight: FontWeight.w400));
 
   //tags list
-  buildTags(Size size) =>
-      postDetailsController.postModel.value.tagList!.isEmpty
-          ? const SizedBox()
-          : postDetailsController.postModel.value.tagList!
-          .map((e) =>
-          Padding(
-            padding: const EdgeInsets.only(left: 8),
+  buildTags(Size size) {
+    final tags = postDetailsController.postModel.value.tagList ?? [];
+    if (tags.isEmpty) return <Widget>[];
+    final slugs = (postDetailsController.postModel.value.styles ?? '')
+        .split(',')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
+    return tags.asMap().entries.map((entry) {
+      final slug = entry.key < slugs.length ? slugs[entry.key] : null;
+      final tag = entry.value.toString();
+      return Padding(
+        padding: const EdgeInsets.only(left: 8),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => openInspirationForStyle(slug: slug, label: tag),
+            borderRadius: BorderRadius.circular(4),
             child: Container(
-              padding:
-              const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: ShapeDecoration(
                   color: const Color(0xFF2B272F),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(4))),
               child: Text(
-                e.toString(),
+                tag,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   color: Color(0xFFDFDCE3),
@@ -487,8 +500,11 @@ class _PostDetailsState extends State<PostDetails>
                 ),
               ),
             ),
-          ))
-          .toList();
+          ),
+        ),
+      );
+    }).toList();
+  }
 
   // buildTags(Size size) => Container(
   //     width: size.width,
@@ -660,6 +676,8 @@ class _PostDetailsState extends State<PostDetails>
     }
     debugPrint("imageList:-> $imageList");
     final imageName = postDetailsController.postModel.value.imageName;
+    final overlayDate = formatPostOverlayDate(
+        postDetailsController.postModel.value.dateAdded);
 
     return InkWell(
         onTap: () =>
@@ -667,9 +685,10 @@ class _PostDetailsState extends State<PostDetails>
                 imgUrl: postDetailsController.postModel.value.imageName!,
                 isMultipleImages:
                 postDetailsController.postModel.value.isMultipleImages ?? "0",
-                posTitle: postDetailsController.postModel.value.artist != null
-                    ? postDetailsController.postModel.value.artist!.name!
-                    : postDetailsController.postModel.value.owner!.name!)),
+                posTitle: postDetailsController.postModel.value.artist?.name ??
+                    postDetailsController.postModel.value.owner?.name ??
+                    ''),
+            ),
         child: Stack(children: [
           postDetailsController.postModel.value.isMultipleImages == "1"
               ? Stack(
@@ -770,6 +789,28 @@ class _PostDetailsState extends State<PostDetails>
                               image:
                               AssetImage("assets/images/placeholder.png"),
                               fit: BoxFit.cover)))),
+          if (overlayDate.isNotEmpty)
+            Positioned(
+              top: 12,
+              left: 12,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.55),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  overlayDate,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    height: 1.1,
+                  ),
+                ),
+              ),
+            ),
           //save
           Positioned(
               bottom: 10,

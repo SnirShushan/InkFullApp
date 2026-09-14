@@ -21,6 +21,7 @@
                         <th><?= $this->settings['hebrew_text']['exp_date']; ?></th>
                         <th><?= $this->settings['hebrew_text']['plan_status']; ?></th>
                         <th><?= $this->settings['hebrew_text']['image_limit']; ?></th>
+                        <th><?= $this->settings['hebrew_text']['cust_created_date']; ?></th>
                         <th style="display:none;"></th>
                     </tr>
                 </thead>

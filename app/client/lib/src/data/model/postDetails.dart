@@ -65,23 +65,28 @@ class MPostDetails {
     artistUid = json['artist_uid'].toString();
     status = json['status'].toString();
     studioUid = json['studio_uid'].toString();
-    isMultipleImages = json['is_multiple_image'].toString()??"0";
+    isMultipleImages = json['is_multiple_image']?.toString() ?? "0";
     owner = json['owner'] == null || json['owner'].toString() == "[]"
         ? null
-        : Owner.fromJson(json['owner']);
+        : Owner.fromJson(json['owner'] is Map<String, dynamic>
+            ? json['owner']
+            : Map<String, dynamic>.from(json['owner']));
 
     artist = json['artist'] == null || json['artist'].toString() == "[]"
         ? null
-        : Artist.fromJson(json['artist']);
+        : Artist.fromJson(json['artist'] is Map<String, dynamic>
+            ? json['artist']
+            : Map<String, dynamic>.from(json['artist']));
 
-    liked = json['liked'].toString();
-    // followers = json['followers'].toString();
-    // postLiked = json['post_liked'].toString();
-    // postLikes = json['post_likes'].toString();
-    tagList = json['tag_list'].cast<String>();
-    tagStr = json['tag_str'].toString();
-    tagListEn = json['tag_list_en'].cast<String>();
-    tagStrEn = json['tag_str_en'].toString();
+    liked = json['liked']?.toString();
+    tagList = json['tag_list'] is List
+        ? json['tag_list'].map((e) => e.toString()).toList().cast<String>()
+        : <String>[];
+    tagStr = json['tag_str']?.toString();
+    tagListEn = json['tag_list_en'] is List
+        ? json['tag_list_en'].map((e) => e.toString()).toList().cast<String>()
+        : <String>[];
+    tagStrEn = json['tag_str_en']?.toString();
     if (json['related_posts'] != null) {
       relatedPosts = <RelatedPosts>[];
       json['related_posts'].forEach((v) {

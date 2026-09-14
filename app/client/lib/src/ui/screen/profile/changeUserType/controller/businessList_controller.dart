@@ -25,13 +25,21 @@ class BusinessListController extends GetxController {
 
   //get artist
   Future getArtists() async {
+    final query = searchController.text.trim();
+    if (query.isEmpty) {
+      artistList.clear();
+      artistList.refresh();
+      isLoading.value = false;
+      return;
+    }
     isLoading.value = true;
     try {
       await Network.getBusinessListApi(
               btype: WebService.isArtist == "1" ? "2" : "1",
-              search_txt: searchController.text)
+              search_txt: query)
           .then((list) {
         isLoading.value = false;
+        if (searchController.text.trim() != query) return;
         if (list != null && list !=false) {
           artistList.clear();
           List<Artist> newList = (list as List<dynamic>)
@@ -56,9 +64,13 @@ class BusinessListController extends GetxController {
         }
       });
     } finally {
+      if (searchController.text.trim().isEmpty) {
+        artistList.clear();
+      }
       filterselectedList.refresh();
       selectedList.refresh();
       artistList.refresh();
+      isLoading.value = false;
     }
   }
 

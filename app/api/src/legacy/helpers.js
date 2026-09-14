@@ -184,6 +184,74 @@ function searchWordsFromQuery(search) {
     .filter((s) => s.length >= 2);
 }
 
+function israelDayStamp() {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Jerusalem',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+}
+
+function pickDailyTwo(ids) {
+  if (!ids.length) return [];
+  if (ids.length === 1) return [ids[0]];
+  const dayIndex = Math.floor(
+    Date.parse(`${israelDayStamp()}T00:00:00+03:00`) / 86400000
+  );
+  const start = (((dayIndex * 2) % ids.length) + ids.length) % ids.length;
+  const first = ids[start];
+  const second = ids[(start + 1) % ids.length];
+  return first === second ? [first] : [first, second];
+}
+
+function sqlInClause(ids, prefix) {
+  const params = {};
+  const placeholders = ids.map((id, i) => {
+    params[`${prefix}${i}`] = id;
+    return `:${prefix}${i}`;
+  });
+  return { clause: placeholders.join(','), params };
+}
+
+function interleavePreferFirst(a, b) {
+  const out = [];
+  let i = 0;
+  let j = 0;
+  while (i < a.length || j < b.length) {
+    if (i < a.length) out.push(a[i++]);
+    if (i < a.length) out.push(a[i++]);
+    if (j < b.length) out.push(b[j++]);
+  }
+  return out;
+}
+
+let promotedCache = { day: '', ids: [] };
+
+/** Two premium businesses featured today — same pair for every user, rotates daily. */
+export async function getDailyPromotedBusinessIds() {
+  const day = israelDayStamp();
+  if (promotedCache.day === day) return promotedCache.ids;
+  const [rows] = await pool.query(
+    `
+    SELECT DISTINCT c.id
+    FROM tbl_customer c
+    INNER JOIN tbl_subscription s ON s.cust_id = c.id
+    WHERE c.is_delete = '0'
+      AND c.status = '1'
+      AND c.user_type = '2'
+      AND s.status = '1'
+      AND s.is_sub_active = '1'
+      AND s.is_delete = '0'
+      AND s.product_id LIKE '%premium%'
+    ORDER BY c.id ASC
+    `
+  );
+  const ids = pickDailyTwo(rows.map((r) => String(r.id)));
+  promotedCache = { day, ids };
+  return ids;
+}
+
 /** Posts for home / inspiration — prefer active subscribers, fall back to any live posts. */
 export async function queryPosts({
   styles = '',
@@ -192,6 +260,7 @@ export async function queryPosts({
   isRandom = false,
   uidOnly = null,
   search = '',
+  excludeUid = '',
 } = {}) {
   const offset = Math.max(Number(start) || 0, 0);
   const take = Math.min(Math.max(Number(limit) || 6, 1), 50);
@@ -234,42 +303,89 @@ export async function queryPosts({
       : '';
 
   const uidClause = uidOnly ? 'AND p.uid = :uidOnly' : '';
+  const excludeUidClause =
+    excludeUid && !uidOnly ? 'AND p.uid <> :excludeUid' : '';
   const order = isRandom ? 'ORDER BY RAND()' : 'ORDER BY p.id DESC';
-  const queryParams = { ...styleParams, ...searchParams, uidOnly };
+  const baseParams = { ...styleParams, ...searchParams, uidOnly, excludeUid };
 
-  const sqlPremium = `
-    SELECT p.id, p.uid, p.image_name, p.image_id, p.styles, p.img_type, p.view_count, p.date_added
-    FROM tbl_post p
-    INNER JOIN tbl_customer c ON c.id = p.uid AND c.is_delete = '0' AND c.status = '1'
-    WHERE p.status = '1'
-    AND EXISTS (
-      SELECT 1 FROM tbl_subscription s
-      WHERE s.cust_id = p.uid AND s.status = '1' AND s.is_sub_active = '1'
-      LIMIT 1
-    )
-    ${styleClause}
-    ${searchClause}
-    ${uidClause}
-    ${order}
-    LIMIT ${take} OFFSET ${offset}
-  `;
+  const fetchRows = async ({ extraWhere = '', extraParams = {}, takeN, offsetN }) => {
+    const sqlPremium = `
+      SELECT p.id, p.uid, p.image_name, p.image_id, p.styles, p.img_type, p.view_count, p.date_added
+      FROM tbl_post p
+      INNER JOIN tbl_customer c ON c.id = p.uid AND c.is_delete = '0' AND c.status = '1'
+      WHERE p.status = '1'
+      AND EXISTS (
+        SELECT 1 FROM tbl_subscription s
+        WHERE s.cust_id = p.uid AND s.status = '1' AND s.is_sub_active = '1'
+        LIMIT 1
+      )
+      ${styleClause}
+      ${searchClause}
+      ${uidClause}
+      ${excludeUidClause}
+      ${extraWhere}
+      ${order}
+      LIMIT ${takeN} OFFSET ${offsetN}
+    `;
+    const queryParams = { ...baseParams, ...extraParams };
+    const [premium] = await pool.query(sqlPremium, queryParams);
+    if (premium.length) return premium;
 
-  const [premium] = await pool.query(sqlPremium, queryParams);
-  if (premium.length) return premium;
+    const sqlAny = `
+      SELECT p.id, p.uid, p.image_name, p.image_id, p.styles, p.img_type, p.view_count, p.date_added
+      FROM tbl_post p
+      INNER JOIN tbl_customer c ON c.id = p.uid AND c.is_delete = '0'
+      WHERE p.status = '1'
+      ${styleClause}
+      ${searchClause}
+      ${uidClause}
+      ${excludeUidClause}
+      ${extraWhere}
+      ${order}
+      LIMIT ${takeN} OFFSET ${offsetN}
+    `;
+    const [any] = await pool.query(sqlAny, queryParams);
+    return any;
+  };
 
-  const sqlAny = `
-    SELECT p.id, p.uid, p.image_name, p.image_id, p.styles, p.img_type, p.view_count, p.date_added
-    FROM tbl_post p
-    INNER JOIN tbl_customer c ON c.id = p.uid AND c.is_delete = '0'
-    WHERE p.status = '1'
-    ${styleClause}
-    ${searchClause}
-    ${uidClause}
-    ${order}
-    LIMIT ${take} OFFSET ${offset}
-  `;
-  const [any] = await pool.query(sqlAny, queryParams);
-  return any;
+  let promotedIds = [];
+  if (!uidOnly && isRandom) {
+    try {
+      promotedIds = await getDailyPromotedBusinessIds();
+    } catch (_) {
+      promotedIds = [];
+    }
+  }
+
+  if (promotedIds.length) {
+    const { clause, params } = sqlInClause(promotedIds, 'pu');
+    const promotedTake = Math.ceil(take * 0.6);
+    const otherTake = Math.max(take - promotedTake, 0);
+    const promotedOffset = Math.floor(offset * 0.6);
+    const otherOffset = Math.max(offset - promotedOffset, 0);
+    const promotedRows = await fetchRows({
+      extraWhere: `AND p.uid IN (${clause})`,
+      extraParams: params,
+      takeN: promotedTake,
+      offsetN: promotedOffset,
+    });
+    const otherRows = await fetchRows({
+      extraWhere: `AND p.uid NOT IN (${clause})`,
+      extraParams: params,
+      takeN: otherTake + Math.max(promotedTake - promotedRows.length, 0),
+      offsetN: otherOffset,
+    });
+    const mixed = interleavePreferFirst(promotedRows, otherRows);
+    const seen = new Set();
+    return mixed.filter((row) => {
+      const id = String(row.id);
+      if (seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    }).slice(0, take);
+  }
+
+  return fetchRows({ takeN: take, offsetN: offset });
 }
 
 export async function mapPostsForClient(rows, styleNameHw = '') {
@@ -289,44 +405,118 @@ export async function mapPostsForClient(rows, styleNameHw = '') {
   });
 }
 
-export async function getBusinessCards({ styles = '', start = 0, limit = 6 } = {}) {
+export async function getBusinessCards({ styles = '', start = 0, limit = 6, uid = '' } = {}) {
   const offset = Math.max(Number(start) || 0, 0);
-  const take = Math.min(Math.max(Number(limit) || 6, 1), 20);
+  const take = Math.min(Math.max(Number(limit) || 6, 1), 200);
   const styleList = String(styles || '')
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean);
 
   let styleClause = '';
-  const params = {};
+  const styleParams = {};
   if (styleList.length) {
     styleClause = `AND (${styleList
       .map((_, i) => `FIND_IN_SET(:bs${i}, c.styles) > 0`)
       .join(' OR ')})`;
     styleList.forEach((s, i) => {
-      params[`bs${i}`] = s;
+      styleParams[`bs${i}`] = s;
     });
   }
 
-  const [users] = await pool.query(
-    `
+  const selfClause = uid ? 'AND c.id <> :selfUid' : '';
+  const selfParams = uid ? { selfUid: uid } : {};
+
+  const userSelect = `
     SELECT c.id, c.name, c.status, c.profile_image, c.styles, c.business_type,
            c.user_type, c.login_type, c.address, c.about_text, c.city_name
     FROM tbl_customer c
     WHERE c.is_delete = '0'
       AND c.status = '1'
       AND c.user_type = '2'
+      ${selfClause}
       ${styleClause}
-    ORDER BY c.register_date DESC
-    LIMIT ${take} OFFSET ${offset}
-    `,
-    params
-  );
+  `;
+
+  let promotedIds = [];
+  try {
+    promotedIds = await getDailyPromotedBusinessIds();
+  } catch (_) {
+    promotedIds = [];
+  }
+  if (uid) {
+    promotedIds = promotedIds.filter((id) => String(id) !== String(uid));
+  }
+
+  if (promotedIds.length && styleList.length) {
+    const { clause, params } = sqlInClause(promotedIds, 'pf');
+    const [matched] = await pool.query(
+      `${userSelect} AND c.id IN (${clause})`,
+      { ...styleParams, ...selfParams, ...params }
+    );
+    const allowed = new Set(matched.map((r) => String(r.id)));
+    promotedIds = promotedIds.filter((id) => allowed.has(id));
+  }
+
+  const excludeClause = promotedIds.length
+    ? `AND c.id NOT IN (${sqlInClause(promotedIds, 'ex').clause})`
+    : '';
+  const excludeParams = promotedIds.length
+    ? sqlInClause(promotedIds, 'ex').params
+    : {};
+
+  const promotedCount = promotedIds.length;
+  const includePromoted = offset === 0 && promotedCount > 0;
+  const regularOffset = includePromoted
+    ? 0
+    : Math.max(0, offset - promotedCount);
+  const regularLimit = includePromoted
+    ? Math.max(0, take - promotedCount)
+    : take;
+
+  let promotedUsers = [];
+  if (includePromoted) {
+    const { clause, params } = sqlInClause(promotedIds, 'pr');
+    const [rows] = await pool.query(
+      `${userSelect} AND c.id IN (${clause})`,
+      { ...styleParams, ...selfParams, ...params }
+    );
+    const byId = new Map(rows.map((r) => [String(r.id), r]));
+    promotedUsers = promotedIds.map((id) => byId.get(id)).filter(Boolean);
+  }
+
+  const [regularUsers] = regularLimit > 0
+    ? await pool.query(
+        `${userSelect}
+         ${excludeClause}
+         ORDER BY c.register_date DESC
+         LIMIT ${regularLimit} OFFSET ${regularOffset}`,
+        { ...styleParams, ...selfParams, ...excludeParams }
+      )
+    : [[]];
 
   const { hw } = await getStyleMap();
+  const promotedSet = new Set(promotedIds);
+  const users = includePromoted
+    ? [...promotedUsers, ...regularUsers]
+    : regularUsers;
+
+  const likedSet = new Set();
+  if (uid && users.length) {
+    const ids = users.map((u) => String(u.id));
+    const { clause, params } = sqlInClause(ids, 'fl');
+    try {
+      const [follows] = await pool.query(
+        `SELECT follow_uid FROM tbl_follows
+         WHERE uid = :uid AND follow_uid IN (${clause})`,
+        { uid, ...params }
+      );
+      for (const row of follows) likedSet.add(String(row.follow_uid));
+    } catch (_) {}
+  }
+
   const out = [];
   for (const u of users) {
-    // Latest unique posts for the home card strip (no subscription join — avoids duplicates)
     const [postRows] = await pool.query(
       `SELECT p.id, p.uid, p.image_name, p.image_id, p.styles, p.img_type, p.view_count, p.date_added
        FROM tbl_post p
@@ -364,14 +554,18 @@ export async function getBusinessCards({ styles = '', start = 0, limit = 6 } = {
       address: u.address || '',
       about_text: u.about_text || '',
       business_img,
+      is_promoted: promotedSet.has(String(u.id)) ? '1' : '0',
+      liked: likedSet.has(String(u.id)) ? '1' : '0',
     });
   }
   return out;
 }
 
-export async function getNewUserList({ start = 0, limit = 6 } = {}) {
+export async function getNewUserList({ start = 0, limit = 6, uid = '' } = {}) {
   const offset = Math.max(Number(start) || 0, 0);
   const take = Math.min(Math.max(Number(limit) || 6, 1), 30);
+  const selfClause = uid ? 'AND c.id <> :selfUid' : '';
+  const selfParams = uid ? { selfUid: uid } : {};
 
   const [rows] = await pool.query(
     `
@@ -383,9 +577,11 @@ export async function getNewUserList({ start = 0, limit = 6 } = {}) {
     WHERE c.is_delete = '0'
       AND c.user_type = '2'
       AND c.status = '1'
+      ${selfClause}
     ORDER BY c.register_date DESC
     LIMIT ${take} OFFSET ${offset}
-    `
+    `,
+    selfParams
   );
 
   return rows.map((r) => ({

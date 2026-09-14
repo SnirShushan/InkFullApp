@@ -11,6 +11,8 @@ import 'package:in_app_purchase_android/in_app_purchase_android.dart';
 import 'package:in_app_purchase_storekit/in_app_purchase_storekit.dart';
 import 'package:in_app_purchase_storekit/store_kit_wrappers.dart';
 import 'package:ink/src/data/source/network/user_api.dart';
+import 'package:ink/src/ui/screen/dashboard/dashboard.dart';
+import 'package:ink/src/ui/screen/dashboard/dashboard_binding.dart';
 import 'package:ink/src/ui/screen/profile/drawer/controller/business_profile_menu_controller.dart';
 import 'package:ink/src/ui/screen/profile/subscription/consumable_store.dart';
 import 'package:ink/src/ui/screen/profile/subscription/widget/purchase_footer_widget.dart';
@@ -100,6 +102,14 @@ class _IOSPurchaseScreenState extends State<IOSPurchaseScreen> {
     _pageController = PageController(viewportFraction: 0.95);
     WebService.isTempPremiumPlanPurchaseLoading = false;
     super.initState();
+  }
+
+  void _exitOpeningProcess() {
+    if (WebService.isTempPremiumPlanPurchaseLoading) return;
+    Get.offAll(
+      () => const DashBoard(initialIndex: 3),
+      binding: DashBoardBinding(),
+    );
   }
 
   Future<void> initStoreInfo() async {
@@ -301,6 +311,23 @@ class _IOSPurchaseScreenState extends State<IOSPurchaseScreen> {
                                 ),
                               ),
                             ),
+                            if (widget.fromRegistration)
+                              Positioned(
+                                top: size.height * 0.07,
+                                left: 20,
+                                child: InkWell(
+                                  onTap: _exitOpeningProcess,
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8),
+                                    child: SvgPicture.asset(
+                                      AppAssets.closeIcon,
+                                      width: 20,
+                                      height: 20,
+                                      color: titleTextColor,
+                                    ),
+                                  ),
+                                ),
+                              ),
                             // Positioned(
                             //   top: size.height * 0.08,
                             //   left: 20,

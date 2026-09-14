@@ -11,6 +11,7 @@ import 'package:ink/src/data/source/network/user_api.dart';
 import 'package:ink/src/ui/screen/profile/drawer/business_profile_menu_screen.dart';
 import 'package:ink/src/utils/assets.dart';
 import 'package:ink/src/utils/colors.dart';
+import 'package:ink/src/utils/common.dart';
 import 'package:ink/src/utils/share_data.dart';
 import 'package:ink/src/utils/webService.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -106,7 +107,10 @@ class _ProfilescreenState extends State<Profilescreen>
                   mainAxisAlignment: MainAxisAlignment.start,
                   //crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    CircleAvatar(
+                    GestureDetector(
+                      onTap: () => showProfileImageViewer(
+                          imageUrl: userController.profileimage.value),
+                      child: CircleAvatar(
                         backgroundColor: Colors.white,
                         radius: size.height * 0.042,
                         child: WebService.isMissingProfileImage(
@@ -152,6 +156,7 @@ class _ProfilescreenState extends State<Profilescreen>
                                           fit: BoxFit.cover)),
                                 )),
                       ),
+                    ),
                     SizedBox(
                       width: size.width * 0.03,
                     ),

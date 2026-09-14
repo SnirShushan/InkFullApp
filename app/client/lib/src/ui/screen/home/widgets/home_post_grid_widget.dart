@@ -4,11 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:ink/src/controller/userController.dart';
-import 'package:ink/src/data/model/currentUser.dart';
-import 'package:ink/src/ui/screen/business_user/dashboard/business_dashboard.dart';
-import 'package:ink/src/ui/screen/business_user/dashboard/bussinessdashboard_binding.dart';
-import 'package:ink/src/ui/screen/dashboard/dashboard.dart';
-import 'package:ink/src/ui/screen/dashboard/dashboard_binding.dart';
 import 'package:ink/src/ui/screen/home/controller/home_screen_controller.dart';
 import 'package:ink/src/ui/screen/home/imageDetails/post_details.dart';
 import 'package:ink/src/ui/widgets/button/custom_gradient_btn_widget.dart';
@@ -16,6 +11,7 @@ import 'package:ink/src/ui/widgets/shimmer_effect.dart';
 import 'package:ink/src/utils/assets.dart';
 import 'package:ink/src/utils/colors.dart';
 import 'package:ink/src/utils/common.dart';
+import 'package:ink/src/utils/open_inspiration_style.dart';
 import 'package:ink/src/utils/webService.dart';
 
 class HomePostGridWidget extends StatefulWidget {
@@ -157,41 +153,9 @@ class _HomePostGridWidgetState extends State<HomePostGridWidget> {
 
                     CustomGradientButtonWidget(
                       title: tr("home_screen.geo_style_tatto_btn"),
-                      onTap: () async {
-                        try {
-                          // Guard: empty list
-                          if (_userController.style_list.isEmpty) return;
-
-                          final styleSlug = styleKey.toString().trim().toLowerCase();
-
-                          final found = _userController.style_list.firstWhereOrNull(
-                                (s) => s.slug?.toString().trim().toLowerCase() == styleSlug,
-                          );
-
-                          if (found == null) return;
-
-                          // Set state once
-                          WebService.selectstylelist = [found];
-                          WebService.tempHomeselectstylelist = true;
-
-                          final isBusiness = await WebService.getIsBusiness() ?? false;
-
-                          if (isBusiness) {
-                            Get.offAll(
-                                  () => BusinessDashBoard(initialIndex: 1),
-                              binding: BusinessDashBoardBinding(),
-                            );
-                          } else {
-                            Get.offAll(
-                                  () => const DashBoard(initialIndex: 1),
-                              binding: DashBoardBinding(),
-                            );
-                          }
-                        } catch (e, st) {
-                          debugPrint("Style tap error: $e");
-                          debugPrintStack(stackTrace: st);
-                        }
-                      },
+                      onTap: () => openInspirationForStyle(
+                        slug: styleKey.toString(),
+                      ),
 
                       // onTap: () async {
                       //

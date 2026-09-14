@@ -77,11 +77,19 @@ class _EditMemberWidgetState extends State<EditMemberWidget> {
                 SizedBox(height: size.height * 0.02),
                 buildSearchbar(size: size),
                 SizedBox(height: size.height * 0.01),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Obx(
-                    () => Text(
-                      " תייגתם ${(editMemberController.selectedList?.length ?? 0) + editMemberController.artistIdList.length} חברי צוות: ",
+                Obx(() {
+                  final taggedCount =
+                      (editMemberController.selectedList?.length ?? 0) +
+                          editMemberController.artistIdList.length;
+                  final query =
+                      editMemberController.searchController.text.trim();
+                  if (query.isEmpty && taggedCount == 0) {
+                    return const SizedBox.shrink();
+                  }
+                  return Align(
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      " תייגתם $taggedCount חברי צוות: ",
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         color: titleTextWhiteColor,
@@ -90,24 +98,22 @@ class _EditMemberWidgetState extends State<EditMemberWidget> {
                         fontWeight: FontWeight.w400,
                       ),
                     ),
-                  ),
-                ),
+                  );
+                }),
                 SizedBox(height: size.height * 0.01),
-                Obx(() => editMemberController.artistList.isEmpty &&
-                        editMemberController.searchController.text != ""
-                    ? buildNoSearchMsg(
-                        size, editMemberController.searchController.text)
-                    : editMemberController.artistList.isEmpty
-                        ? Center(
-                            child: const Text("txt.txt_add_studio",
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                        color: lightGrayColor,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w400))
-                                .tr(),
-                          )
-                        : ListView.builder(
+                Obx(() {
+                  final query =
+                      editMemberController.searchController.text.trim();
+                  if (query.isEmpty) {
+                    return buildEmptySearchMsg(size);
+                  }
+                  if (editMemberController.isLoading.value) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (editMemberController.artistList.isEmpty) {
+                    return buildNoSearchMsg(size, query);
+                  }
+                  return ListView.builder(
                             itemCount: editMemberController.artistList.length,
                             // reverse: true,
                             shrinkWrap: true,
@@ -302,7 +308,8 @@ class _EditMemberWidgetState extends State<EditMemberWidget> {
                                             : const SizedBox(),
                                       ),
                               );
-                            })),
+                            });
+                }),
                 SizedBox(height: size.height * 0.02),
                 Container(
                     padding: EdgeInsets.only(
@@ -413,16 +420,28 @@ class _EditMemberWidgetState extends State<EditMemberWidget> {
               FocusManager.instance.primaryFocus?.unfocus();
               editMemberController.getArtists();
             },
-            onChanged: (txt) => editMemberController.getArtists(),
+            onChanged: (txt) {
+              setState(() {});
+              editMemberController.getArtists();
+            },
             decoration: InputDecoration(
                 hintStyle: const TextStyle(color: Color(0xFF6B676F)),
                 hintText: "חפשו את חברי הצוות שלכם",
                 contentPadding: const EdgeInsets.all(8),
                 filled: true,
                 fillColor: socialoginbtn,
-                suffixIcon: InkWell(
-                    child: const Icon(Icons.clear, color: titleTextWhiteColor),
-                    onTap: () => editMemberController.searchController.clear()),
+                suffixIcon: editMemberController.searchController.text
+                        .trim()
+                        .isEmpty
+                    ? null
+                    : InkWell(
+                        child: const Icon(Icons.clear,
+                            color: titleTextWhiteColor),
+                        onTap: () {
+                          editMemberController.searchController.clear();
+                          editMemberController.getArtists();
+                          setState(() {});
+                        }),
                 focusedBorder: OutlineInputBorder(
                     // width: 0.0 produces a thin "hairline" border
                     borderSide:
@@ -460,6 +479,28 @@ class _EditMemberWidgetState extends State<EditMemberWidget> {
 
 
   }
+
+  buildEmptySearchMsg(Size size) => SizedBox(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            SizedBox(height: size.height * 0.02),
+            const Text(
+              'חפשו את חברי צוות ותייגו אותם',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Color(0xFF807C84),
+                fontSize: 16,
+                fontFamily: 'Arimo',
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+            SizedBox(height: size.height * 0.04),
+            Image.asset(AppAssets.notFound, width: size.width * 0.6)
+          ],
+        ),
+      );
 
   buildNoSearchMsg(Size size, String search_txt) => SizedBox(
         child: Column(

@@ -13,6 +13,7 @@ import 'package:ink/src/utils/webService.dart';
 class DashBoardController extends GetxController {
   var tabIndex = 0;
   RxBool init = true.obs;
+  PageController? pageController;
 
   RxBool isFixedAdClosed = false.obs;
   RxString startupImageDashboard = "".obs;
@@ -27,6 +28,26 @@ class DashBoardController extends GetxController {
     // because HomeScreenController was already created and never refreshed.
     _ensureHomeLoaded();
     super.onInit();
+  }
+
+  void attachPageController() {
+    pageController ??= PageController(initialPage: tabIndex);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _syncPageView(tabIndex));
+  }
+
+  void _syncPageView(int index) {
+    final pc = pageController;
+    if (pc == null || !pc.hasClients) return;
+    if ((pc.page?.round() ?? pc.initialPage) != index) {
+      pc.jumpToPage(index);
+    }
+  }
+
+  @override
+  void onClose() {
+    pageController?.dispose();
+    pageController = null;
+    super.onClose();
   }
 
   Future<void> _ensureHomeLoaded() async {
@@ -133,7 +154,7 @@ class DashBoardController extends GetxController {
   //   }
   // }
 
-  Future<void> changeTabIndex(int index) async {
+  Future<void> changeTabIndex(int index, {bool fromSwipe = false}) async {
 
 
     try {
@@ -154,6 +175,9 @@ class DashBoardController extends GetxController {
     } catch (e, st) {
       print("Error in changeTabIndex: $e\n$st");
     } finally {
+      if (!fromSwipe) {
+        _syncPageView(index);
+      }
       update(); // Always update at the end
     }
   }
@@ -173,6 +197,9 @@ class DashBoardController extends GetxController {
   }
 
   Future<void> _handleInspirationTab() async {
+    if (Get.isRegistered<InspirationController>()) {
+      Get.find<InspirationController>().showSearchBar.value = true;
+    }
     if (!WebService.isSplashHomeScreen) {
       WebService.isSplashHomeScreen = true;
     }
@@ -313,9 +340,13 @@ class DashBoardController extends GetxController {
     inspirationController.startInspiration.value = 0;
     inspirationController.searchController.text = "";
     inspirationController.styles="";
-    WebService.selectstylelist = [];
-    inspirationController.selectedStyles?.clear();
-    inspirationController.isStyleEnabled.value = false;
+    if (WebService.tempHomeselectstylelist) {
+      WebService.tempHomeselectstylelist = false;
+    } else {
+      WebService.selectstylelist = [];
+      inspirationController.selectedStyles?.clear();
+      inspirationController.isStyleEnabled.value = false;
+    }
     inspirationController.isselected = "מומלצים עבורכם".obs;
     inspirationController.getInspirationController();
     await SharedPreferencesHelper.saveInspirationApiHoldTime();

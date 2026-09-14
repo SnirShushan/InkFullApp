@@ -40,6 +40,7 @@ class BusinessDashBoard extends StatelessWidget {
         controller.init.value = false;
         controller.changeTabIndex(initialIndex);
       }
+      controller.attachPageController();
 
       return UnFocusWidget(
           child: Obx(() => SafeArea(
@@ -55,25 +56,26 @@ class BusinessDashBoard extends StatelessWidget {
                             })),
                       )
                     : Scaffold(
-                        body:
-                            IndexedStack(index: controller.tabIndex, children: [
-                          //home screen
-                          const HomeScreen(),
-                          // Scaffold(),
-                          //business profiles
-                          //notification
-                          InspirationScreen(),
-
-                          const SizedBox.shrink(),
-                          BusinessProfiles(),
-                          //profile
-                          Profilescreen(
-                              key: const PageStorageKey("profile"),
-                              isDrawerOpened:
-                                  WebService.isNotificationBackPressed
-                                      ? true
-                                      : false),
-                        ]),
+                        body: PageView(
+                          controller: controller.pageController,
+                          onPageChanged: (page) {
+                            final tab = controller.tabForPage(page);
+                            if (controller.tabIndex != tab) {
+                              controller.changeTabIndex(tab, fromSwipe: true);
+                            }
+                          },
+                          children: [
+                            const HomeScreen(),
+                            InspirationScreen(),
+                            BusinessProfiles(),
+                            Profilescreen(
+                                key: const PageStorageKey("profile"),
+                                isDrawerOpened:
+                                    WebService.isNotificationBackPressed
+                                        ? true
+                                        : false),
+                          ],
+                        ),
                         bottomNavigationBar: BottomNavigationBar(
                             elevation: 0,
                             type: BottomNavigationBarType.fixed,

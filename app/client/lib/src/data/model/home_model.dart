@@ -78,6 +78,7 @@ class Business {
   List<String>? stylesHe;
 
   List<BusinessImageModel>? businessimg;
+  String? isPromoted;
 
   Business({
     this.id,
@@ -101,7 +102,7 @@ class Business {
     // this.postLimit,
     // this.isRegister,
     this.businessimg,
-
+    this.isPromoted,
   });
 
   Business.fromJson(Map<String, dynamic> json) {
@@ -137,6 +138,7 @@ class Business {
         businessimg!.add(BusinessImageModel.fromJson(v));
       });
     }
+    isPromoted = json['is_promoted']?.toString();
   }
 
   Map<String, dynamic> toJson() {
@@ -167,6 +169,7 @@ class Business {
     if (this.businessimg != null) {
       data['business_img'] = this.businessimg!.map((v) => v.toJson()).toList();
     }
+    data['is_promoted'] = this.isPromoted;
 
     return data;
   }

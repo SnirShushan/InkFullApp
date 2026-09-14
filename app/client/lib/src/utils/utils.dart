@@ -238,7 +238,4 @@ class Utils {
               const Center(child: CircularProgressIndicator()),
           errorWidget: (context, url, error) =>
               Icon(Icons.photo, size: height, color: kWhite));
-
-
-
 }

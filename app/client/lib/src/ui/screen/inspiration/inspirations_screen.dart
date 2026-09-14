@@ -27,8 +27,15 @@ class InspirationScreen extends StatelessWidget {
             SizedBox(
               height: size.height * 0.01,
             ),
-            SearchInspirationWidget(
-                inspirationController: _inspirationController),
+            Obx(() => AnimatedSize(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOut,
+                  alignment: Alignment.topCenter,
+                  child: _inspirationController.showSearchBar.value
+                      ? SearchInspirationWidget(
+                          inspirationController: _inspirationController)
+                      : const SizedBox(width: double.infinity, height: 0),
+                )),
             // Divider(),
 
             Expanded(

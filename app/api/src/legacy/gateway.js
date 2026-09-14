@@ -181,14 +181,16 @@ async function handleGetHomeData(p) {
     start: 0,
     limit: 6,
     isRandom: true,
+    excludeUid: auth.uid,
   });
   const tattos_in_style = await mapPostsForClient(tattooRows);
 
-  const new_user_list = await getNewUserList({ start, limit });
+  const new_user_list = await getNewUserList({ start, limit, uid: auth.uid });
   const business = await getBusinessCards({
     styles,
     start: 0,
     limit: 6,
+    uid: auth.uid,
   });
 
   let is_new_notification = '2';
@@ -279,6 +281,7 @@ async function handleGetHomePostsNew(p) {
       start: 0,
       limit: Number(p.limit || 6),
       isRandom: String(p.is_random) === '1',
+      excludeUid: auth.uid,
     });
     if (!rows.length) return;
     posts[styleName] = await mapPostsForClient(rows, hw[styleName] || '');
@@ -320,6 +323,7 @@ async function handleGetPostsNew(p) {
     limit: p.limit || 20,
     isRandom: !isMy && String(p.is_random) === '1',
     uidOnly: isMy ? auth.uid : null,
+    excludeUid: isMy ? '' : auth.uid,
     search: String(p.search_txt || '').trim(),
   });
   const styleName = style.includes(',')
@@ -370,6 +374,7 @@ async function handleGetBusiness(p) {
     styles: p.styles || profile?.styles || '',
     start: p.start || 0,
     limit: p.limit || 6,
+    uid: auth.uid,
   });
   return ok({
     business,

@@ -23,15 +23,11 @@ class _TagMembersState extends State<TagMembers> {
   final scrollController = ScrollController();
   final BusinessListController artistListController = Get.find();
 
-  getArtist() async => await artistListController.getArtists();
-
   bool isManageEnabled = false;
 
   @override
   void initState() {
     WebService.memberList.clear();
-    // widget.changeUserTypeController ??= Get.put(ChangeUserTypeController());
-    getArtist();
     super.initState();
   }
 
@@ -243,13 +239,16 @@ class _TagMembersState extends State<TagMembers> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             SizedBox(height: size.height * 0.02),
-            Utils.buildTitle(
-                title: "user_to_business.something_is_missing",
-                color: titleTextWhiteColor),
-            SizedBox(height: size.height * 0.01),
-            Utils.buildSubTitle(
-                title: "user_to_business.something_is_missing_subtitle",
-                color: titleTextWhiteColor),
+            const Text(
+              'חפשו את חברי צוות ותייגו אותם',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Color(0xFF807C84),
+                fontSize: 16,
+                fontFamily: 'Arimo',
+                fontWeight: FontWeight.w400,
+              ),
+            ),
             SizedBox(height: size.height * 0.04),
             Image.asset(AppAssets.notFound, width: size.width * 0.6)
           ],
@@ -463,12 +462,15 @@ class _TagMembersState extends State<TagMembers> {
       height: size.height * 0.45,
       child: artistListController.isLoading.value
           ? Utils.showProgress()
-          : artistListController.artistList.isEmpty &&
-                  artistListController.searchController.text.length > 1
-              ? buildNoSearchMsg(
-                  size, artistListController.searchController.text)
-              : artistListController.artistList.isEmpty
-                  ? buildNoFoundMsg(size)
+          : artistListController.searchController.text.trim().isEmpty &&
+                  artistListController.selectedList.isEmpty
+              ? buildNoFoundMsg(size)
+              : artistListController.artistList.isEmpty &&
+                      artistListController.searchController.text
+                          .trim()
+                          .isNotEmpty
+                  ? buildNoSearchMsg(
+                      size, artistListController.searchController.text)
                   : ListView(
         children: [
           ListView.builder(

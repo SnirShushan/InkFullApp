@@ -1,42 +1,156 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
-import 'package:ink/src/data/model/currentUser.dart';
-import 'package:ink/src/ui/screen/business_user/dashboard/business_dashboard.dart';
-import 'package:ink/src/ui/screen/business_user/dashboard/bussinessdashboard_binding.dart';
+import 'package:ink/src/controller/userController.dart';
+import 'package:ink/src/data/source/network/user_api.dart';
 import 'package:ink/src/ui/screen/bussiness_profiles/model_business_user.dart';
-import 'package:ink/src/ui/screen/dashboard/dashboard.dart';
-import 'package:ink/src/ui/screen/dashboard/dashboard_binding.dart';
 import 'package:ink/src/ui/screen/profile/businessUserProfile.dart';
 import 'package:ink/src/ui/widgets/build_custom_catched_image.dart';
+import 'package:ink/src/ui/widgets/button/animation_loader_button_widget.dart';
+import 'package:ink/src/ui/widgets/promoted_badge.dart';
 import 'package:ink/src/utils/assets.dart';
 import 'package:ink/src/utils/colors.dart';
 import 'package:ink/src/utils/common.dart';
+import 'package:ink/src/utils/open_inspiration_style.dart';
 import 'package:ink/src/utils/webService.dart';
 
-class TattooArtistCard extends StatelessWidget {
+class TattooArtistCard extends StatefulWidget {
   final BusinessUserListModel businessUserListModel;
 
-  TattooArtistCard({super.key, required this.businessUserListModel});
+  const TattooArtistCard({super.key, required this.businessUserListModel});
+
+  @override
+  State<TattooArtistCard> createState() => _TattooArtistCardState();
+}
+
+class _TattooArtistCardState extends State<TattooArtistCard> {
+  late String _liked;
+  bool _followLoading = false;
+
+  BusinessUserListModel get businessUserListModel =>
+      widget.businessUserListModel;
+
+  @override
+  void initState() {
+    super.initState();
+    _liked = businessUserListModel.liked == "1" ? "1" : "0";
+  }
+
+  @override
+  void didUpdateWidget(TattooArtistCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final nextLiked =
+        widget.businessUserListModel.liked == "1" ? "1" : "0";
+    if (_liked != nextLiked && !_followLoading) {
+      _liked = nextLiked;
+    }
+  }
+
+  bool get _isOwnProfile {
+    if (!Get.isRegistered<UserController>()) return false;
+    final myId = Get.find<UserController>().id.value;
+    return myId.isNotEmpty && myId == businessUserListModel.id?.toString();
+  }
+
+  void _openProfile() {
+    final id = businessUserListModel.id?.toString() ?? "";
+    if (id.isEmpty || id == "null") return;
+    Get.to(() => BusinessProfileScreen(bId: id, fromPost: false));
+  }
+
+  Future<void> _toggleFollow() async {
+    if (_followLoading) return;
+    final id = businessUserListModel.id?.toString() ?? "";
+    if (id.isEmpty || id == "null") return;
+    final next = _liked == "1" ? "0" : "1";
+    setState(() => _followLoading = true);
+    try {
+      final result = await Network.followUser(fid: id, likeStatus: next);
+      if (!mounted) return;
+      if (result != false) {
+        setState(() {
+          _liked = next;
+          businessUserListModel.liked = next;
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _followLoading = false);
+    }
+  }
+
+  Widget _followButton() {
+    final isLiked = _liked == "1";
+    return GestureDetector(
+      onTap: _toggleFollow,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: signInButtonColor,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: _followLoading
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: InkSpinningLoader(size: 18),
+              )
+            : isLiked
+                ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SvgPicture.asset(
+                        AppAssets.checkedIcon,
+                        width: 14,
+                        height: 14,
+                        color: titleTextWhiteColor,
+                      ),
+                      const SizedBox(width: 4),
+                      const Text(
+                        'במעקב',
+                        style: TextStyle(
+                          color: titleTextWhiteColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  )
+                : const Text(
+                    'הוסף למעקב',
+                    style: TextStyle(
+                      color: titleTextWhiteColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     var size = MediaQuery.of(context).size;
-    return InkWell(
-      onTap: () {
-        final id = businessUserListModel.id?.toString() ?? "";
-        if (id.isEmpty || id == "null") return;
-        Get.to(() => BusinessProfileScreen(bId: id, fromPost: false));
-      },
-      child: Card(
-        color: cardBgColor,
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
+    final promoted = isPromotedFlag(businessUserListModel.isPromoted);
+    return Card(
+      color: cardBgColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: promoted
+            ? const BorderSide(color: promotedBorderColor, width: 1.5)
+            : BorderSide.none,
+      ),
+      child: Stack(
+        children: [
+          Padding(
+          padding: EdgeInsets.fromLTRB(8, promoted ? 36 : 8, 8, 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(height: size.height * 0.01),
-              SingleChildScrollView(
+              GestureDetector(
+                onTap: _openProfile,
+                child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child:  businessUserListModel.businessImg.toString()=="[]"? Image.asset(
                     height: 120.0,
@@ -68,10 +182,15 @@ class TattooArtistCard extends StatelessWidget {
                   }).toList(),
                 ),
               ),
+              ),
               const SizedBox(height: 8),
-              Column(
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Row(
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: _openProfile,
+                      child: Row(
                     children: [
                       // const CircleAvatar(radius: 26),
                       businessUserListModel.profileImage==""?ClipRRect(
@@ -91,7 +210,8 @@ class TattooArtistCard extends StatelessWidget {
                               businessUserListModel.profileImage),
                           radius: 26),
                       const SizedBox(width: 5),
-                      Column(
+                      Expanded(
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
@@ -123,17 +243,27 @@ class TattooArtistCard extends StatelessWidget {
                                   AppAssets.locationIcon,
                                   color: titleTextWhiteColor),
                               const SizedBox(width: 4),
-                              Text(
+                              Flexible(
+                                child: Text(
                                   businessUserListModel.address!.length > 20
                                       ? '${businessUserListModel.address!.substring(0, 20)}...'
                                       : businessUserListModel.address!,
                                   maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
                                       color: titleTextWhiteColor)),
+                              ),
                             ])
-                          ])
+                          ]),
+                      ),
                     ],
-                  )
+                  ),
+                    ),
+                  ),
+                  if (!_isOwnProfile) ...[
+                    const SizedBox(width: 8),
+                    _followButton(),
+                  ],
                 ],
               ),
               const SizedBox(height: 8),
@@ -150,28 +280,22 @@ class TattooArtistCard extends StatelessWidget {
                             child: SizedBox(
                                 height: 24,
                                 child: ElevatedButton(
-                                    onPressed: () async {
-                                      final isBusiness =
-                                      await WebService.getIsBusiness();
-                                      AppUser user =
-                                      await WebService.getCurrentUser();
-                                      WebService.selectstylelist = [];
-                                      user.stylesList?.forEach((stylesList) {
-                                        if (stylesList.name == style) {
-                                          print("stylesList $stylesList");
-                                          WebService.selectstylelist
-                                              .add(stylesList);
-                                        }
-                                      });
-                                      print("stylesList $isBusiness");
-                                      if (isBusiness) {
-                                        Get.offAll(
-                                            BusinessDashBoard(initialIndex: 1),
-                                            binding: BusinessDashBoardBinding());
-                                      } else {
-                                        Get.offAll(const DashBoard(initialIndex: 1),
-                                            binding: DashBoardBinding());
-                                      }
+                                    onPressed: () {
+                                      final slugs = (businessUserListModel.styles ?? '')
+                                          .split(',')
+                                          .map((s) => s.trim())
+                                          .where((s) => s.isNotEmpty)
+                                          .toList();
+                                      final names = businessUserListModel.stylesHe!
+                                          .where((s) => s.isNotEmpty)
+                                          .toList();
+                                      final index = names.indexOf(style);
+                                      openInspirationForStyle(
+                                        slug: index >= 0 && index < slugs.length
+                                            ? slugs[index]
+                                            : null,
+                                        label: style,
+                                      );
                                     },
                                     style: ElevatedButton.styleFrom(
                                         backgroundColor: styleBgColor,
@@ -185,31 +309,18 @@ class TattooArtistCard extends StatelessWidget {
                           );
                         }).toList())),
               SizedBox(height: size.height * 0.01),
-              // Wrap(
-              //   spacing: 8.0,
-              //   children: businessUserListModel.styles.map((style) {
-              //     return Container(
-              //       height: 24,
-              //       child: Chip(
-              //         label: Text(
-              //           style,
-              //           textAlign: TextAlign.center,
-              //         ),
-              //         backgroundColor: styleBgColor,
-              //         labelStyle: TextStyle(color: titleTextWhiteColor),
-              //         shape: RoundedRectangleBorder(
-              //           side: BorderSide.none,
-              //           borderRadius: BorderRadius.circular(
-              //               4.0), // Adjust the radius as needed
-              //         ),
-              //       ),
-              //     );
-              //   }).toList(),
-              // ),
             ],
           ),
+            ),
+            if (promoted)
+              const PositionedDirectional(
+                top: 10,
+                end: 10,
+                child: PromotedBadge(),
+              ),
+          ],
         ),
-      ),
     );
   }
 }
+

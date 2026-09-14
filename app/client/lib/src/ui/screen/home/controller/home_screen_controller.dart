@@ -14,6 +14,7 @@ class HomeScreenController extends GetxController {
   RxList<Business> businessList = <Business>[].obs;
 
   RxString isNewNotification = "".obs;
+  RxString unreadRequestCount = "0".obs;
   final ScrollController scrollController = ScrollController();
   final ScrollController userscrollControllerRequest = ScrollController();
   int startUsers = 0;
@@ -98,6 +99,8 @@ class HomeScreenController extends GetxController {
 
       // Update notification state
       isNewNotification.value = response['is_new_notification'] ?? "";
+      unreadRequestCount.value =
+          (response['unread_request_count'] ?? "0").toString();
 
       // Parse lists
       tattosInStyle.addAll(

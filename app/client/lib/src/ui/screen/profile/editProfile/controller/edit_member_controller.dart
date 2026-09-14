@@ -21,18 +21,25 @@ class EditMemberController extends GetxController {
   @override
   void onInit() {
     isChecked.value = false;
-    getArtists();
+    getMyArtists();
     super.onInit();
   }
 
   Future getArtists() async {
+    final query = searchController.text.trim();
+    if (query.isEmpty) {
+      artistList.clear();
+      artistList.refresh();
+      return;
+    }
     if (isLoading.value) return;
     isLoading.value = true;
     try {
       await Network.getBusinessListApi(
               btype: WebService.isArtist == "1" ? "2" : "1",
-              search_txt: searchController.text)
+              search_txt: query)
           .then((list) {
+        if (searchController.text.trim() != query) return;
         if (list != null) {
           artistList.clear();
           List<Artist> newList = (list as List<dynamic>)
@@ -46,6 +53,9 @@ class EditMemberController extends GetxController {
     } catch (e) {
       isLoading.value = false;
     } finally {
+      if (searchController.text.trim().isEmpty) {
+        artistList.clear();
+      }
       getMyArtists();
       artistList.refresh();
     }

@@ -8,8 +8,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:ink/src/controller/userController.dart';
+import 'package:ink/src/data/source/network/user_api.dart';
 import 'package:ink/src/ui/screen/auth/login.dart';
+import 'package:ink/src/ui/screen/auth/OTPBinding.dart';
+import 'package:ink/src/ui/screen/auth/verification.dart';
 import 'package:ink/src/ui/screen/auth/widget/number_formatter_widget.dart';
+import 'package:ink/src/utils/generate_otp_digit.dart';
 import 'package:ink/src/ui/widgets/unfocus_widget.dart';
 import 'package:ink/src/utils/assets.dart';
 import 'package:ink/src/utils/colors.dart';
@@ -826,6 +830,10 @@ class _RegistrationScreenState extends State<RegistrationScreen>
               isLoading = true;
               animationController.forward();
               animationController.repeat();
+            });
+            if (!widget.isphonenumberLogin) {
+              _sendSocialPhoneOtp();
+            } else {
               userController
                   .userRegistration(
                       name: _nameController.text.trim(),
@@ -835,7 +843,7 @@ class _RegistrationScreenState extends State<RegistrationScreen>
                 isLoading = false;
                 setState(() {});
               });
-            });
+            }
           }
         },
         child: Container(
@@ -879,6 +887,56 @@ class _RegistrationScreenState extends State<RegistrationScreen>
                         fontWeight: FontWeight.w700),
                   ).tr()),
       );
+
+  Future<void> _sendSocialPhoneOtp() async {
+    final phone = _phoneController.text.replaceAll('-', '');
+    final email = _emailController.text.trim();
+    final name = _nameController.text.trim();
+    try {
+      final otp = generateOtp(phoneNumber: phone);
+      WebService.generateTmpOTP = otp;
+      if (!isTestNumber(phone)) {
+        final sent = await Network.fetchOTPApi(
+            '${WebService.countryCode}$phone', otp, email);
+        if (sent == false) {
+          if (mounted) {
+            setState(() => isLoading = false);
+            animationController.stop();
+          }
+          displayMessageIcon(
+              message: "אירעה שגיאה, יש לבדוק שמספר הטלפון נכון או לנסות שוב",
+              color: errorColor,
+              snackposition: SnackPosition.BOTTOM,
+              imageData: AppAssets.errorIcon);
+          return;
+        }
+      }
+      if (!mounted) return;
+      setState(() => isLoading = false);
+      animationController.stop();
+      Get.to(
+          CodeVerification(
+            phoneNumber: _phoneController.text,
+            strVerificationId: "",
+            strResendToken: "",
+            isUpSendVerification: true,
+            isSocialRegistration: true,
+            registrationName: name,
+            registrationEmail: email,
+          ),
+          binding: OTPBinding());
+    } catch (e) {
+      if (mounted) {
+        setState(() => isLoading = false);
+        animationController.stop();
+      }
+      displayMessageIcon(
+          message: e.toString(),
+          color: errorColor,
+          snackposition: SnackPosition.BOTTOM,
+          imageData: AppAssets.errorIcon);
+    }
+  }
 
   @override
   void dispose() {

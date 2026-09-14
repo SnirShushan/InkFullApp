@@ -33,6 +33,7 @@ import 'contact_us.dart';
 import 'delete_account_screen.dart';
 import 'editing_details.dart';
 import 'followed_artist_list.dart';
+import 'sent_requests_screen.dart';
 import 'widget/custom_btn_widget.dart';
 
 class BusinessProfileMenuScreen extends StatefulWidget {
@@ -59,7 +60,12 @@ class _BusinessProfileMenuScreenState extends State<BusinessProfileMenuScreen> {
     super.initState();
   }
 
-  // final FollowedUsersController followedUsersController =  Get.find<FollowedUsersController>();
+  void _openEditingDetails() {
+    Get.to(() => EditingDetails(
+          businessProfileMenuController: _controller,
+        ));
+  }
+
   @override
   Widget build(BuildContext context) {
     var size = MediaQuery.of(context).size;
@@ -89,44 +95,59 @@ class _BusinessProfileMenuScreenState extends State<BusinessProfileMenuScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox(height: size.height * 0.04),
-                  //user info
+                  //user info — tap avatar / name / pencil to edit details
                   SizedBox(
                     height: size.height * 0.08,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            buildCachedNetworkImage(
-                                height: size.width * 0.15,
-                                width: size.width * 0.15,
-                                errorWidget: Image.asset(
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: _openEditingDetails,
+                            behavior: HitTestBehavior.opaque,
+                            child: Row(
+                              children: [
+                                buildCachedNetworkImage(
                                     height: size.width * 0.15,
                                     width: size.width * 0.15,
-                                    AppAssets.userPlaceHolder,
-                                    fit: BoxFit.cover),
-                                url: WebService.resolveProfileImage(
-                                    _controller.profileimage.value),
-                                radius: 50),
-                            SizedBox(width: size.width * 0.04),
-                            SizedBox(
-                              width: size.width*0.55,
-                              child: Text(
-                                _controller.name.value,
-                                maxLines: 2,
-                                overflow:
-                                TextOverflow
-                                    .ellipsis,
-                                style: textTheme.titleLarge!.copyWith(
-                                  fontSize: 20,
-                                  color: titleTextWhiteColor,
-                                  fontWeight: FontWeight.w700,
+                                    errorWidget: Image.asset(
+                                        height: size.width * 0.15,
+                                        width: size.width * 0.15,
+                                        AppAssets.userPlaceHolder,
+                                        fit: BoxFit.cover),
+                                    url: WebService.resolveProfileImage(
+                                        _controller.profileimage.value),
+                                    radius: 50),
+                                SizedBox(width: size.width * 0.04),
+                                Flexible(
+                                  child: Row(
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          _controller.name.value,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: textTheme.titleLarge!.copyWith(
+                                            fontSize: 20,
+                                            color: titleTextWhiteColor,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      SvgPicture.asset(
+                                        AppAssets.editIcon,
+                                        height: 16,
+                                        width: 16,
+                                        color: titleTextWhiteColor,
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            )
-                          ],
+                              ],
+                            ),
+                          ),
                         ),
                         if (widget.iscurrentUserProfile == true)
                           IconButton(
@@ -163,19 +184,18 @@ class _BusinessProfileMenuScreenState extends State<BusinessProfileMenuScreen> {
 
                   ImageRoundedTitleWidget(controller: _controller),
 
+                  if (_controller.userType.value == "1")
+                    buildtitlebackbold(
+                        title: "sideDrawer.sent_requests",
+                        context: context,
+                        onTap: () => Get.to(() => SentRequestsScreen(
+                            currentUserType: _controller.userType.value))),
+
                   SizedBox(height: size.height * 0.01),
 
                   // title account settings
                   buildtitle(
                       context: context, title: "sideDrawer.account_operation"),
-
-                  //editing details
-                  buildtitleback(
-                      title: "sideDrawer.editing_details",
-                      context: context,
-                      onTap: () => Get.to(EditingDetails(
-                            businessProfileMenuController: _controller,
-                          ))),
 
                   //edit styles
                   buildtitleback(
@@ -185,6 +205,8 @@ class _BusinessProfileMenuScreenState extends State<BusinessProfileMenuScreen> {
                             fromProfile: true,
                             businessProfileMenuController: _controller,
                           ))),
+
+                  buildLanguageRow(context),
 
                   //delete account
                   buildtitleback(
@@ -349,6 +371,135 @@ class _BusinessProfileMenuScreenState extends State<BusinessProfileMenuScreen> {
               fontSize: 16, color: lightGrayColor, fontWeight: FontWeight.w700),
         )
       ],
+    );
+  }
+
+  Padding buildLanguageRow(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final isEnglish = context.locale.languageCode == 'en';
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: size.height * 0.017),
+      child: InkWell(
+        onTap: () => _openLanguageSheet(context),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              tr('sideDrawer.language'),
+              style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                  fontSize: 16,
+                  color: dividerGray,
+                  fontWeight: FontWeight.w400),
+            ),
+            Row(
+              children: [
+                Text(
+                  isEnglish
+                      ? tr('sideDrawer.language_english')
+                      : tr('sideDrawer.language_hebrew'),
+                  style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                      fontSize: 16,
+                      color: titleTextWhiteColor,
+                      fontWeight: FontWeight.w400),
+                ),
+                Padding(
+                  padding: EdgeInsets.only(left: size.width * 0.02),
+                  child: SvgPicture.asset(AppAssets.backside),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _openLanguageSheet(BuildContext context) {
+    final current = context.locale;
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: signInButtonColor,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(16),
+              topRight: Radius.circular(16),
+            ),
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 48,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF56525A),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  Text(
+                    tr('sideDrawer.language_title'),
+                    style: Theme.of(context).textTheme.titleLarge!.copyWith(
+                        fontSize: 18,
+                        color: titleTextWhiteColor,
+                        fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 8),
+                  _languageOption(
+                    pageContext: context,
+                    sheetContext: sheetContext,
+                    label: tr('sideDrawer.language_hebrew'),
+                    locale: const Locale('he', 'HE'),
+                    selected: current.languageCode == 'he',
+                  ),
+                  _languageOption(
+                    pageContext: context,
+                    sheetContext: sheetContext,
+                    label: tr('sideDrawer.language_english'),
+                    locale: const Locale('en', 'EN'),
+                    selected: current.languageCode == 'en',
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _languageOption({
+    required BuildContext pageContext,
+    required BuildContext sheetContext,
+    required String label,
+    required Locale locale,
+    required bool selected,
+  }) {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      title: Text(
+        label,
+        style: Theme.of(pageContext).textTheme.titleMedium!.copyWith(
+            fontSize: 16,
+            color: titleTextWhiteColor,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w400),
+      ),
+      trailing: selected
+          ? const Icon(Icons.check, color: linearGradieantColor1)
+          : null,
+      onTap: () async {
+        Navigator.of(sheetContext).pop();
+        if (selected) return;
+        await pageContext.setLocale(locale);
+        Get.updateLocale(locale);
+      },
     );
   }
 

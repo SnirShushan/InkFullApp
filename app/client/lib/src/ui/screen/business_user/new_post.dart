@@ -807,11 +807,15 @@ class _SketchImageScreenState extends State<SketchImageScreen>
               imageFile3.path.isEmpty) {
             FocusScope.of(context).unfocus();
             return;
-          } else if (selectedList.length == 0) {
+          } else if (aboutTextController.text.trim().isEmpty) {
             FocusScope.of(context).unfocus();
+            displayMessageIcon(
+                message: 'יש להזין תיאור',
+                color: errorColor,
+                snackposition: SnackPosition.TOP,
+                imageData: AppAssets.errorIcon);
             return;
-          } else if (aboutTextController.text.isEmpty &&
-              aboutTextController.text.trim().isEmpty) {
+          } else if (selectedList.length == 0) {
             FocusScope.of(context).unfocus();
             return;
           } else {

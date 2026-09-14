@@ -97,7 +97,9 @@ export function createAdminRouter(getLivePool) {
       const [rows] = await pool.query(
         `SELECT
            c.id, c.name, c.email, c.phone, c.cnt_code, c.user_type, c.business_type,
-           c.status, c.city_name, c.register_date, c.login_date, c.post_limit, c.sub_id,
+           c.status, c.city_name,
+           COALESCE(NULLIF(c.register_date, '0000-00-00 00:00:00'), c.date_added) AS register_date,
+           c.login_date, c.post_limit, c.sub_id,
            c.profile_image, c.register_type,
            s.product_id AS plan_name, s.expire_date, s.is_sub_active
          FROM tbl_customer c

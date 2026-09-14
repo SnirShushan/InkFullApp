@@ -33,6 +33,7 @@ class _DashBoardState extends State<DashBoard> {
         controller.tabIndex = widget.initialIndex;
         controller.init.value = false;
       }
+      controller.attachPageController();
 
       return UnFocusWidget(
           child: SafeArea(
@@ -48,8 +49,13 @@ class _DashBoardState extends State<DashBoard> {
                     })),
               )
             : Scaffold(
-                body: IndexedStack(
-                  index: controller.tabIndex,
+                body: PageView(
+                  controller: controller.pageController,
+                  onPageChanged: (index) {
+                    if (controller.tabIndex != index) {
+                      controller.changeTabIndex(index, fromSwipe: true);
+                    }
+                  },
                   children: [
                     const HomeScreen(),
                     InspirationScreen(),

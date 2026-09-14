@@ -13,7 +13,10 @@ import 'package:ink/src/utils/webService.dart';
 import 'businessProfilecontroller.dart';
 
 class BusinessDashBoardController extends GetxController {
+  static const swipeableTabs = [0, 1, 3, 4];
+
   var tabIndex = 0;
+  PageController? pageController;
   List<int> subCheckList = [1, 2];
   bool isNotificationInit = false;
   bool isHomeInit = false;
@@ -34,6 +37,39 @@ class BusinessDashBoardController extends GetxController {
     super.onInit();
   }
 
+  void attachPageController() {
+    pageController ??= PageController(initialPage: pageForTab(tabIndex));
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _syncPageView(tabIndex));
+  }
+
+  int pageForTab(int tab) {
+    final page = swipeableTabs.indexOf(tab);
+    return page >= 0 ? page : 0;
+  }
+
+  int tabForPage(int page) {
+    if (page < 0 || page >= swipeableTabs.length) return swipeableTabs.first;
+    return swipeableTabs[page];
+  }
+
+  void _syncPageView(int tab) {
+    if (tab == 2) return;
+    final pc = pageController;
+    if (pc == null || !pc.hasClients) return;
+    final target = pageForTab(tab);
+    if ((pc.page?.round() ?? pc.initialPage) != target) {
+      pc.jumpToPage(target);
+    }
+  }
+
+  @override
+  void onClose() {
+    pageController?.dispose();
+    pageController = null;
+    super.onClose();
+  }
+
   // Future getBusinessList() async =>
   //     await businessProfileController.getBusinessList(0, "", "", "", "", "");
 
@@ -41,7 +77,7 @@ class BusinessDashBoardController extends GetxController {
   //     await startupController.checkSubscription();
 
   //change index
-  void changeTabIndex(int index) async {
+  void changeTabIndex(int index, {bool fromSwipe = false}) async {
     try {
       switch (index) {
         case 2:
@@ -99,6 +135,9 @@ class BusinessDashBoardController extends GetxController {
           break;
 
         case 1:
+          if (Get.isRegistered<InspirationController>()) {
+            Get.find<InspirationController>().showSearchBar.value = true;
+          }
           if (!WebService.isSplashHomeScreen) {
             WebService.isSplashHomeScreen = true;
           }
@@ -159,6 +198,9 @@ class BusinessDashBoardController extends GetxController {
 
       notifyChildrens();
     } finally {
+      if (!fromSwipe) {
+        _syncPageView(index);
+      }
       update();
     }
   }

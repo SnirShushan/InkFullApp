@@ -38,6 +38,7 @@ class BusinessDetailController extends GetxController {
   RxList<Artist> studiosList = <Artist>[].obs;
   RxBool isLoading = true.obs;
   RxBool animationLoading = false.obs;
+  RxBool isFollowLoading = false.obs;
   RxString loadError = "".obs;
 
   RxList<String> stylesHe = <String>[].obs;
@@ -275,18 +276,19 @@ class BusinessDetailController extends GetxController {
     }
   }
 
-  //follow user
   Future followUser({bid, likeStatus}) async {
-    // final postDetailsController = Get.put(PostDetailsController());
-    await Network.followUser(fid: bid, likeStatus: likeStatus).then((value) {
-      if (value != false) {
-        followers.value = value["followers"];
-      }
-    });
-    liked.value = likeStatus;
-    // await getBusinessInfo(bid: bid).then((value) async =>
-    //     await postDetailsController.getPostDetails(
-    //         pid: postDetailsController.postModel.value.id!));
+    if (isFollowLoading.value) return;
+    isFollowLoading.value = true;
+    try {
+      await Network.followUser(fid: bid, likeStatus: likeStatus).then((value) {
+        if (value != false) {
+          followers.value = value["followers"];
+        }
+      });
+      liked.value = likeStatus;
+    } finally {
+      isFollowLoading.value = false;
+    }
   }
 
   //report Business

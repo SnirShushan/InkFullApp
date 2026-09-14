@@ -9,6 +9,7 @@ import 'package:ink/src/ui/screen/dashboard/dashboard.dart';
 import 'package:ink/src/ui/screen/dashboard/dashboard_binding.dart';
 import 'package:ink/src/ui/widgets/bottomenu/business_dashboard_bottomenu.dart';
 import 'package:ink/src/ui/widgets/bottomenu/dashboard_bottomenu.dart';
+import 'package:ink/src/ui/widgets/button/animation_loader_button_widget.dart';
 import 'package:ink/src/ui/widgets/button/custom_gradient_btn_child_widget.dart';
 import 'package:ink/src/ui/widgets/button/custom_gradient_btn_widget.dart';
 import 'package:ink/src/utils/assets.dart';
@@ -166,6 +167,10 @@ class _StudioProfileScreenState extends State<StudioProfileScreen>
 
                                     return GestureDetector(
                                         onTap: () async {
+                                          if (studioDetailsController
+                                              .isFollowLoading.value) {
+                                            return;
+                                          }
                                           await studioDetailsController
                                               .followUser(
                                             bid: studioDetailsController
@@ -187,7 +192,10 @@ class _StudioProfileScreenState extends State<StudioProfileScreen>
                                                   : signInButtonColor,
                                             ),
                                             child: Center(
-                                              child: isLiked
+                                              child: studioDetailsController
+                                                      .isFollowLoading.value
+                                                  ? const InkSpinningLoader()
+                                                  : isLiked
                                                   ? Row(
                                                       mainAxisAlignment:
                                                           MainAxisAlignment
@@ -863,7 +871,10 @@ class _StudioProfileScreenState extends State<StudioProfileScreen>
       StudioDetailController studioDetailsController) {
     return Row(
       children: [
-        CircleAvatar(
+        GestureDetector(
+          onTap: () => showProfileImageViewer(
+              imageUrl: studioDetailsController.profile_image.value),
+          child: CircleAvatar(
             backgroundColor: Colors.white,
             radius: size.height * 0.042,
             child: studioDetailsController.profile_image.value == ""
@@ -902,7 +913,9 @@ class _StudioProfileScreenState extends State<StudioProfileScreen>
                               image: DecorationImage(
                                   image: AssetImage(AppAssets.userPlaceHolder),
                                   fit: BoxFit.cover)),
-                        ))),
+                        )),
+          ),
+        ),
         SizedBox(
           width: size.width * 0.03,
         ),

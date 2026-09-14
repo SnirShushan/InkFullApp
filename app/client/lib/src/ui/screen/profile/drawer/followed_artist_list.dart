@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:ink/src/ui/screen/profile/businessStudioProfile.dart';
+import 'package:ink/src/ui/screen/profile/businessUserProfile.dart';
 import 'package:ink/src/ui/screen/profile/drawer/widget/no_following_widget.dart';
 import 'package:ink/src/ui/widgets/bottomenu/business_dashboard_bottomenu.dart';
 import 'package:ink/src/ui/widgets/bottomenu/dashboard_bottomenu.dart';
@@ -74,7 +76,17 @@ class FollowedArtistList extends StatelessWidget {
                                         size.height * 0.01),
                                     child: ListTile(
                                       dense: true,
-                                      onTap: () async {},
+                                      onTap: () {
+                                        final id = follower.id?.toString() ?? "";
+                                        if (id.isEmpty || id == "null") return;
+                                        if (follower.businessType == "1") {
+                                          Get.to(() => StudioProfileScreen(
+                                              bId: id, fromPost: false));
+                                        } else {
+                                          Get.to(() => BusinessProfileScreen(
+                                              bId: id, fromPost: false));
+                                        }
+                                      },
                                       // leading: const CircleAvatar(
                                       //   radius: 26,
                                       //   backgroundImage: AssetImage(

@@ -12,7 +12,15 @@ import {
   newLoginToken,
   getSettings,
   validateToken,
+  normalizePostStyles,
 } from './helpers.js';
+
+function toIsoDate(value) {
+  if (value == null || value === '') return '';
+  const d = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toISOString();
+}
 
 async function followerCount(uid) {
   try {
@@ -68,18 +76,23 @@ export async function handleGetPostDetail(p) {
   if (!pid) return fail('Missing pid');
 
   const [rows] = await pool.query(
-    `SELECT p.*, c.name, c.profile_image, c.user_type, c.business_type, c.styles AS user_styles
-     FROM tbl_post p
-     LEFT JOIN tbl_customer c ON c.id = p.uid
-     WHERE p.id = :pid LIMIT 1`,
+    `SELECT p.* FROM tbl_post p WHERE p.id = :pid AND p.status = '1' LIMIT 1`,
     { pid }
   );
-  if (!rows.length) return fail('Post not found');
+  if (!rows.length) return fail('הפוסט לא נמצא');
   const post = rows[0];
   await pool.query(
     `UPDATE tbl_post SET view_count = COALESCE(view_count,0) + 1 WHERE id = :pid`,
     { pid }
   );
+
+  // Flutter PostDetails expects nested owner/artist (PHP get_post_detail).
+  // Without owner the client immediately Get.back() and kicks the user out.
+  const owner = await getUserProfile(post.uid, false);
+  let artist = [];
+  if (owner && String(owner.business_type) === '1' && post.artist_uid) {
+    artist = (await getUserProfile(post.artist_uid, false)) || [];
+  }
 
   const { hw, en } = await getStyleMap();
   const styleSlugs = String(post.styles || '')
@@ -103,33 +116,44 @@ export async function handleGetPostDetail(p) {
     start: 0,
     limit: 4,
     isRandom: true,
+    excludeUid: auth.uid,
   });
-  const related_posts = (await mapPostsForClient(relatedRows)).filter(
-    (r) => String(r.id) !== String(pid)
-  );
+  const related_posts = (await mapPostsForClient(relatedRows))
+    .filter((r) => String(r.id) !== String(pid))
+    .map((r) => ({
+      id: r.id,
+      uid: r.uid,
+      img_type: r.img_type,
+      styles: r.styles || '',
+      description: r.description || '',
+      image_name: r.image_name,
+      image_id: r.image_id,
+      is_multiple_image: r.is_multiple_image,
+    }));
 
   const detail = {
     id: String(post.id),
     uid: String(post.uid),
-    name: post.name || '',
-    profile_image: post.profile_image
-      ? assetUrl(post.profile_image, 'profile')
-      : '',
-    user_type: String(post.user_type ?? ''),
-    business_type: String(post.business_type ?? ''),
+    img_type: post.img_type != null ? String(post.img_type) : '0',
     styles: post.styles || '',
     description: post.description || '',
-    img_type: post.img_type,
-    view_count: String(Number(post.view_count || 0) + 1),
     image_name: names,
     image_id: ids,
+    date_added: toIsoDate(post.date_added),
+    date_updated: toIsoDate(post.date_updated),
+    artist_uid: post.artist_uid != null ? String(post.artist_uid) : '',
+    status: post.status != null ? String(post.status) : '1',
+    studio_uid: post.studio_uid != null ? String(post.studio_uid) : '',
+    owner: owner || null,
+    artist,
+    liked: await isLikedByMe(post.uid, auth.uid),
     is_multiple_image: names.length > 1 ? '1' : '0',
     tag_list,
     tag_str: tag_list.join(','),
     tag_list_en,
     tag_str_en: tag_list_en.join(','),
     related_posts,
-    liked: await isLikedByMe(post.uid, auth.uid),
+    view_count: String(Number(post.view_count || 0) + 1),
   };
   return ok({ detail });
 }
@@ -268,6 +292,47 @@ export async function handleGetSketchList(p) {
   return ok({ sketch: list });
 }
 
+async function notifyBusinessFollow(followerId, businessId) {
+  const [targets] = await pool.query(
+    `SELECT id, user_type, push_enable, udid, firebase_id, device_type
+     FROM tbl_customer
+     WHERE id = :id AND is_delete = '0' LIMIT 1`,
+    { id: businessId }
+  );
+  const target = targets[0];
+  if (!target || String(target.user_type) !== '2') return;
+
+  const follower = await getUserProfile(followerId, false);
+  const followerName = follower?.name || 'משתמש';
+
+  await pool.query(
+    `INSERT INTO tbl_notifications
+      (noti_type, date_added, uid, pid, me, is_read, status)
+     VALUES
+      ('new_follow', NOW(), :uid, 0, :me, '2', '0')`,
+    { uid: followerId, me: businessId }
+  );
+
+  if (String(target.push_enable) !== '1') return;
+  const token = String(target.udid || target.firebase_id || '').trim();
+  if (!token) return;
+
+  const { sendPush } = await import('../push.js');
+  await sendPush({
+    token,
+    title: `${followerName} הוסיף אותך למעקב`,
+    body: '',
+    deviceType: target.device_type,
+    data: {
+      screen: 'notification',
+      is_request: '0',
+      pid: '0',
+      badge_count: '1',
+      description: '',
+    },
+  });
+}
+
 export async function handleFollowUser(p) {
   const auth = await requireAuthLocal(p);
   if (auth.error) return auth.error;
@@ -284,6 +349,9 @@ export async function handleFollowUser(p) {
         await pool.query(
           `INSERT INTO tbl_follows (uid, follow_uid, date_added) VALUES (:uid, :fid, NOW())`,
           { uid: auth.uid, fid }
+        );
+        notifyBusinessFollow(auth.uid, fid).catch((err) =>
+          console.error('follow push failed', err?.message || err)
         );
       }
     }
@@ -396,6 +464,8 @@ export async function handleRemovePost(p) {
 export async function handleAddPost(p) {
   const auth = await requireAuthLocal(p);
   if (auth.error) return auth.error;
+  if (!String(p.description || '').trim()) return fail('יש להזין תיאור');
+  const imgType = p.image_type || p.img_type || '0';
   const [result] = await pool.query(
     `INSERT INTO tbl_post
       (uid, image_name, image_id, img_type, styles, description, status, date_added, view_count)
@@ -405,8 +475,8 @@ export async function handleAddPost(p) {
       uid: p.creator_id || auth.uid,
       image_name: p.image_name || '',
       image_id: p.image_id || '',
-      img_type: p.image_type || p.img_type || '0',
-      styles: p.styles || '',
+      img_type: imgType,
+      styles: normalizePostStyles(p.styles || '', imgType),
       description: p.description || '',
     }
   );
@@ -428,6 +498,15 @@ export async function handleUpdatePost(p) {
   if (p.image_type !== undefined) {
     sets.push('img_type = :img_type');
     params.img_type = p.image_type;
+  }
+  if (params.styles !== undefined) {
+    params.styles = normalizePostStyles(
+      params.styles,
+      params.img_type ?? p.image_type ?? p.img_type
+    );
+  }
+  if (params.description !== undefined && !String(params.description).trim()) {
+    return fail('יש להזין תיאור');
   }
   if (sets.length) {
     await pool.query(
@@ -519,23 +598,41 @@ export async function handleGetNotifications(p) {
     const start = Math.max(Number(p.start || 0), 0);
     const limit = Math.min(Math.max(Number(p.limit || 20), 1), 50);
     const [rows] = await pool.query(
-      `SELECT n.*, c.name, c.profile_image
+      `SELECT n.*,
+              c.id AS cust_id,
+              c.name AS cust_name,
+              c.profile_image AS cust_profile_image
        FROM tbl_notifications n
-       LEFT JOIN tbl_customer c ON c.id = n.uid
+       LEFT JOIN tbl_customer c ON c.id = n.uid AND c.is_delete = '0'
        WHERE n.me = :uid
        ORDER BY n.id DESC
        LIMIT ${limit} OFFSET ${start}`,
       { uid: auth.uid }
     );
+    const [unread] = await pool.query(
+      `SELECT COUNT(*) AS c
+       FROM tbl_notifications n
+       INNER JOIN tbl_customer c ON c.id = n.uid AND c.is_delete = '0'
+       WHERE n.me = :uid AND n.is_read = '2'`,
+      { uid: auth.uid }
+    );
     return ok({
-      notifications: rows.map((r) => ({
+      notification: rows.map((r) => ({
         ...r,
         id: String(r.id),
-        profile_image: r.profile_image
-          ? assetUrl(r.profile_image, 'profile')
+        pid: String(r.pid ?? '0'),
+        uid: String(r.uid ?? ''),
+        me: String(r.me ?? ''),
+        is_read: String(r.is_read ?? '1'),
+        cust_id: r.cust_id != null ? String(r.cust_id) : '',
+        cust_name: r.cust_name || '',
+        cust_profile_image: r.cust_profile_image
+          ? assetUrl(r.cust_profile_image, 'profile')
           : '',
+        noti_date: r.date_added,
       })),
-      is_new_notification: '2',
+      unread_notification_count: String(unread[0]?.c ?? 0),
+      is_new_notification: Number(unread[0]?.c) > 0 ? '1' : '2',
     });
   } catch {
     return ok({ notifications: [], is_new_notification: '2' });
@@ -554,29 +651,114 @@ export async function handleReadNotifications(p) {
   return ok([], 'Success');
 }
 
+function parseRequestImages(raw) {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === 'string') {
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+async function mapTattooRequestRow(r) {
+  const business_row = r.business_id
+    ? await getUserProfile(r.business_id, false)
+    : null;
+  if (!business_row) return null;
+  const sender_row = r.uid ? await getUserProfile(r.uid, false) : null;
+  const artist_row = r.artists_uid
+    ? await getUserProfile(r.artists_uid, false)
+    : null;
+  const str = (v) => (v == null ? '' : String(v));
+  return {
+    id: str(r.id),
+    uid: str(r.uid),
+    business_id: str(r.business_id),
+    artists_uid: str(r.artists_uid),
+    name: r.name || sender_row?.name || '',
+    phone: r.phone || sender_row?.phone || '',
+    email: r.email || sender_row?.email || '',
+    cnt_code: r.cnt_code || sender_row?.cnt_code || '',
+    tattoo_size: str(r.tattoo_size),
+    styles: r.styles || '',
+    description: r.description || '',
+    front_side: r.front_side || '',
+    back_side: r.back_side || '',
+    front_data: r.front_data || '',
+    back_data: r.back_data || '',
+    front_data_image: r.front_data_image
+      ? assetUrl(String(r.front_data_image).trim(), 'body')
+      : '',
+    back_data_image: r.back_data_image
+      ? assetUrl(String(r.back_data_image).trim(), 'body')
+      : '',
+    image1_id: str(r.image1_id),
+    image2_id: str(r.image2_id),
+    image3_id: str(r.image3_id),
+    image1_name: r.image1_name || '',
+    image2_name: r.image2_name || '',
+    image3_name: r.image3_name || '',
+    is_read: str(r.is_read || '1'),
+    status: str(r.status || '1'),
+    is_contact_request: str(r.is_contact_request || '0'),
+    date_added: toIsoDate(r.date_added),
+    date_updated: toIsoDate(r.date_updated),
+    request_images: parseRequestImages(r.request_images),
+    business_row,
+    sender_row: sender_row || [],
+    artist_row: artist_row || [],
+  };
+}
+
 export async function handleGetTattooRequest(p) {
   const auth = await requireAuthLocal(p);
   if (auth.error) return auth.error;
+  const type = String(p.type || '').toLowerCase();
+  const isSent = type === 'sent';
+  const start = Math.max(Number(p.start || 0), 0);
+  const limit = Math.min(Math.max(Number(p.limit || 20), 1), 50);
+  const where = isSent
+    ? `r.uid = :uid AND IFNULL(r.business_id, '0') != '0' AND r.business_id != ''`
+    : `r.business_id = :uid`;
+
   try {
     const [rows] = await pool.query(
-      `SELECT * FROM tbl_request
-       WHERE uid = :uid OR business_id = :uid
-       ORDER BY id DESC LIMIT 50`,
+      `SELECT r.* FROM tbl_request r
+       INNER JOIN tbl_customer cus ON r.uid = cus.id AND cus.is_delete = '0'
+       WHERE ${where}
+       ORDER BY r.id DESC
+       LIMIT ${limit} OFFSET ${start}`,
       { uid: auth.uid }
     );
+    const list = [];
+    for (const r of rows) {
+      const mapped = await mapTattooRequestRow(r);
+      if (mapped) list.push(mapped);
+    }
+    let unread = 0;
+    try {
+      const unreadWhere = isSent
+        ? `r.uid = :uid AND IFNULL(r.business_id, '0') != '0' AND r.is_read = '2'`
+        : `r.business_id = :uid AND r.is_read = '2'`;
+      const [[countRow]] = await pool.query(
+        `SELECT COUNT(*) AS c FROM tbl_request r
+         INNER JOIN tbl_customer cus ON r.uid = cus.id AND cus.is_delete = '0'
+         WHERE ${unreadWhere}`,
+        { uid: auth.uid }
+      );
+      unread = Number(countRow?.c ?? 0);
+    } catch (_) {}
     return ok({
-      request_list: rows.map((r) => ({
-        ...r,
-        front_data_image: r.front_data_image
-          ? assetUrl(String(r.front_data_image).trim(), 'body')
-          : r.front_data_image,
-        back_data_image: r.back_data_image
-          ? assetUrl(String(r.back_data_image).trim(), 'body')
-          : r.back_data_image,
-      })),
+      unread_request_count: String(unread),
+      request_list: list,
     });
   } catch {
-    return ok({ request_list: [] });
+    return ok({ request_list: [], unread_request_count: '0' });
   }
 }
 

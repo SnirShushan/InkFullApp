@@ -37,6 +37,15 @@ const InkAdmin = (() => {
     return row.business_type === '2' ? 'אמן' : 'סטודיו';
   }
 
+  function fmtDate(value) {
+    if (!value) return '—';
+    const raw = String(value);
+    if (raw.startsWith('0000-00-00')) return '—';
+    const d = new Date(raw.includes('T') ? raw : raw.replace(' ', 'T'));
+    if (Number.isNaN(d.getTime())) return raw;
+    return d.toLocaleString('he-IL', { dateStyle: 'short', timeStyle: 'short' });
+  }
+
   function pager(data, hashBase, q) {
     const from = data.total === 0 ? 0 : (data.page - 1) * data.limit + 1;
     const to = Math.min(data.total, data.page * data.limit);
@@ -102,7 +111,7 @@ const InkAdmin = (() => {
                 <thead>
                   <tr>
                     <th>שם</th><th>טלפון</th><th>אימייל</th><th>סוג</th>
-                    <th>סטטוס</th><th>תוכנית</th><th>פוסטים</th><th>פעולות</th>
+                    <th>סטטוס</th><th>תוכנית</th><th>תאריך הרשמה</th><th>פוסטים</th><th>פעולות</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -116,6 +125,7 @@ const InkAdmin = (() => {
                       <td>${esc(businessKind(row))} · ${esc(registerType(row.register_type))}</td>
                       <td>${userStatus(row.status)}</td>
                       <td>${esc(row.plan_label || '—')}</td>
+                      <td>${esc(fmtDate(row.register_date))}</td>
                       <td>
                         <input class="limit-input" data-limit="${row.id}" type="number" min="0" value="${escAttr(row.post_limit ?? 0)}" />
                       </td>

@@ -74,20 +74,26 @@ class PostDetailsController extends GetxController {
     try {
       await Network.getPostDetails(pid: pid).then((value) async {
         if (value != false && value != null) {
-          postModel.value = await MPostDetails.fromJson(value);
+          try {
+            postModel.value = MPostDetails.fromJson(
+                Map<String, dynamic>.from(value as Map));
+          } catch (e) {
+            WebService.printMsg('GetPostDetail parse error: $e');
+            return;
+          }
 
-          if (postModel.value != null) {
-            if (postModel.value.owner == null) {
-              if (foldersid != "") {
-                await FireBaseApi.removeFolderImageFromPostSpecificUser(
-                    postid: postModel.value.id!, foldersId: foldersid);
-                await FireBaseApi.removeFolderFromPostSpecificUser(
-                    imageurl: postModel.value.imageName!, fid: foldersid);
-                Get.back();
-              } else {
-                Get.back();
-              }
-            } else {
+          if (postModel.value.owner == null) {
+            // Collection-only: drop a saved image whose owner is gone.
+            // Do not Get.back() on a normal open — that kicked users out
+            // of the image screen when the API omitted `owner`.
+            if (foldersid != "") {
+              await FireBaseApi.removeFolderImageFromPostSpecificUser(
+                  postid: postModel.value.id!, foldersId: foldersid);
+              await FireBaseApi.removeFolderFromPostSpecificUser(
+                  imageurl: postModel.value.imageName!, fid: foldersid);
+              Get.back();
+            }
+          } else {
               await getCollectionList().then((value) async {
                 AppUser user = await WebService.getCurrentUser();
                 await FirebaseFirestore.instance
@@ -107,7 +113,6 @@ class PostDetailsController extends GetxController {
                   }).toList();
                 });
               });
-            }
           }
         }
       });
