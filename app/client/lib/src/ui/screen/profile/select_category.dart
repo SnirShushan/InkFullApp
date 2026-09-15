@@ -136,9 +136,11 @@ class _SelectCategoryState extends State<SelectCategory>
         child: Scaffold(
           backgroundColor: bgBlack,
           //drawer: const SideDrawer(),
-          bottomSheet: Container(
+          bottomSheet: ColoredBox(
             color: bgBlack,
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
+            child: SafeArea(
+              top: false,
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
               isbtnLoading!
                   ? Align(
                 alignment: Alignment.center,
@@ -367,12 +369,13 @@ class _SelectCategoryState extends State<SelectCategory>
                         ],
                       ),
                     )),
-              SizedBox(height: size.height * 0.055),
+              SizedBox(height: 16),
             ]),
+            ),
           ),
           body: Column(
             children: [
-              if (widget.editprofile) SizedBox(height: size.height * 0.04),
+              SizedBox(height: MediaQuery.viewPaddingOf(context).top),
               if (widget.editprofile)
                 Align(
                   alignment: Alignment.centerRight,
@@ -388,7 +391,7 @@ class _SelectCategoryState extends State<SelectCategory>
                         onPressed: () => Navigator.pop(context)),
                   ),
                 ),
-              if (widget.editprofile == false) SizedBox(height: size.height * 0.06),
+              if (widget.editprofile == false) SizedBox(height: size.height * 0.02),
               Utils.buildHeaderTitle(
                   title: widget.fromProfile
                       ? "מה הסגנון שלך?"

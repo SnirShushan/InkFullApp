@@ -108,7 +108,7 @@ class _ScreenChangeUserTypeState extends State<ScreenChangeUserType>
                       height: size.height * 0.5,
                       fit: BoxFit.cover),
                   Positioned(
-                    top: size.height * 0.08,
+                    top: MediaQuery.viewPaddingOf(context).top + 16,
                     right: 20,
                     child: InkWell(
                       splashColor: dividerGray,

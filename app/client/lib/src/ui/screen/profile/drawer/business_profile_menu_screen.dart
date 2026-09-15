@@ -87,14 +87,19 @@ class _BusinessProfileMenuScreenState extends State<BusinessProfileMenuScreen> {
   Padding buildBodyDrawer(
       Size size, TextTheme textTheme, BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(12.0),
+      padding: EdgeInsets.fromLTRB(
+        12,
+        MediaQuery.viewPaddingOf(context).top + 12,
+        12,
+        12,
+      ),
       child: Obx(() => _controller.isLoading.value
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(height: size.height * 0.04),
+                  const SizedBox(height: 8),
                   //user info — tap avatar / name / pencil to edit details
                   SizedBox(
                     height: size.height * 0.08,

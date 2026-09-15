@@ -12,6 +12,14 @@ class Utils {
   static final GlobalKey<NavigatorState> navigationKey =
       GlobalKey<NavigatorState>();
 
+  /// Status-bar / Dynamic Island inset. Overlay controls must sit below this
+  /// after iOS edge-to-edge, or taps hit the system UI instead of the button.
+  static double safeTop(BuildContext context, {double extra = 12}) =>
+      MediaQuery.viewPaddingOf(context).top + extra;
+
+  static double safeBottom(BuildContext context, {double extra = 0}) =>
+      MediaQuery.viewPaddingOf(context).bottom + extra;
+
   static bool isDataEmpty(var data) {
     bool isEmpty = false;
     if (data == null) {

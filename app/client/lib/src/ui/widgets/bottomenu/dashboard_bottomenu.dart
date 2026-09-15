@@ -17,7 +17,11 @@ class DashboardBottomBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    return BottomNavigationBar(
+    return ColoredBox(
+      color: Colors.black,
+      child: SafeArea(
+        top: false,
+        child: BottomNavigationBar(
       elevation: 0,
       type: BottomNavigationBarType.fixed,
       currentIndex: currentIndex,
@@ -52,6 +56,8 @@ class DashboardBottomBar extends StatelessWidget {
             activeIconName: AppAssets.profile_filled_dashboard,
             label: 'פרופיל'),
       ],
+        ),
+      ),
     );
   }
 

@@ -21,7 +21,12 @@ class InspirationScreen extends StatelessWidget {
       backgroundColor: bgBlack,
 
       body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: EdgeInsets.fromLTRB(
+          16,
+          MediaQuery.viewPaddingOf(context).top,
+          16,
+          0,
+        ),
         child: Column(
           children: [
             SizedBox(

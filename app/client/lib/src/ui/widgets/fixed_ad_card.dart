@@ -59,19 +59,35 @@ class FixedAdCard extends StatelessWidget {
           ],
         ),
         Positioned(
-            left: 12,
-            top: 12,
-            child: InkWell(
-              onTap: onClose,
-              child: Container(
-                  padding: EdgeInsets.all(size.height * 0.015),
-                  decoration: const BoxDecoration(
-                      color: signInButtonColor, shape: BoxShape.circle),
-                  child: SvgPicture.asset(
-                    AppAssets.closeIcon,
-                    color: titleTextWhiteColor,
-                  )),
-            ))
+          top: 0,
+          left: 0,
+          child: SafeArea(
+            right: false,
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Material(
+                color: signInButtonColor,
+                shape: const CircleBorder(),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: onClose,
+                  customBorder: const CircleBorder(),
+                  child: SizedBox(
+                    width: 44,
+                    height: 44,
+                    child: Center(
+                      child: SvgPicture.asset(
+                        AppAssets.closeIcon,
+                        color: titleTextWhiteColor,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        )
       ],
     );
   }

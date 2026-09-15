@@ -37,11 +37,15 @@ class _BusinessProfilesState extends State<BusinessProfiles> {
 
   @override
   Widget build(BuildContext context) {
-    var size = MediaQuery.of(context).size;
     return Scaffold(
       backgroundColor: bgBlack,
       body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: EdgeInsets.fromLTRB(
+          16,
+          MediaQuery.viewPaddingOf(context).top,
+          16,
+          0,
+        ),
         child: Column(
           children: [
             AnimatedSize(
