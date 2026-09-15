@@ -1,7 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:ink/src/ui/widgets/appbar_back_widget.dart';
-import 'package:ink/src/ui/widgets/bottomenu/dashboard_bottomenu.dart';
 import 'package:ink/src/utils/colors.dart';
 import 'package:ink/src/utils/utils_styles.dart';
 
@@ -100,7 +99,6 @@ class AgrementRegulations extends StatelessWidget {
           title: 'תקנון הסכם ספק',
           titleColor: titleTextWhiteColor,
           iconColor: titleTextWhiteColor),
-      bottomNavigationBar: DashboardBottomBar(currentIndex: 3),
       body: Padding(
         padding: const EdgeInsets.only(
             left: 16.0, right: 16.0, bottom: 16.0, top: 32),

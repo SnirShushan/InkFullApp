@@ -451,10 +451,7 @@ class _SelectCategoryState extends State<SelectCategory>
                                   Card(
                                     shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(10)),
-                                    color: !selectedList.contains(
-                                        userController.style_list.value[index])
-                                        ? null
-                                        : Colors.white,
+                                    color: Colors.white,
                                     elevation: 8,
                                     child: Container(
                                       foregroundDecoration: BoxDecoration(
@@ -470,8 +467,8 @@ class _SelectCategoryState extends State<SelectCategory>
                                               !selectedList.contains(
                                                   userController
                                                       .style_list.value[index])
-                                              ? Colors.black.withOpacity(0.5) //null
-                                              : Colors.black.withOpacity(0.2)),
+                                              ? Colors.black.withOpacity(0.5)
+                                              : Colors.transparent),
                                       // margin: selectedList.contains(
                                       //         userController.style_list.value[index])
                                       //     ? EdgeInsets.all(size.width * 0.01)

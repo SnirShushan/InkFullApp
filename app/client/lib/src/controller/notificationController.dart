@@ -122,13 +122,14 @@ class NotificationController extends GetxController {
   //================= request ===============
 
   //tattoo requests
-  Future fetchRequests({bool isTempLoading = true}) async {
+  Future fetchRequests({bool isTempLoading = true, String? type}) async {
     if (isMessageApiLoading) return;
     isMessageApiLoading = true;
 
     try {
       isLoadingRequest.value = isTempLoading;
-      await Network.getTattooRequestsData(startIndexRequest, limitRequest)
+      await Network.getTattooRequestsData(startIndexRequest, limitRequest,
+              type: type)
           .then((res) async {
         if (res != "" && res != null && res != false && res != "false") {
           final List newList = res;

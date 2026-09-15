@@ -11,6 +11,7 @@ import {
   mapPostsForClient,
   newLoginToken,
   getSettings,
+  insertCustomer,
   validateToken,
   normalizePostStyles,
 } from './helpers.js';
@@ -669,7 +670,6 @@ async function mapTattooRequestRow(r) {
   const business_row = r.business_id
     ? await getUserProfile(r.business_id, false)
     : null;
-  if (!business_row) return null;
   const sender_row = r.uid ? await getUserProfile(r.uid, false) : null;
   const artist_row = r.artists_uid
     ? await getUserProfile(r.artists_uid, false)
@@ -709,7 +709,10 @@ async function mapTattooRequestRow(r) {
     date_added: toIsoDate(r.date_added),
     date_updated: toIsoDate(r.date_updated),
     request_images: parseRequestImages(r.request_images),
-    business_row,
+    business_row: business_row || {
+      id: str(r.business_id),
+      name: r.name || '',
+    },
     sender_row: sender_row || [],
     artist_row: artist_row || [],
   };
@@ -729,7 +732,6 @@ export async function handleGetTattooRequest(p) {
   try {
     const [rows] = await pool.query(
       `SELECT r.* FROM tbl_request r
-       INNER JOIN tbl_customer cus ON r.uid = cus.id AND cus.is_delete = '0'
        WHERE ${where}
        ORDER BY r.id DESC
        LIMIT ${limit} OFFSET ${start}`,
@@ -747,7 +749,6 @@ export async function handleGetTattooRequest(p) {
         : `r.business_id = :uid AND r.is_read = '2'`;
       const [[countRow]] = await pool.query(
         `SELECT COUNT(*) AS c FROM tbl_request r
-         INNER JOIN tbl_customer cus ON r.uid = cus.id AND cus.is_delete = '0'
          WHERE ${unreadWhere}`,
         { uid: auth.uid }
       );
@@ -765,22 +766,70 @@ export async function handleGetTattooRequest(p) {
 export async function handleRequestForTattoo(p) {
   const auth = await requireAuthLocal(p);
   if (auth.error) return auth.error;
+  const businessId = String(p.business_id || p.bid || '').trim();
+  if (!businessId || businessId === '0') {
+    return fail('Something went wrong while sending your request. Please try again.');
+  }
+  const payload = {
+    uid: auth.uid,
+    business_id: businessId,
+    name: p.name || '',
+    tattoo_size: p.tattoo_size || '',
+    styles: p.styles || '',
+    description: p.description || '',
+    body_part: p.body_part || '',
+    artists_uid: p.artists_uid || '',
+    email: p.email || '',
+    phone: p.phone || '',
+    image1_id: p.image1_id || '',
+    image2_id: p.image2_id || '',
+    image3_id: p.image3_id || '',
+    image1_name: p.image1_name || '',
+    image2_name: p.image2_name || '',
+    image3_name: p.image3_name || '',
+    request_images: typeof p.request_images === 'string'
+      ? p.request_images
+      : JSON.stringify(p.request_images || []),
+    front_side: p.front_side || '',
+    back_side: p.back_side || '',
+    front_data: p.front_data || '',
+    back_data: p.back_data || '',
+    is_contact_request: p.is_contact_request || '0',
+    status: '1',
+    is_read: '2',
+  };
   try {
     await pool.query(
       `INSERT INTO tbl_request
-        (uid, business_id, body_part, tattoo_size, description, status, is_read, date_added)
+        (uid, business_id, name, tattoo_size, styles, description, body_part, artists_uid,
+         email, phone, image1_id, image2_id, image3_id, image1_name, image2_name, image3_name,
+         request_images, front_side, back_side, front_data, back_data, is_contact_request,
+         status, is_read, date_added)
        VALUES
-        (:uid, :business_id, :body_part, :tattoo_size, :description, '1', '2', NOW())`,
-      {
-        uid: auth.uid,
-        business_id: p.business_id || p.bid || '',
-        body_part: p.body_part || '',
-        tattoo_size: p.tattoo_size || '',
-        description: p.description || '',
-      }
+        (:uid, :business_id, :name, :tattoo_size, :styles, :description, :body_part, :artists_uid,
+         :email, :phone, :image1_id, :image2_id, :image3_id, :image1_name, :image2_name, :image3_name,
+         :request_images, :front_side, :back_side, :front_data, :back_data, :is_contact_request,
+         :status, :is_read, NOW())`,
+      payload
     );
-  } catch (_) {
-    /* table shape may differ — still succeed for UX */
+  } catch (e) {
+    try {
+      await pool.query(
+        `INSERT INTO tbl_request
+          (uid, business_id, body_part, tattoo_size, description, status, is_read, date_added)
+         VALUES
+          (:uid, :business_id, :body_part, :tattoo_size, :description, '1', '2', NOW())`,
+        {
+          uid: auth.uid,
+          business_id: businessId,
+          body_part: payload.body_part,
+          tattoo_size: payload.tattoo_size,
+          description: payload.description,
+        }
+      );
+    } catch (err) {
+      return fail(err?.message || e?.message || 'לא ניתן לשלוח את הפנייה');
+    }
   }
   return ok([], 'הפנייה נשלחה');
 }
@@ -820,28 +869,60 @@ export async function handleDeleteAccount(p) {
 export async function handleLoginWithGmail(p) {
   const email = String(p.email || '').trim();
   if (!email) return fail('Missing email');
-  const [rows] = await pool.query(
+  const [active] = await pool.query(
     `SELECT * FROM tbl_customer WHERE email = :email AND is_delete = '0' LIMIT 1`,
     { email }
   );
-  let user = rows[0];
+  let user = active[0];
   const loginToken = newLoginToken();
   const settings = await getSettings();
   if (!user) {
-    const [ins] = await pool.query(
-      `INSERT INTO tbl_customer
-        (email, name, device_type, login_type, app_version, register_date, date_added, date_updated, post_limit, is_register, status, user_type)
-       VALUES
-        (:email, :name, :device_type, '3', :app_version, NOW(), NOW(), NOW(), :post_limit, '1', '1', '1')`,
-      {
+    const [deleted] = await pool.query(
+      `SELECT * FROM tbl_customer WHERE email = :email AND is_delete = '1' ORDER BY id DESC LIMIT 1`,
+      { email }
+    );
+    if (deleted[0]) {
+      user = deleted[0];
+      await pool.query(
+        `UPDATE tbl_customer SET
+           is_delete = '0',
+           status = '1',
+           is_register = '1',
+           login_type = '3',
+           login_token = :tok,
+           udid = :udid,
+           device_type = :device_type,
+           app_version = :app_version,
+           name = IF(:name = '', name, :name),
+           login_date = NOW(),
+           date_updated = NOW()
+         WHERE id = :id`,
+        {
+          tok: loginToken,
+          udid: p.udid || 'dev',
+          device_type: p.device_type || 'a',
+          app_version: p.app_version || '',
+          name: p.name || '',
+          id: user.id,
+        }
+      );
+    } else {
+      const newId = await insertCustomer({
         email,
         name: p.name || '',
         device_type: p.device_type || 'a',
+        login_type: '3',
         app_version: p.app_version || '',
+        register_date: new Date(),
+        date_added: new Date(),
+        date_updated: new Date(),
         post_limit: settings.post_limit || '35',
-      }
-    );
-    user = { id: ins.insertId };
+        is_register: '1',
+        status: '1',
+        user_type: '1',
+      });
+      user = { id: newId };
+    }
   }
   await pool.query(
     `UPDATE tbl_customer SET login_token = :tok, udid = :udid, device_type = :device_type, login_date = NOW()

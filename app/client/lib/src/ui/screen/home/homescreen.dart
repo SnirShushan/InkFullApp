@@ -168,8 +168,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   },
                   child: SvgPicture.asset(
                     AppAssets.homeLogoSVG,
-                    height: 36,
-                    width: 36,
+                    height: 42,
+                    width: 42,
                   ),
                 ),
                 Row(
@@ -180,14 +180,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                             _hasUnreadRequests
                                 ? AppAssets.mailFilled
                                 : AppAssets.mail,
-                            height: 28,
-                            width: 28,
+                            height: 32,
+                            width: 32,
                             color: titleTextWhiteColor,
                           ),
                           badge: _homeScreenController.unreadRequestCount.value,
                           onTap: () => _openInbox(isRequest: true),
                         )),
-                    const SizedBox(width: 14),
+                    const SizedBox(width: 22),
                     Obx(() => _headerActionIcon(
                           icon: SvgPicture.asset(
                             _homeScreenController.isNewNotification.value ==
@@ -200,8 +200,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                         ""
                                 ? AppAssets.bellInactiveIcon
                                 : AppAssets.bellActiveIcon,
-                            height: 28,
-                            width: 28,
+                            height: 32,
+                            width: 32,
                           ),
                           onTap: () => _openInbox(isRequest: false),
                         )),

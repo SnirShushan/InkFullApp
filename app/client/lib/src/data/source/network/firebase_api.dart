@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:get/get.dart';
@@ -19,6 +20,16 @@ import '../../model/folderImage.dart';
 
 class FireBaseApi {
   static FirebaseFirestore fireStore = FirebaseFirestore.instance;
+
+  static String folderUid() {
+    try {
+      if (Get.isRegistered<UserController>()) {
+        final v = Get.find<UserController>().firebaseId.value.trim();
+        if (v.isNotEmpty && v != 'null') return v;
+      }
+    } catch (_) {}
+    return FirebaseAuth.instance.currentUser?.uid ?? '';
+  }
 
   //business user uploaded images
   static Future uploadBusinessImage({required RequestImages image}) async {
@@ -79,7 +90,7 @@ class FireBaseApi {
           "fid": fid,
           "fname": name,
           "image_url": fImageUrl ?? "",
-          "uid": userController.firebaseId.value,
+          "uid": folderUid(),
         });
 
         displayMessageIcon(
@@ -127,7 +138,7 @@ class FireBaseApi {
                 fid: fid,
                 pId: pid,
                 imageUrl: fimageUrl,
-                firebaseId: userController.firebaseId.value);
+                firebaseId: folderUid());
 
             await folderObject.add(image.toJson());
 

@@ -35,10 +35,17 @@ class _FolderImagesState extends State<FolderImages> {
 
   Stream<List<FolderImage>> readPosts() => FirebaseFirestore.instance
       .collection('foldersImages')
+      .where('fid', isEqualTo: widget.fid)
       .snapshots()
       .map((snapshots) => snapshots.docs
-          .map((doc) => FolderImage.fromJson(doc.data()))
-          .where((doc) => doc.fid == widget.fid)
+          .map((doc) {
+            try {
+              return FolderImage.fromJson(doc.data());
+            } catch (_) {
+              return null;
+            }
+          })
+          .whereType<FolderImage>()
           .toList());
 
   @override

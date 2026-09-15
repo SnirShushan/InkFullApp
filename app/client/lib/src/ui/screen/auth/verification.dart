@@ -254,11 +254,15 @@ class _CodeVerificationState extends State<CodeVerification>
                                         //otp code
                                         // Keep PinField outside Obx/currentCode sync so timer
                                         // rebuilds and autofill updates don't block typing.
-                                        PinFieldAutoFill(
+                                        Directionality(
+                                          textDirection: TextDirection.ltr,
+                                          child: PinFieldAutoFill(
                                           autoFocus: true,
                                           enableInteractiveSelection: true,
                                           focusNode: _focusNode,
                                           keyboardType: TextInputType.number,
+                                          currentCode:
+                                              otpController.messageCode.value,
                                           cursor: Cursor(
                                               width: 2,
                                               height: 25,
@@ -299,16 +303,22 @@ class _CodeVerificationState extends State<CodeVerification>
                                             FocusScope.of(context).unfocus();
                                           },
                                           onCodeChanged: (code) {
-                                            final value = code ?? '';
+                                            final value = (code ?? '')
+                                                .replaceAll(RegExp(r'[^0-9]'), '');
                                             otpController.errorMsg.value = "";
                                             otpController.messageCode.value =
                                                 value;
 
                                             if (value.length == 6) {
-                                              FocusScope.of(context).unfocus();
-                                              signInWithPhoneNumber(context);
+                                              setState(() {});
+                                              WidgetsBinding.instance
+                                                  .addPostFrameCallback((_) {
+                                                if (!mounted) return;
+                                                signInWithPhoneNumber(context);
+                                              });
                                             }
                                           },
+                                        ),
                                         ),
                                         SizedBox(height: size.height * 0.02),
 

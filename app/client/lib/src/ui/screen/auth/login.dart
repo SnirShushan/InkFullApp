@@ -99,26 +99,22 @@ class _LoginScreenState extends State<LoginScreen>
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     return UnFocusWidget(
-        child: SafeArea(
-            child: Scaffold(
+        child: Scaffold(
                 backgroundColor: const Color(0xFF897975),
                 key: scaffoldKey,
                 body: Stack(children: [
-                  Image.asset(AppAssets.loginBg,
-                      width: size.width,
-                      height: size.height,
-                      fit: BoxFit.cover),
+                  Positioned.fill(
+                    child: Image.asset(AppAssets.loginBg, fit: BoxFit.cover),
+                  ),
                   Align(
                     alignment: Alignment.bottomCenter,
-                    // child: SlideTransition(
-                    //   position: slidAnimation,
                     child: Container(
-                        height: size.height * 0.56, //size.height * 0.7,
+                        height: size.height * 0.56,
                         decoration: const BoxDecoration(
                             color: bgBlack,
                             borderRadius: BorderRadius.only(
-                                topLeft: Radius.circular(44), //25
-                                topRight: Radius.circular(44))), //25
+                                topLeft: Radius.circular(44),
+                                topRight: Radius.circular(44))),
                         child: Column(
                           children: <Widget>[
                             Expanded(
@@ -128,7 +124,8 @@ class _LoginScreenState extends State<LoginScreen>
                                 padding: EdgeInsets.only(
                                     top: size.height * 0.03,
                                     left: size.width * 0.01,
-                                    right: size.height * 0.01),
+                                    right: size.height * 0.01,
+                                    bottom: MediaQuery.paddingOf(context).bottom),
                                 decoration: const BoxDecoration(
                                     color: bgBlack,
                                     borderRadius: BorderRadius.only(
@@ -141,6 +138,7 @@ class _LoginScreenState extends State<LoginScreen>
                                       children: [
                                         Text(
                                           "login.glad_u_r_hear",
+                                          textAlign: TextAlign.center,
                                           style: Theme.of(context)
                                               .textTheme
                                               .headlineSmall!
@@ -151,6 +149,7 @@ class _LoginScreenState extends State<LoginScreen>
                                         SizedBox(height: size.height * 0.015),
                                         Text(
                                           "login.before_u_start",
+                                          textAlign: TextAlign.center,
                                           style: Theme.of(context)
                                               .textTheme
                                               .titleLarge!
@@ -161,7 +160,7 @@ class _LoginScreenState extends State<LoginScreen>
                                         ).tr(),
                                         SizedBox(height: size.height * 0.04),
                                         Align(
-                                          alignment: Alignment.centerRight,
+                                          alignment: AlignmentDirectional.centerStart,
                                           child: Text(
                                             "login.phone_number",
                                             style: Theme.of(context)
@@ -216,7 +215,7 @@ class _LoginScreenState extends State<LoginScreen>
                         )),
                     // ),
                   )
-                ]))));
+                ])));
   }
 
   Row buildHorizontalDivider(Size size, BuildContext context) {
@@ -570,14 +569,14 @@ class _LoginScreenState extends State<LoginScreen>
       UserCredential? userdata =
           await FirebaseAuth.instance.signInWithCredential(oauthCredential);
 
-      String? email = userdata.user?.email ?? '';
-      String? name = credential.givenName ??
+      final appleId = credential.userIdentifier ?? userdata.user?.uid ?? '';
+      String email = userdata.user?.email ?? credential.email ?? '';
+      String name = credential.givenName ??
           userdata.user?.displayName ??
-          userdata.user?.email!.split('@')[0];
-      String? idToken = credential.identityToken ?? '';
-      String? socialId = userdata.user?.uid ?? '';
+          (email.contains('@') ? email.split('@').first : 'User');
+      String idToken = credential.identityToken ?? '';
 
-      await Network.loginwithapple(name, email, idToken, socialId)
+      await Network.loginwithapple(name, email, idToken, appleId)
           .then((value) async {
         animationController.stop();
         if (value == true) {
@@ -589,34 +588,35 @@ class _LoginScreenState extends State<LoginScreen>
               WebService.setRegistrationData("false");
               Get.to(RegistrationScreen(
                   isphonenumberLogin: false,
-                  nameReg: currentUser.profile!.name.toString() == ""
-                      ? name ?? ""
-                      : currentUser.profile!.name.toString(),
-                  phonenoReg: userdata.user!.phoneNumber.toString(),
-                  emailReg: userdata.user!.email.toString()));
+                  nameReg: currentUser.profile?.name?.toString() == ""
+                      ? name
+                      : currentUser.profile?.name?.toString() ?? name,
+                  phonenoReg: userdata.user?.phoneNumber ?? '',
+                  emailReg: email));
             } else {
+              if (mounted) {
+                setState(() {
+                  isLoading = false;
+                });
+              }
               if (currentUser.profile!.userType == "2") {
-                scaffoldKey.currentState!.setState(() {
-                  isLoading = false;
-                  Get.offAll(BusinessDashBoard(initialIndex: 0),
-                      binding: BusinessDashBoardBinding());
-                });
+                Get.offAll(BusinessDashBoard(initialIndex: 0),
+                    binding: BusinessDashBoardBinding());
               } else {
-                scaffoldKey.currentState!.setState(() {
-                  isLoading = false;
-                  currentUser.profile!.styles!.isNotEmpty
-                      ? Get.offAll(const DashBoard(initialIndex: 0),
-                          binding: DashBoardBinding())
-                      : Get.offAll(const SelectCategory(
-                          fromLogin: true,
-                        ));
-                });
+                currentUser.profile!.styles!.isNotEmpty
+                    ? Get.offAll(const DashBoard(initialIndex: 0),
+                        binding: DashBoardBinding())
+                    : Get.offAll(const SelectCategory(
+                        fromLogin: true,
+                      ));
               }
             }
           } else {
-            scaffoldKey.currentState!.setState(() {
-              isLoading = false;
-            });
+            if (mounted) {
+              setState(() {
+                isLoading = false;
+              });
+            }
           }
         } else {
           displayMessageIcon(

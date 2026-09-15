@@ -96,28 +96,35 @@ class Profile {
       this.pushEnable});
 
   Profile.fromJson(Map<String, dynamic> json) {
-    id = json['id'].toString();
-    firebaseId = json['firebase_id'].toString();
-    name = json['name'].toString() ?? "";
-    email = json['email'].toString();
-    phone = json['phone'].toString();
-    cntCode = json['cnt_code'].toString();
-    udId = json['udid'].toString();
-    lang = json['lang'].toString();
-    profileImage = json['profile_image'].toString();
-    loginToken = json['login_token'].toString();
-    styles = json['styles'].toString();
-    businessType = json['business_type'].toString();
-    userType = json['user_type'].toString();
-    loginType = json['login_type'].toString();
-    address = json['address'].toString();
-    addressLat = json['address_lat'].toString();
-    addressLng = json['address_lng'].toString();
-    addressPlaceId = json['address_place_id'].toString();
-    aboutText = json['about_text'].toString();
-    locationEnable = json['location_enable'].toString();
-    pushEnable = json['push_enable'].toString();
-    isRegister = json['is_register'].toString() ?? "0";
+    String nz(dynamic v) {
+      if (v == null) return '';
+      final s = v.toString();
+      if (s == 'null' || s == 'undefined') return '';
+      return s;
+    }
+
+    id = nz(json['id']);
+    firebaseId = nz(json['firebase_id']);
+    name = nz(json['name']);
+    email = nz(json['email']);
+    phone = nz(json['phone']);
+    cntCode = nz(json['cnt_code']);
+    udId = nz(json['udid']);
+    lang = nz(json['lang']);
+    profileImage = nz(json['profile_image']);
+    loginToken = nz(json['login_token']);
+    styles = nz(json['styles']);
+    businessType = nz(json['business_type']);
+    userType = nz(json['user_type']);
+    loginType = nz(json['login_type']);
+    address = nz(json['address']);
+    addressLat = nz(json['address_lat']);
+    addressLng = nz(json['address_lng']);
+    addressPlaceId = nz(json['address_place_id']);
+    aboutText = nz(json['about_text']);
+    locationEnable = nz(json['location_enable']);
+    pushEnable = nz(json['push_enable']);
+    isRegister = nz(json['is_register']).isEmpty ? '0' : nz(json['is_register']);
     if (json['styles_he'] != null && json['styles_he'] is List) {
       stylesHe = <String>[];
       for (final v in json['styles_he'] as List) {
@@ -167,11 +174,18 @@ class StylesList {
   StylesList({this.id, this.name, this.nameEn, this.imageName, this.slug});
 
   StylesList.fromJson(Map<String, dynamic> json) {
-    id = json['id'].toString();
-    name = json['name'].toString();
-    nameEn = json['name_en'].toString();
-    imageName = json['image_name'].toString();
-    slug = json['slug'].toString();
+    String nz(dynamic v) {
+      if (v == null) return '';
+      final s = v.toString();
+      if (s == 'null' || s == 'undefined') return '';
+      return s;
+    }
+
+    id = nz(json['id']);
+    name = nz(json['name']);
+    nameEn = nz(json['name_en']);
+    imageName = nz(json['image_name']);
+    slug = nz(json['slug']);
   }
 
   Map<String, dynamic> toJson() {

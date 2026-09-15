@@ -73,11 +73,11 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                   Image.asset(AppAssets.onboarding4,
                       height: double.infinity,
                       width: double.infinity,
-                      fit: BoxFit.fill),
+                      fit: BoxFit.cover),
                   Positioned(
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
+                      left: 24,
+                      right: 24,
+                      bottom: MediaQuery.paddingOf(context).bottom,
                       child: Column(
                         children: [
                           buildTititleText(title: 'onboarding.screen4_title'),
@@ -139,11 +139,11 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                               Image.asset(e.imgname!,
                                   height: double.infinity,
                                   width: double.infinity,
-                                  fit: BoxFit.fill),
+                                  fit: BoxFit.cover),
                               Positioned(
-                                  left: 0,
-                                  right: 0,
-                                  bottom: 0,
+                                  left: 24,
+                                  right: 24,
+                                  bottom: MediaQuery.paddingOf(context).bottom,
                                   child: Column(
                                     children: [
                                       buildTititleText(title: e.name!),

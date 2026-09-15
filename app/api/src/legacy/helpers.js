@@ -78,6 +78,7 @@ export async function getStyleList() {
   );
   return rows.map((r) => ({
     ...r,
+    name: r.slug === 'cover-up' ? 'קאבר' : r.name,
     image_url: assetUrl(r.image_name, 'styles'),
   }));
 }

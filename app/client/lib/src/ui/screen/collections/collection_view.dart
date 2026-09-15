@@ -325,10 +325,17 @@ class _ImageGridScreenState extends State<ImageGridScreen> {
 
   Stream<List<FolderImage>> _readPosts() => FirebaseFirestore.instance
       .collection('foldersImages')
+      .where('fid', isEqualTo: widget.fid)
       .snapshots()
       .map((snapshots) => snapshots.docs
-          .map((doc) => FolderImage.fromJson(doc.data()))
-          .where((doc) => doc.fid == widget.fid)
+          .map((doc) {
+            try {
+              return FolderImage.fromJson(doc.data());
+            } catch (_) {
+              return null;
+            }
+          })
+          .whereType<FolderImage>()
           .toList());
 
   Future<void> _loadSuggestions(List<FolderImage> saved) async {
@@ -436,7 +443,7 @@ class _ImageGridScreenState extends State<ImageGridScreen> {
                 ),
                 SizedBox(height: size.height * 0.03),
                 const Text(
-                  "התיקייה ריקה",
+                  "לא ניתן לטעון את האוסף",
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: titleTextWhiteColor,
@@ -459,7 +466,7 @@ class _ImageGridScreenState extends State<ImageGridScreen> {
           });
 
           if (users.isEmpty) {
-            FireBaseApi.removeImageFromSpecificFolders(fid: widget.fid);
+            // Do not wipe the folder cover when the query is empty.
           }
 
           return ListView(

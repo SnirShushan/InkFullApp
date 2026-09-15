@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -40,9 +39,7 @@ void main() async {
 
 // Initialize Dependency Injection immediately
   Future.microtask(() => _initializeFirebaseMessaging());
-  if (Platform.isAndroid) {
-    _configureAndroidSystemUI();
-  }
+  _configureSystemUI();
 
   runApp(EasyLocalization(
       supportedLocales: const [Locale('he', 'HE'), Locale('en', 'EN')],
@@ -53,23 +50,21 @@ void main() async {
       child: const MyApp()));
 }
 
-void _configureAndroidSystemUI() {
+void _configureSystemUI() {
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    systemNavigationBarColor: Colors.black,
+    systemNavigationBarColor: Colors.transparent,
     systemNavigationBarDividerColor: Colors.transparent,
-    statusBarColor: Colors.black,
-    statusBarBrightness: Brightness.light,
+    statusBarColor: Colors.transparent,
+    statusBarBrightness: Brightness.dark,
     systemNavigationBarIconBrightness: Brightness.light,
     statusBarIconBrightness: Brightness.light,
     systemNavigationBarContrastEnforced: false,
-
   ));
 
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitDown,
     DeviceOrientation.portraitUp,
   ]);
-
 
   SystemChrome.setEnabledSystemUIMode(
     SystemUiMode.edgeToEdge,

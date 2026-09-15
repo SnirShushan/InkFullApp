@@ -30,7 +30,7 @@ class _SentRequestsScreenState extends State<SentRequestsScreen> {
     _controller.startIndexRequest = 0;
     _controller.hasMoreRequest.value = true;
     _controller.tattooRequestsList.clear();
-    _controller.fetchRequests();
+    _controller.fetchRequests(type: 'sent');
   }
 
   @override

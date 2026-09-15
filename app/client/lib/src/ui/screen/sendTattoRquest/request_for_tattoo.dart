@@ -140,33 +140,48 @@ class _ScreenTattooRequestState extends State<ScreenTattooRequest>
       //     ],
       //   ),
       // ),
-      body: Padding(
-        padding: EdgeInsets.all(size.height * 0.02),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              buildTitle(context, size, textTheme),
-              SizedBox(height: size.height * 0.03),
-              buildSendingRequestAdvice(size, textTheme),
-              SizedBox(height: size.height * 0.03),
-              buildNotes(size, textTheme),
-              SizedBox(height: size.height * 0.03),
-              buildTattoSize(context, size, textTheme),
-              buildStyleList(context, size, textTheme),
-              buildImageUpload(context, size, textTheme),
-              buildLocationChoose(context, size, textTheme),
-              // buildLocationChooseSS(context, size, textTheme),
-              buildTattoArtist(context, size, textTheme),
-              buildAdditionalNotes(context, size, textTheme),
-              buildBtnSubmit(context: context, size: size),
-              if(Platform.isAndroid) SizedBox(
-                height: MediaQuery.of(context).size.height * 0.05,
-              )
-
-            ],
+      body: Column(
+        children: [
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.all(size.height * 0.02),
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    buildTitle(context, size, textTheme),
+                    SizedBox(height: size.height * 0.03),
+                    buildSendingRequestAdvice(size, textTheme),
+                    SizedBox(height: size.height * 0.03),
+                    buildNotes(size, textTheme),
+                    SizedBox(height: size.height * 0.03),
+                    buildTattoSize(context, size, textTheme),
+                    buildStyleList(context, size, textTheme),
+                    buildLocationChoose(context, size, textTheme),
+                    buildTattoArtist(context, size, textTheme),
+                    buildAdditionalNotes(context, size, textTheme),
+                    buildBtnSubmit(context: context, size: size),
+                    if (Platform.isAndroid)
+                      SizedBox(
+                        height: MediaQuery.of(context).size.height * 0.05,
+                      )
+                  ],
+                ),
+              ),
+            ),
           ),
-        ),
+          Material(
+            color: bgBlack,
+            child: SafeArea(
+              top: false,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                    size.height * 0.02, 8, size.height * 0.02, 8),
+                child: buildImageUpload(context, size, textTheme),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -284,13 +299,13 @@ class _ScreenTattooRequestState extends State<ScreenTattooRequest>
       );
 
   Padding buildNotes(Size size, TextTheme textTheme) => Padding(
-        padding: EdgeInsets.only(left: size.width * 0.05),
+        padding: EdgeInsets.zero,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-                // businessDetailsController.name.value,
                 "sending_request.sending_request_notes_title",
+                textAlign: TextAlign.start,
                 style: textTheme.titleLarge?.copyWith(
                   color: titleTextWhiteColor,
                   fontWeight: FontWeight.w700,
@@ -298,8 +313,8 @@ class _ScreenTattooRequestState extends State<ScreenTattooRequest>
                 )).tr(),
             SizedBox(height: size.height * 0.02),
             Text(
-                // businessDetailsController.name.value,
                 "sending_request.sending_request_notes_description",
+                textAlign: TextAlign.start,
                 style: textTheme.titleMedium?.copyWith(
                   color: titleTextWhiteColor,
                   fontWeight: FontWeight.w400,
@@ -315,7 +330,7 @@ class _ScreenTattooRequestState extends State<ScreenTattooRequest>
         children: [
           SizedBox(height: size.height * 0.02),
           Align(
-            alignment: Alignment.centerRight,
+            alignment: AlignmentDirectional.centerStart,
             child: Text("sending_request.tatto_size_title",
                     style: textTheme.titleMedium!.copyWith(
                         color: kWhite,

@@ -2496,7 +2496,7 @@ class Network {
   //================ request ================
 
   //get User tattoo requests
-  static Future getTattooRequestsData(start, limit) async {
+  static Future getTattooRequestsData(start, limit, {String? type}) async {
     final loginToken = await WebService.getUserToken();
     Response response;
     try {
@@ -2509,7 +2509,8 @@ class Network {
         "device_type": WebService.deviceType,
         "app_version": WebService.appVersion,
         "app_token": WebService.appToken,
-        "type": userController.userType.value == "1" ? "sent" : "rcvd",
+        "type": type ??
+            (userController.userType.value == "1" ? "sent" : "rcvd"),
       });
       response = await dio.post(WebService.baseUrl, data: formData);
       final isDataNotEmpty = ApiResponse.checkResponseStatus(response);

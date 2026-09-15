@@ -43,8 +43,7 @@ class BusinessDashBoard extends StatelessWidget {
       controller.attachPageController();
 
       return UnFocusWidget(
-          child: Obx(() => SafeArea(
-                child: controller.isFixedAdClosed.value
+          child: Obx(() => controller.isFixedAdClosed.value
                     ? Scaffold(
                         backgroundColor: scaffoldBg,
                         body: Obx(() => FixedAdCard(
@@ -56,6 +55,7 @@ class BusinessDashBoard extends StatelessWidget {
                             })),
                       )
                     : Scaffold(
+                        backgroundColor: scaffoldBg,
                         body: PageView(
                           controller: controller.pageController,
                           onPageChanged: (page) {
@@ -76,7 +76,9 @@ class BusinessDashBoard extends StatelessWidget {
                                         : false),
                           ],
                         ),
-                        bottomNavigationBar: BottomNavigationBar(
+                        bottomNavigationBar: SafeArea(
+                          top: false,
+                          child: BottomNavigationBar(
                             elevation: 0,
                             type: BottomNavigationBarType.fixed,
                             currentIndex: controller.tabIndex,
@@ -115,8 +117,8 @@ class BusinessDashBoard extends StatelessWidget {
                                   activeIconName:
                                       AppAssets.profile_filled_dashboard,
                                   label: 'פרופיל')
-                            ])),
-              )));
+                            ]))),
+              ));
     });
   }
 

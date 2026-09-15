@@ -36,7 +36,6 @@ class _DashBoardState extends State<DashBoard> {
       controller.attachPageController();
 
       return UnFocusWidget(
-          child: SafeArea(
         child: controller.isFixedAdClosed.value
             ? Scaffold(
                 backgroundColor: scaffoldBg,
@@ -49,6 +48,7 @@ class _DashBoardState extends State<DashBoard> {
                     })),
               )
             : Scaffold(
+                backgroundColor: scaffoldBg,
                 body: PageView(
                   controller: controller.pageController,
                   onPageChanged: (index) {
@@ -63,7 +63,9 @@ class _DashBoardState extends State<DashBoard> {
                     const BusinessProfileMenuScreen()
                   ],
                 ),
-                bottomNavigationBar: BottomNavigationBar(
+                bottomNavigationBar: SafeArea(
+                  top: false,
+                  child: BottomNavigationBar(
                   elevation: 0,
                   type: BottomNavigationBarType.fixed,
                   currentIndex: controller.tabIndex,
@@ -96,8 +98,9 @@ class _DashBoardState extends State<DashBoard> {
                         label: 'פרופיל'), //profile
                   ],
                 ),
+                ),
               ),
-      ));
+      );
     });
   }
 

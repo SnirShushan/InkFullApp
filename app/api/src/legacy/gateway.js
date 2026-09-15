@@ -68,6 +68,9 @@ async function handleLogin(p) {
     ? assetUrl(settings.startup_image)
     : '';
 
+  if (loginType === '2') {
+    return handleAppleLogin(p, startupImage);
+  }
   if (loginType !== '1') {
     return fail('Only phone login is migrated on this gateway');
   }
@@ -152,6 +155,95 @@ async function handleLogin(p) {
     {
       profile,
       styles_list: stylesList,
+      startup_image: startupImage,
+      followers: '0',
+    },
+    'התחברת בהצלחה'
+  );
+}
+
+async function handleAppleLogin(p, startupImage) {
+  const email = String(p.email || '').trim();
+  const appleId = String(p.apple_id || '').trim();
+  if (!email && !appleId) return fail('Missing Apple account');
+
+  const loginToken = newLoginToken();
+  let user = null;
+  if (appleId) {
+    const [byApple] = await pool.query(
+      `SELECT * FROM tbl_customer
+       WHERE apple_id = :appleId
+       ORDER BY is_delete ASC, id DESC LIMIT 1`,
+      { appleId }
+    );
+    user = byApple[0];
+  }
+  if (!user && email) {
+    const [byEmail] = await pool.query(
+      `SELECT * FROM tbl_customer
+       WHERE email = :email
+       ORDER BY is_delete ASC, id DESC LIMIT 1`,
+      { email }
+    );
+    user = byEmail[0];
+  }
+
+  if (user) {
+    await pool.query(
+      `UPDATE tbl_customer SET
+         device_type = :device_type,
+         udid = :udid,
+         login_token = :login_token,
+         app_version = :app_version,
+         login_date = NOW(),
+         is_delete = '0',
+         status = '1',
+         apple_id = IF(:appleId = '', apple_id, :appleId),
+         is_register = IF(IFNULL(phone, '') = '', '1', IFNULL(is_register, '0'))
+       WHERE id = :id`,
+      {
+        device_type: p.device_type || 'a',
+        udid: p.udid || 'dev',
+        login_token: loginToken,
+        app_version: p.app_version || '',
+        appleId,
+        id: user.id,
+      }
+    );
+  } else {
+    const settings = await getSettings();
+    const newId = await insertCustomer({
+      email,
+      name: p.name || '',
+      apple_id: appleId,
+      device_type: p.device_type || 'a',
+      login_type: '2',
+      register_type: '2',
+      app_version: p.app_version || '',
+      register_date: new Date(),
+      date_added: new Date(),
+      date_updated: new Date(),
+      post_limit: settings.post_limit || '35',
+      is_register: '1',
+      status: '1',
+      user_type: '1',
+    });
+    await pool.query(
+      `UPDATE tbl_customer SET udid = :udid, login_token = :login_token, login_date = NOW()
+       WHERE id = :id`,
+      { udid: p.udid || 'dev', login_token: loginToken, id: newId }
+    );
+    user = { id: newId };
+  }
+
+  const profile = await getUserProfile(user.id, true);
+  if (!profile) return fail('Login failed');
+  profile.styles_he = await styleNamesHe(profile.styles);
+  profile.login_token = loginToken;
+  return ok(
+    {
+      profile,
+      styles_list: await getStyleList(),
       startup_image: startupImage,
       followers: '0',
     },

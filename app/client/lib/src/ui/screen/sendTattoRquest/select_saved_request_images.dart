@@ -10,6 +10,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:ink/src/controller/userController.dart';
 import 'package:ink/src/data/model/folderImage.dart';
+import 'package:ink/src/data/source/network/firebase_api.dart';
 import 'package:ink/src/ui/widgets/appbar_back_widget.dart';
 import 'package:ink/src/utils/assets.dart';
 import 'package:ink/src/utils/colors.dart';
@@ -40,11 +41,7 @@ class _SelectSavedRequestImagesState extends State<SelectSavedRequestImages> {
     _loadImages();
   }
 
-  String _folderUid() {
-    final fromUser = _userController.firebaseId.value.trim();
-    if (fromUser.isNotEmpty && fromUser != "null") return fromUser;
-    return FirebaseAuth.instance.currentUser?.uid ?? "";
-  }
+  String _folderUid() => FireBaseApi.folderUid();
 
   List<String> _urlsFromField(String raw) {
     var value = raw.trim();
@@ -76,12 +73,28 @@ class _SelectSavedRequestImagesState extends State<SelectSavedRequestImages> {
           .where('uid', isEqualTo: uid)
           .get();
       final fids = folders.docs
-          .map((doc) => (doc.data()['fid'] ?? '').toString())
-          .where((id) => id.isNotEmpty)
+          .map((doc) {
+            final data = doc.data();
+            final fid = (data['fid'] ?? doc.id).toString();
+            return fid;
+          })
+          .where((id) => id.isNotEmpty && id != 'null')
           .toSet();
 
       final urls = <String>{};
-      if (fids.isNotEmpty) {
+      try {
+        final byUser = await FirebaseFirestore.instance
+            .collection('foldersImages')
+            .where('firebase_id', isEqualTo: uid)
+            .get();
+        for (final doc in byUser.docs) {
+          try {
+            final image = FolderImage.fromJson(doc.data());
+            urls.addAll(_urlsFromField(image.imageUrl));
+          } catch (_) {}
+        }
+      } catch (_) {}
+      if (urls.isEmpty && fids.isNotEmpty) {
         final fidList = fids.toList();
         for (var i = 0; i < fidList.length; i += 10) {
           final chunk = fidList.sublist(i, min(i + 10, fidList.length));
@@ -90,8 +103,10 @@ class _SelectSavedRequestImagesState extends State<SelectSavedRequestImages> {
               .where('fid', whereIn: chunk)
               .get();
           for (final doc in snap.docs) {
-            final image = FolderImage.fromJson(doc.data());
-            urls.addAll(_urlsFromField(image.imageUrl));
+            try {
+              final image = FolderImage.fromJson(doc.data());
+              urls.addAll(_urlsFromField(image.imageUrl));
+            } catch (_) {}
           }
         }
       }

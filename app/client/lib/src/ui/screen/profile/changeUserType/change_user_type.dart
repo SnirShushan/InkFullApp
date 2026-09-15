@@ -321,11 +321,12 @@ class _ScreenChangeUserTypeState extends State<ScreenChangeUserType>
           SizedBox(height: size.height * 0.02),
           TextFormField(
               onTap: () async {
+                FocusManager.instance.primaryFocus?.unfocus();
                 var place = await fg.PlacesAutocomplete.show(
                     context: context,
                     apiKey: WebService.googleApiKey,
                     mode: fg.Mode.overlay,
-                    language: 'He',
+                    language: 'iw',
                     types: [],
                     components: [gmwp.Component(gmwp.Component.country, 'IL')],
                     onError: (err) {
@@ -363,6 +364,7 @@ class _ScreenChangeUserTypeState extends State<ScreenChangeUserType>
                 }
               },
               autofocus: false,
+              readOnly: true,
               controller: changeUserTypeController.addressController,
               keyboardType: TextInputType.streetAddress,
               style: textStyle,
