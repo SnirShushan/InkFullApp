@@ -31,7 +31,7 @@ class _MyAppState extends State<MyApp> {
           primarySwatch: appPrimaryColor,
           scaffoldBackgroundColor: scaffoldBg,
           fontFamily: 'Arimo',
-          pageTransitionsTheme: const PageTransitionsTheme(
+          pageTransitionsTheme: PageTransitionsTheme(
             builders: {
               TargetPlatform.android: CupertinoPageTransitionsBuilder(),
               TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
