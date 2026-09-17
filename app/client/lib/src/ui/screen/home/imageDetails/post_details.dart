@@ -948,7 +948,7 @@ class _PostDetailsState extends State<PostDetails>
                                               .collection('folders')
                                               .where('uid',
                                               isEqualTo:
-                                              userController.firebaseId.value)
+                                              FireBaseApi.folderUid())
                                               .snapshots(),
                                           builder: (BuildContext context,
                                               AsyncSnapshot<

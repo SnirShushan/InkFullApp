@@ -4,7 +4,7 @@ description: A new Flutter project.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
 # iOS App Store / TestFlight: marketing version and build number stay aligned.
-version: 1.0.93+93
+version: 1.0.94+94
 
 environment:
 
@@ -133,6 +133,7 @@ flutter:
     - assets/svg/
     - assets/images/onboarding/
     - assets/images/changeUserType/
+    - assets/images/styles/
 
   fonts:
     - family: Arimo

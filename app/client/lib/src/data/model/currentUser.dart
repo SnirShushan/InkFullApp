@@ -186,6 +186,12 @@ class StylesList {
     nameEn = nz(json['name_en']);
     imageName = nz(json['image_name']);
     slug = nz(json['slug']);
+    if (name == 'Cover-up' || name == 'Cover up' || slug == 'cover-up') {
+      name = 'קאבר';
+    }
+    if (name == 'Sketch' || slug == 'sketch') {
+      name = 'סקיצה';
+    }
   }
 
   Map<String, dynamic> toJson() {
@@ -196,5 +202,14 @@ class StylesList {
     data['image_name'] = this.imageName;
     data['slug'] = this.slug;
     return data;
+  }
+
+  String get displayName {
+    final n = (name ?? '').trim();
+    final key =
+        '${slug ?? ''} ${nameEn ?? ''} $n ${imageName ?? ''}'.toLowerCase();
+    if (key.contains('cover')) return 'קאבר';
+    if (key.contains('sketch')) return n.isNotEmpty ? n : 'סקיצה';
+    return n;
   }
 }

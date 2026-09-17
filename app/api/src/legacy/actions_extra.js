@@ -395,6 +395,9 @@ export async function handleUpdateProfile(p) {
     push_enable: p.push_enable,
     location_enable: p.location_enable,
   };
+  if (String(p.name || '').trim() !== '') {
+    fields.is_register = '0';
+  }
   const sets = [];
   const params = { uid: auth.uid };
   for (const [k, v] of Object.entries(fields)) {
@@ -941,9 +944,7 @@ export async function handleLoginWithGmail(p) {
     {
       profile,
       styles_list: await getStyleList(),
-      startup_image: settings.startup_image
-        ? assetUrl(settings.startup_image)
-        : '',
+      startup_image: settings.startup_image || '',
       followers: '0',
     },
     'התחברת בהצלחה'

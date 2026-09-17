@@ -409,7 +409,7 @@ class _BusinessProfileMenuScreenState extends State<BusinessProfileMenuScreen> {
                       fontWeight: FontWeight.w400),
                 ),
                 Padding(
-                  padding: const EdgeInsetsDirectional.only(start: 20),
+                  padding: EdgeInsets.only(left: size.width * 0.02),
                   child: SvgPicture.asset(AppAssets.backside),
                 ),
               ],

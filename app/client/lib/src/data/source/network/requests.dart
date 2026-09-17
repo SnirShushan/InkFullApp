@@ -592,6 +592,7 @@ class NetWorkRequest {
         "email": email,
         "phone": phone,
         "cnt_code": WebService.countryCode,
+        "is_register": "0",
       };
 
   //update profile

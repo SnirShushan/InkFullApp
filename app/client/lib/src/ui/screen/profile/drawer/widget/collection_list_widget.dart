@@ -1,6 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
@@ -37,11 +36,7 @@ class _CollectionListWidgetState extends State<CollectionListWidget> {
     }
   }
 
-  String _folderUid() {
-    final fromUser = userController.firebaseId.value.trim();
-    if (fromUser.isNotEmpty && fromUser != "null") return fromUser;
-    return FirebaseAuth.instance.currentUser?.uid ?? "";
-  }
+  String _folderUid() => FireBaseApi.folderUid();
 
   @override
   Widget build(BuildContext context) {

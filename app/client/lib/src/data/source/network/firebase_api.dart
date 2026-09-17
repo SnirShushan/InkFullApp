@@ -280,11 +280,10 @@ class FireBaseApi {
 
   static Future isAlreadyExist({required name}) async {
     try {
-      final userController = Get.find<UserController>();
       return await FirebaseFirestore.instance
           .collection('folders')
           .where('fname', isEqualTo: name.toString().replaceAll(" ", ""))
-          .where('uid', isEqualTo: userController.firebaseId.value)
+          .where('uid', isEqualTo: folderUid())
           .get()
           .then((QuerySnapshot snapshot) {
         if (snapshot.docs.isNotEmpty) {
@@ -387,11 +386,10 @@ class FireBaseApi {
 
   static Future removeImageFromSpecificFolders({required String fid}) async {
     try {
-      final userController = Get.find<UserController>();
       final query = FirebaseFirestore.instance
           .collection('folders')
           .where('fid', isEqualTo: fid)
-          .where('uid', isEqualTo: userController.firebaseId.value);
+          .where('uid', isEqualTo: folderUid());
       final batch = FirebaseFirestore.instance.batch();
       await query.get().then((querySnapshot) {
         for (final doc in querySnapshot.docs) {

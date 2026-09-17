@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get/get.dart';
 import 'package:ink/src/data/model/ArtistModel.dart';
 import 'package:ink/src/data/model/currentUser.dart';
@@ -42,7 +43,10 @@ class UserController extends GetxController {
     try {
       AppUser user = await WebService.getCurrentUser();
       id.value = user.profile!.id.toString();
-      firebaseId.value = user.profile!.firebaseId.toString();
+      final fid = (user.profile?.firebaseId ?? '').trim();
+      firebaseId.value = (fid.isEmpty || fid == 'null')
+          ? (FirebaseAuth.instance.currentUser?.uid ?? '')
+          : fid;
       name.value = user.profile!.name.toString();
       followers.value = user.followers.toString();
       startup_image.value = user.startup_image.toString();

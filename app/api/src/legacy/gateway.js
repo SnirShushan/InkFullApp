@@ -64,9 +64,7 @@ async function handleLogin(p) {
   const loginType = String(p.login_type || '1');
   const settings = await getSettings();
   const postLimit = settings.post_limit || '35';
-  const startupImage = settings.startup_image
-    ? assetUrl(settings.startup_image)
-    : '';
+  const startupImage = settings.startup_image || '';
 
   if (loginType === '2') {
     return handleAppleLogin(p, startupImage);
@@ -84,8 +82,12 @@ async function handleLogin(p) {
   const now = new Date();
 
   if (user) {
+    const hasName = String(user.name || '').trim() !== '';
+    const hasEmail = String(user.email || '').trim() !== '';
+    const alreadyRegistered =
+      user.is_register === '0' || user.is_register === 0;
     const isRegister =
-      demo || (user.email && user.email !== '') ? '0' : '1';
+      demo || hasName || hasEmail || alreadyRegistered ? '0' : '1';
     await pool.query(
       `UPDATE tbl_customer SET
          device_type = :device_type,
@@ -435,10 +437,7 @@ async function handleStartupImage(p) {
   const auth = await requireAuth(p);
   if (auth.error) return auth.error;
   const settings = await getSettings();
-  const startup = settings.startup_image
-    ? assetUrl(settings.startup_image)
-    : '';
-  return ok({ startup_image: startup });
+  return ok({ startup_image: settings.startup_image || '' });
 }
 
 async function handleGetUser(p) {

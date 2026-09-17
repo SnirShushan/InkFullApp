@@ -665,7 +665,6 @@ class _RegistrationScreenState extends State<RegistrationScreen>
                       errorBorder: InputBorder.none,
                       disabledBorder: InputBorder.none,
                       errorMaxLines: 1,
-                      errorText: '',
                       errorStyle: TextStyle(
                         height: 0,
                         color: Colors.transparent,

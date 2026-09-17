@@ -522,8 +522,8 @@ class _EditProfile extends State<EditProfile>
                     context: context,
                     apiKey: WebService.googleApiKey,
                     mode: fg.Mode.overlay,
-                    language: 'He',
-                    types: [],
+                    language: 'he',
+                    region: 'il',
                     components: [
                       const gmwp.Component(gmwp.Component.country, 'IL')
                     ],

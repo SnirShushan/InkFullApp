@@ -7,7 +7,6 @@ import 'package:ink/src/ui/screen/dashboard/dashboard.dart';
 import 'package:ink/src/ui/screen/dashboard/dashboard_binding.dart';
 import 'package:ink/src/utils/colors.dart';
 import 'package:ink/src/utils/common.dart';
-import 'package:ink/src/utils/webService.dart';
 
 class HomeStylesWidget extends StatefulWidget {
   const HomeStylesWidget({super.key});
@@ -66,16 +65,17 @@ class _HomeStylesWidgetState extends State<HomeStylesWidget> {
                     borderRadius: BorderRadius.circular(10),
                   ),
                   elevation: 8,
-                  child: buildCachedNetworkImage(
+                  child: buildStyleIconImage(
                     height: size.width * 0.27,
                     width: size.width * 0.27,
-                    url: WebService.resolveImageUrl(data.imageName,
-                        base: WebService.styleImgUrl),
+                    imageName: data.imageName,
+                    name: data.name,
+                    slug: data.slug,
                     radius: 10,
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text(data.name ?? '',
+                Text(data.displayName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.titleMedium!.copyWith(

@@ -326,8 +326,8 @@ class _ScreenChangeUserTypeState extends State<ScreenChangeUserType>
                     context: context,
                     apiKey: WebService.googleApiKey,
                     mode: fg.Mode.overlay,
-                    language: 'iw',
-                    types: [],
+                    language: 'he',
+                    region: 'il',
                     components: [gmwp.Component(gmwp.Component.country, 'IL')],
                     onError: (err) {
                       print(

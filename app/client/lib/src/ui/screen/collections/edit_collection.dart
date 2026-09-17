@@ -63,7 +63,7 @@ class _EditCollectionState extends State<EditCollection> {
               child: StreamBuilder<QuerySnapshot>(
                   stream: FirebaseFirestore.instance
                       .collection('folders')
-                      .where('uid', isEqualTo: userController.firebaseId.value)
+                      .where('uid', isEqualTo: FireBaseApi.folderUid())
                       .snapshots(),
                   builder: (BuildContext context,
                       AsyncSnapshot<QuerySnapshot<Object?>> snapshot) {

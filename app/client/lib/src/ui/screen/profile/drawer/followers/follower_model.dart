@@ -43,26 +43,33 @@ class FollowerModel {
       this.isRegister});
 
   FollowerModel.fromJson(Map<String, dynamic> json) {
-    id = json['id'].toString();
-    name = json['name'].toString();
-    status = json['status'].toString();
-    email = json['email'].toString();
-    phone = json['phone'].toString();
-    cntCode = json['cnt_code'].toString();
-    lang = json['lang'].toString();
-    profileImage = json['profile_image'].toString();
-    styles = json['styles'].toString();
-    businessType = json['business_type'].toString();
-    userType = json['user_type'].toString();
-    loginType = json['login_type'].toString();
-    cityname = json['city_name'].toString();
-    address = json['address'].toString();
-    addressLat = json['address_lat'].toString();
-    addressLng = json['address_lng'].toString();
-    addressPlaceId = json['address_place_id'].toString();
-    aboutText = json['about_text'].toString();
-    postLimit = json['post_limit'].toString();
-    isRegister = json['is_register'].toString();
+    String nz(dynamic v) {
+      if (v == null) return '';
+      final s = v.toString().trim();
+      if (s.isEmpty || s == 'null' || s == 'undefined') return '';
+      return s;
+    }
+
+    id = nz(json['id']);
+    name = nz(json['name']);
+    status = nz(json['status']);
+    email = nz(json['email']);
+    phone = nz(json['phone']);
+    cntCode = nz(json['cnt_code']);
+    lang = nz(json['lang']);
+    profileImage = nz(json['profile_image']);
+    styles = nz(json['styles']);
+    businessType = nz(json['business_type']);
+    userType = nz(json['user_type']);
+    loginType = nz(json['login_type']);
+    cityname = nz(json['city_name']);
+    address = nz(json['address']);
+    addressLat = nz(json['address_lat']);
+    addressLng = nz(json['address_lng']);
+    addressPlaceId = nz(json['address_place_id']);
+    aboutText = nz(json['about_text']);
+    postLimit = nz(json['post_limit']);
+    isRegister = nz(json['is_register']);
   }
 
   Map<String, dynamic> toJson() {

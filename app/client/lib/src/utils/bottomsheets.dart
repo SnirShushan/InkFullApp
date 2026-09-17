@@ -63,7 +63,7 @@ showBookmarkBottomSheet({size, context, fNameController, pid, imageId, url}) =>
                                     .collection('folders')
                                     .where('uid',
                                         isEqualTo:
-                                            userController.firebaseId.value)
+                                            FireBaseApi.folderUid())
                                     .snapshots(),
                                 builder: (BuildContext context,
                                     AsyncSnapshot<QuerySnapshot<Object?>>

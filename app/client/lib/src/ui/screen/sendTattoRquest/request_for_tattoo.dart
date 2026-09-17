@@ -588,11 +588,8 @@ class _ScreenTattooRequestState extends State<ScreenTattooRequest>
       useRootNavigator: true,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(sheetContext).viewInsets.bottom +
-                (Platform.isIOS ? 102.0 : 62.0),
-          ),
+        return SafeArea(
+          top: false,
           child: Container(
             decoration: const BoxDecoration(
               color: signInButtonColor,
@@ -645,17 +642,23 @@ class _ScreenTattooRequestState extends State<ScreenTattooRequest>
 
   Widget _imageSourceRow({required String title, required String imageName}) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       width: double.infinity,
       color: signInButtonColor,
-      height: MediaQuery.of(context).size.height * 0.08,
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          SvgPicture.asset(imageName),
-          const SizedBox(width: 8),
-          Text(
-            title,
-            style: const TextStyle(color: titleTextWhiteColor, fontSize: 18),
+          SizedBox(
+            width: 28,
+            height: 28,
+            child: Center(child: SvgPicture.asset(imageName)),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(color: titleTextWhiteColor, fontSize: 18),
+            ),
           ),
         ],
       ),

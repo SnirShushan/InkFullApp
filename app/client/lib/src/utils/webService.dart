@@ -73,7 +73,7 @@ class WebService {
   // static const defaultImageUrl =
   //     "http://192.168.1.59/tattoo/assets/img/defult.png";
 
-  static String appVersion = Platform.isAndroid ? "1.0.67" : "1.0.93";
+  static String appVersion = Platform.isAndroid ? "1.0.67" : "1.0.94";
   static const appToken = "123456";
   static String deviceType = Platform.isAndroid ? "a" : "i";
   static double locationRadius = 100.0;

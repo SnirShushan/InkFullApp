@@ -476,17 +476,21 @@ class _SelectCategoryState extends State<SelectCategory>
                                       //         userController.style_list.value[index])
                                       //     ? EdgeInsets.all(size.width * 0.01)
                                       //     : null,
-                                      child: buildCachedNetworkImage(
+                                      child: buildStyleIconImage(
                                           height: size.width * 0.27,
                                           width: size.width * 0.27,
-                                          url: WebService.resolveImageUrl(
-                                              userController.style_list[index]
-                                                  .imageName,
-                                              base: WebService.styleImgUrl),
+                                          imageName: userController
+                                              .style_list[index].imageName,
+                                          name: userController
+                                              .style_list[index].name,
+                                          slug: userController
+                                              .style_list[index].slug,
                                           radius: 10),
                                     ),
                                   ),
-                                  Text(userController.style_list[index].name!,
+                                  Text(
+                                      userController
+                                          .style_list[index].displayName,
                                       style: const TextStyle(color: defaultWhite)),
                                   // Text(userController.style_list[index].nameEn!,style: TextStyle(color: defaultWhite))
                                 ],

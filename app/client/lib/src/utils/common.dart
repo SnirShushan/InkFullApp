@@ -398,6 +398,58 @@ buildCachedNetworkImage(
       );
     });
 
+const ColorFilter kInvertStyleIconFilter = ColorFilter.matrix(<double>[
+  -1, 0, 0, 0, 255,
+  0, -1, 0, 0, 255,
+  0, 0, -1, 0, 255,
+  0, 0, 0, 1, 0,
+]);
+
+String? localStyleIconAsset({String? name, String? slug, String? imageName}) {
+  final key = '${name ?? ''} ${slug ?? ''} ${imageName ?? ''}'.toLowerCase();
+  if (key.contains('sketch') || key.contains('סקיצה')) {
+    return 'assets/images/styles/sketch.png';
+  }
+  if (key.contains('cover') || key.contains('קאבר')) {
+    return 'assets/images/styles/cover_up.png';
+  }
+  return null;
+}
+
+Widget buildStyleIconImage({
+  required dynamic height,
+  required dynamic width,
+  required String? imageName,
+  String? name,
+  String? slug,
+  double radius = 10,
+}) {
+  final local = localStyleIconAsset(
+      name: name, slug: slug, imageName: imageName);
+  if (local != null) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(radius),
+      child: Image.asset(
+        local,
+        height: height,
+        width: width,
+        fit: BoxFit.cover,
+      ),
+    );
+  }
+  Widget image = buildCachedNetworkImage(
+    height: height,
+    width: width,
+    url: WebService.resolveImageUrl(imageName, base: WebService.styleImgUrl),
+    radius: radius,
+  );
+  final key = '${name ?? ''} ${slug ?? ''} ${imageName ?? ''}'.toLowerCase();
+  if (key.contains('sketch') || key.contains('סקיצה')) {
+    image = ColorFiltered(colorFilter: kInvertStyleIconFilter, child: image);
+  }
+  return image;
+}
+
 buildCachedNetworkImage2(
         {required height,
         required width,

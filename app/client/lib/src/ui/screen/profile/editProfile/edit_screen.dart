@@ -208,8 +208,8 @@ class _EditScreenState extends State<EditScreen> {
                         context: context,
                         apiKey: WebService.googleApiKey,
                         mode: Mode.overlay,
-                        language: 'He',
-                        types: [],
+                        language: 'he',
+                        region: 'il',
                         components: [
                           const gmwp.Component(gmwp.Component.country, 'IL')
                         ],

@@ -3,6 +3,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:ink/src/controller/userController.dart';
+import 'package:ink/src/data/source/network/firebase_api.dart';
 import 'package:ink/src/utils/webService.dart';
 
 import '../../../utils/bottomsheets.dart';
@@ -83,7 +84,7 @@ class _SavedTattooScreenState extends State<SavedTattooScreen> {
               StreamBuilder<QuerySnapshot>(
                   stream: FirebaseFirestore.instance
                       .collection('folders')
-                      .where('uid', isEqualTo: userController.firebaseId.value)
+                      .where('uid', isEqualTo: FireBaseApi.folderUid())
                       .snapshots(),
                   builder: (BuildContext context,
                       AsyncSnapshot<QuerySnapshot<Object?>> snapshot) {

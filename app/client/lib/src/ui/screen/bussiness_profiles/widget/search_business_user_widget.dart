@@ -704,8 +704,8 @@ class SearchBusinessUserWidget extends StatelessWidget {
         context: context,
         apiKey: WebService.googleApiKey,
         mode: Mode.overlay,
-        language: 'He',
-        types: [],
+        language: 'he',
+        region: 'il',
         components: [const gmwp.Component(gmwp.Component.country, 'IL')],
         onError: (err) {
           // displayMessageIcon(
@@ -746,8 +746,8 @@ class SearchBusinessUserWidget extends StatelessWidget {
         context: context,
         apiKey: WebService.googleApiKey,
         mode: Mode.overlay,
-        language: 'He',
-        types: [],
+        language: 'he',
+        region: 'il',
         components: [const gmwp.Component(gmwp.Component.country, 'IL')],
         onError: (err) {
           // displayMessageIcon(

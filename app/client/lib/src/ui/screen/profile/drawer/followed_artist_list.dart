@@ -100,19 +100,25 @@ class FollowedArtistList extends StatelessWidget {
                                                   ? ""
                                                   : follower.profileImage!),
                                       title: Text(
-                                        follower.name.toString(),
+                                        (follower.name ?? '').trim().isEmpty
+                                            ? ''
+                                            : follower.name!,
                                         style: const TextStyle(
                                             color: titleTextWhiteColor,
                                             fontSize: 16,
                                             fontWeight: FontWeight.w700),
                                       ),
-                                      subtitle: Text(
-                                        follower.cityname.toString(),
-                                        style: const TextStyle(
-                                            color: lightGrayColor,
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w400),
-                                      ),
+                                      subtitle: ((follower.cityname ?? '')
+                                              .trim()
+                                              .isEmpty)
+                                          ? null
+                                          : Text(
+                                              follower.cityname!,
+                                              style: const TextStyle(
+                                                  color: lightGrayColor,
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w400),
+                                            ),
                                       trailing: ElevatedButton(
                                         onPressed: () async {
                                           await followersController

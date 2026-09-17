@@ -554,7 +554,6 @@ class _EditingDetails extends State<EditingDetails>
                     errorBorder: InputBorder.none,
                     disabledBorder: InputBorder.none,
                     errorMaxLines: 1,
-                    errorText: '',
                     errorStyle: TextStyle(
                       height: 0,
                       color: Colors.transparent,

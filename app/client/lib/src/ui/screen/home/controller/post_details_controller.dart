@@ -84,13 +84,12 @@ class PostDetailsController extends GetxController {
 
           if (postModel.value.owner != null) {
               await getCollectionList().then((value) async {
-                AppUser user = await WebService.getCurrentUser();
                 await FirebaseFirestore.instance
                     .collection('foldersImages')
                     .where('imageId', isEqualTo: postModel.value.imageId)
                     .where('pid', isEqualTo: pid)
                     .where('firebase_id',
-                        isEqualTo: user.profile!.firebaseId.toString())
+                        isEqualTo: FireBaseApi.folderUid())
                     .get()
                     .then((value) {
                   value.docs.map((e) {
@@ -354,10 +353,9 @@ class PostDetailsController extends GetxController {
 
   Future getCollectionList() async {
     collectionsList.clear();
-    AppUser user = await WebService.getCurrentUser();
     await FirebaseFirestore.instance
         .collection('folders')
-        .where('uid', isEqualTo: user.profile!.firebaseId.toString())
+        .where('uid', isEqualTo: FireBaseApi.folderUid())
         .get()
         .then((value) {
       value.docs.map((e) {
