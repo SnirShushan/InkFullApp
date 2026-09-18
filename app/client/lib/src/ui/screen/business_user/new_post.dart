@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:easy_localization/easy_localization.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
@@ -22,8 +21,6 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../../../controller/post_controller.dart';
 import '../../../controller/userController.dart';
-import '../../../data/model/image_model.dart';
-import '../../../data/source/network/firebase_api.dart';
 import '../../../data/source/network/user_api.dart';
 import '../../../utils/common.dart';
 import '../../../utils/webService.dart';
@@ -52,7 +49,6 @@ class _SketchImageScreenState extends State<SketchImageScreen>
   bool secondScreenVisible = true;
   bool thirdScreenVisible = false;
   bool isLoading = false;
-  UploadTask? uploadTask;
 
   List<StylesList> listStyles = [];
   List<StylesList> filteredListStyles = [];
@@ -604,32 +600,7 @@ class _SketchImageScreenState extends State<SketchImageScreen>
         ),
       );
 
-  //image uploading progress
-  buildProgress() => StreamBuilder<TaskSnapshot>(
-      stream: uploadTask?.snapshotEvents,
-      builder: (context, snapshots) {
-        final data = snapshots.data!;
-        double progress = data.bytesTransferred / data.totalBytes;
-
-        return SizedBox(
-            height: 50,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                LinearProgressIndicator(
-                    value: progress,
-                    backgroundColor: Colors.grey,
-                    color: Colors.green),
-                Center(
-                    child: Text(
-                        'Please Wait..  ${(100 * progress).roundToDouble()} %',
-                        style: const TextStyle(color: Colors.white)))
-              ],
-            ));
-      });
-
-  //upload image to firebase
-  uploadImage() async {
+  Future uploadImage() async {
     bool isConnected = await WebService.checkConnection2();
 
     if (!isConnected) {
@@ -648,92 +619,17 @@ class _SketchImageScreenState extends State<SketchImageScreen>
           });
         }
         List<File> imageFiles = [imageFile1, imageFile2, imageFile3];
-        List<RequestImages> uploadedImages = [];
-
-        // Filter out empty or non-existing files
         List<File> validImages = imageFiles.where((file) {
           return file.path.isNotEmpty && file.existsSync();
         }).toList();
-        AppUser user = await WebService.getCurrentUser();
-        // Now process only the valid ones
-        for (var file in validImages) {
-          final fileName = file.path.split('/').last;
-          final path = "creatorImages/${user.profile!.id}/$fileName";
-          final ref = FirebaseStorage.instance.ref().child(path);
-
-          // Upload to Firebase Storage
-          final uploadTask = ref.putFile(file);
-          final snapshots = await uploadTask.whenComplete(() {});
-          final imageUrl = await snapshots.ref.getDownloadURL();
-
-          print("imageUrl $imageUrl");
-          // Create your RequestImages object
-          final image = RequestImages(
-            name: fileName,
-            imageUrl: imageUrl,
-            uid: user.profile!.id!,
-          );
-
-          print("imageimageimageimage:-> $image");
-          // Save image info to Firestore (or your backend)
-          await FireBaseApi.uploadBusinessImage(image: image);
-          uploadedImages.add(image);
-          // Your upload or handling logic here
-        }
-
-        //Old Data
-
-        // String fileName = widget.pickedFile.existsSync()
-        //     ? widget.pickedFile.path.split('/').last
-        //     : null;
-        //
-        // AppUser user = await WebService.getCurrentUser();
-        // final path = "creatorImages/${user.profile!.id}/$fileName";
-        //
-        // final ref = FirebaseStorage.instance.ref().child(path);
-        //
-        // setState(() {
-        //   uploadTask = ref.putFile(
-        //       widget.pickedFile.existsSync() ? widget.pickedFile : null);
-        // });
-        //
-        // final snapshots = await uploadTask!.whenComplete(() {});
-        //
-        // final imageUrl = await snapshots.ref.getDownloadURL();
-        //
-        // RequestImages image = RequestImages(
-        //     name: fileName, imageUrl: imageUrl, uid: user.profile!.id!);
-        //
-        // await FireBaseApi.uploadBusinessImage(image: image);
-// Old Data End
-
-        print("uploadedImages ${uploadedImages.length}");
-        print("uploadedImages ${uploadedImages}");
-        String tempImageUrl = "";
-        String tempImageId = "";
-
-        if (uploadedImages.isNotEmpty) {
-          for (var image in uploadedImages) {
-            // Assuming RequestImages has fields: name, imageUrl, uid
-            tempImageUrl += "${image.imageUrl},";
-            tempImageId += "${image.imageId},";
-          }
-
-          // Remove the last comma if needed
-          if (tempImageUrl.endsWith(',')) {
-            tempImageUrl = tempImageUrl.substring(0, tempImageUrl.length - 1);
-          }
-          if (tempImageId.endsWith(',')) {
-            tempImageId = tempImageId.substring(0, tempImageId.length - 1);
-          }
-        }
         await Network.addPost(
           imageType: imageTypes,
           description: aboutTextController.text,
-          imageName: tempImageUrl,
-          imageId: tempImageId,
+          imageName: "",
+          imageId: "",
           styles: styleList,
           creatorId: selectedMemberList.isNotEmpty ? selectedMemberList[0] : "",
+          images: validImages,
         ).then((value) async {
           final postController = await Get.put(PostController());
           final myPostsController = await Get.put(MyPostsController());
@@ -746,7 +642,6 @@ class _SketchImageScreenState extends State<SketchImageScreen>
                   snackposition: SnackPosition.BOTTOM,
                   imageData: AppAssets.correct_transparentIcon);
               animationController.stop();
-              uploadTask = null;
             });
           });
         });

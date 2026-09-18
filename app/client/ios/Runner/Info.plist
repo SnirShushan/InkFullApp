@@ -35,6 +35,7 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
+				<string>inkapp</string>
 				<string>com.googleusercontent.apps.593891329507-7uh2g880nski6gdp01bc88su1trbe1ru</string>
 				<string>fb524314284050023</string>
 			</array>
@@ -47,11 +48,7 @@
 	<key>FirebaseMessagingAutoInitEnabled</key>
 	<true/>
 	<key>FlutterDeepLinkingEnabled</key>
-	<true/>
-	<key>FirebaseDynamicLinksCustomDomains</key>
-	<array>
-		<string>https://inkapp.page.link</string>
-	</array>
+	<false/>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>https</string>

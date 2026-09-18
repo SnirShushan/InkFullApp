@@ -179,7 +179,8 @@ class PostDetailsController extends GetxController {
       styles,
       description,
       postId,
-      studioId}) async {
+      studioId,
+      List<File>? images}) async {
     try {
       await Network.updatePostApi(
           styles: styles ?? "",
@@ -188,7 +189,8 @@ class PostDetailsController extends GetxController {
           artistId: artistId ?? "",
           studioId: studioId ?? "",
           imageId: imageId ?? "",
-          imageName: imageNmae ?? "");
+          imageName: imageNmae ?? "",
+          images: images);
 
       await getPostDetailsController(pid: postId, foldersid: "");
       await myPostController.getMyPosts();

@@ -305,10 +305,13 @@ class FireBaseApi {
   //image
   static Future deletestorageImage({String? imageUrl}) async {
     try {
-      // Extract the path from the URL (more robust approach)
-      final reference = FirebaseStorage.instance.refFromURL(imageUrl!);
+      final url = (imageUrl ?? '').trim();
+      if (url.isEmpty ||
+          !(url.contains('firebasestorage') || url.contains('googleapis.com'))) {
+        return;
+      }
+      final reference = FirebaseStorage.instance.refFromURL(url);
 
-      // Ensure the path matches your expected structure
       if (reference.fullPath.startsWith('creatorImages')) {
         await reference.delete();
         return;

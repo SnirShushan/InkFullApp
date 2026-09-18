@@ -11,6 +11,7 @@ import { usersRouter } from './routes/users.js';
 import { settingsRouter } from './routes/settings.js';
 import { docsRouter } from './routes/docs.js';
 import { legalRouter } from './routes/legal.js';
+import { shareRouter } from './routes/share.js';
 import { handleLegacyAction } from './legacy/gateway.js';
 
 const app = express();
@@ -44,6 +45,7 @@ app.get('/', (_req, res) => {
 });
 
 app.use(docsRouter);
+app.use(shareRouter);
 app.use(legalRouter);
 app.use(healthRouter);
 app.use('/v1/styles', stylesRouter);

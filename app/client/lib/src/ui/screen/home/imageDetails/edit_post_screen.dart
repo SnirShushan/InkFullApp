@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
@@ -38,7 +37,6 @@ class _EditPostScreenState extends State<EditPostScreen>
     with SingleTickerProviderStateMixin {
   bool secondScreenVisible = true;
   bool thirdScreenVisible = false;
-  UploadTask? uploadTask;
 
   List<StylesList> listStyles = [];
   List<StylesList> filteredListStyles = [];
@@ -700,32 +698,6 @@ class _EditPostScreenState extends State<EditPostScreen>
         ),
       );
 
-  //image uploading progress
-  buildProgress() =>
-      StreamBuilder<TaskSnapshot>(
-          stream: uploadTask?.snapshotEvents,
-          builder: (context, snapshots) {
-            final data = snapshots.data!;
-            double progress = data.bytesTransferred / data.totalBytes;
-
-            return SizedBox(
-                height: 50,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    LinearProgressIndicator(
-                        value: progress,
-                        backgroundColor: Colors.grey,
-                        color: Colors.green),
-                    Center(
-                        child: Text(
-                            'Please Wait..  ${(100 * progress)
-                                .roundToDouble()} %',
-                            style: const TextStyle(color: Colors.white)))
-                  ],
-                ));
-          });
-
   //upload image to firebase
   // updatePostDetail(BuildContext context) async {
   //   setState(() {
@@ -876,7 +848,7 @@ class _EditPostScreenState extends State<EditPostScreen>
         imageFile3.path.isNotEmpty);
 
     if (hasRemovedImage || hasAddPostImage) {
-      await updatePostFirebaseHandling();
+      await updatePostImages();
     } else {
       finalImageUrls = widget.postModel.imageName;
       finalImageIds = widget.postModel.imageId ?? "";
@@ -886,6 +858,9 @@ class _EditPostScreenState extends State<EditPostScreen>
     finalImageUrls.replaceAll('[', '').replaceAll(']', '');
     String cleanedImageId =
     finalImageIds.replaceAll('[', '').replaceAll(']', '');
+    final newFiles = [imageFile1, imageFile2, imageFile3]
+        .where((file) => file.path.isNotEmpty && file.existsSync())
+        .toList();
     try {
       await postDetailController.updatePostController(
         imageNmae: cleanedImageUrl,
@@ -898,6 +873,7 @@ class _EditPostScreenState extends State<EditPostScreen>
             selectedMemberList.isNotEmpty
             ? selectedMemberList.first
             : '',
+        images: newFiles,
       );
     } catch (e) {
       postDetailController.isEditPostLoading.value = false;
@@ -1506,48 +1482,12 @@ class _EditPostScreenState extends State<EditPostScreen>
     );
   }
 
-  Future<void> updatePostFirebaseHandling() async {
+  Future<void> updatePostImages() async {
     try {
-      // Combine all local image files
-      final imageFilesList = [imageFile1, imageFile2, imageFile3];
-
-      // Remove any images the user deleted
       await deleteImageUserDeleted();
 
-      // Filter only valid (existing + non-empty path) files
-      final validImages = imageFilesList
-          .where((file) => file.path.isNotEmpty && file.existsSync())
-          .toList();
-
-      // Fetch current user
-      final user = await WebService.getCurrentUser();
-      final userId = user.profile?.id;
-      if (userId == null) throw Exception("User ID not found.");
-
-      // Upload all valid images sequentially
-      for (final file in validImages) {
-        final fileName = file.path
-            .split('/')
-            .last;
-        final path = "creatorImages/$userId/$fileName";
-        final ref = FirebaseStorage.instance.ref(path);
-
-        // Upload to Firebase Storage
-        final uploadTask = await ref.putFile(file);
-        final imageUrl = await uploadTask.ref.getDownloadURL();
-
-        // Create RequestImages object
-        final image = RequestImages(
-          name: fileName,
-          imageUrl: imageUrl,
-          uid: userId,
-        );
-
-        await FireBaseApi.uploadBusinessImage(image: image);
-        uploadedImages.add(image);
-      }
-
-      // Collect existing (already uploaded) image data
+      existingUrls.clear();
+      existingIds.clear();
       final existingImages = [
         {'url': imageUrl1, 'id': imageId1},
         {'url': imageUrl2, 'id': imageId2},
@@ -1563,17 +1503,10 @@ class _EditPostScreenState extends State<EditPostScreen>
         }
       }
 
-      // Append newly uploaded images
-      for (final img in uploadedImages) {
-        existingUrls.add(img.imageUrl ?? '');
-        existingIds.add(img.imageId ?? '');
-      }
-
-      // Generate final comma-separated strings
       finalImageUrls = existingUrls.join(',');
       finalImageIds = existingIds.join(',');
     } catch (e, stack) {
-      debugPrint("Error updating post Firebase handling: $e");
+      debugPrint("Error updating post images: $e");
       debugPrint(stack.toString());
     }
   }

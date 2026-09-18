@@ -71,12 +71,19 @@
                  <action android:name="FLUTTER_NOTIFICATION_CLICK"/>
                  <category android:name="android.intent.category.DEFAULT"/>
              </intent-filter>
-             <intent-filter android:autoVerify="true" tools:targetApi="m">
+             <intent-filter>
+                 <action android:name="android.intent.action.VIEW"/>
+                 <category android:name="android.intent.category.DEFAULT"/>
+                 <category android:name="android.intent.category.BROWSABLE"/>
+                 <data android:scheme="inkapp" android:host="share" />
+             </intent-filter>
+             <intent-filter>
                  <action android:name="android.intent.action.VIEW"/>
                  <category android:name="android.intent.category.DEFAULT"/>
                  <category android:name="android.intent.category.BROWSABLE"/>
                  <data android:scheme="https"
-                     android:host="inkapp.page.link" />
+                     android:host="ink-api-production-2e1d.up.railway.app"
+                     android:pathPrefix="/share" />
              </intent-filter>
 
         </activity>
@@ -93,6 +100,9 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <meta-data
+            android:name="flutter_deeplinking_enabled"
+            android:value="false" />
 
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"

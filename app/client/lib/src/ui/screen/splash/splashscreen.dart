@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:ink/src/data/model/currentUser.dart';
@@ -26,6 +25,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../controller/userController.dart';
 import '../../../data/source/network/user_api.dart';
+import '../../../utils/DynamicLinkService.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
@@ -89,39 +89,21 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _initialization() async {
-    PendingDynamicLinkData? data;
-
-    if (Platform.isIOS) {
-      FirebaseDynamicLinks.instance.onLink
-          .listen((PendingDynamicLinkData dynamicLinkData) async {
-        if (dynamicLinkData.link != null) {
-          dynamiclink = dynamicLinkData.link;
-          String link = dynamicLinkData.link.toString();
-          checklink = await extractBaseUrl(link);
-          user_dynamic_id =
-              extractLastSlashValue(dynamicLinkData.link.toString());
-        } else {
-          dynamiclink = null;
-          checklink = "";
-          user_dynamic_id = "";
-        }
-      }).onError((error) {
-        print('Error getting dynamic link: $error');
-      });
-    } else {
-      data = await FirebaseDynamicLinks.instance.getInitialLink();
-      dynamiclink = data?.link;
+    try {
+      final links = DynamicLinkService();
+      dynamiclink = await links.getInitialShareLink();
+      await links.retrieveDynamicLink(context);
       if (dynamiclink != null) {
-        // String link = dynamiclink.toString();
-        // checklink = await extractBaseUrl(link);
-        // user_dynamic_id = extractLastSlashValue(dynamiclink.toString());
-        checklink = "";
-        user_dynamic_id = "";
+        checklink = dynamiclink.toString();
+        user_dynamic_id = dynamiclink!.queryParameters['pid'] ?? '';
       } else {
-        dynamiclink = null;
         checklink = "";
         user_dynamic_id = "";
       }
+    } catch (_) {
+      dynamiclink = null;
+      checklink = "";
+      user_dynamic_id = "";
     }
     _getHomeData();
     setState(() {});
@@ -281,17 +263,5 @@ class _SplashScreenState extends State<SplashScreen> {
     }
 
     // Get.offAll(BusinessProfileMenuScreen());
-  }
-
-  String extractLastSlashValue(String url) {
-    final parts = url.split('/');
-    return parts.last.isNotEmpty
-        ? parts.last
-        : (parts.length > 1 ? parts[parts.length - 2] : '');
-  }
-
-  String extractBaseUrl(String url) {
-    Uri uri = Uri.parse(url);
-    return '${uri.scheme}://${uri.host}${uri.path.split('/').take(6).join('/')}';
   }
 }

@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -196,21 +195,9 @@ class Network {
 
       await userController.initUser();
 
-      // Step 5: If no Firebase ID, register on Firestore (needs a signed-in user)
+      // Persist Firebase Auth uid in MySQL so folders keep working.
       if (Utils.isDataEmpty(profile["firebase_id"]) && fuser != null) {
         try {
-          final docRef =
-              FirebaseFirestore.instance.collection("users").doc(fuser.uid);
-
-          await docRef.set({
-            "uid": fuser.uid,
-            "name": profile["name"],
-            "profileImage": profile["profile_image"],
-            "id": profile["id"],
-            "login_type": profile["login_type"],
-            "business_type": profile["business_type"],
-          });
-
           await userController.updateUser(
             name: profile["name"],
             address: profile["address"],
@@ -222,7 +209,7 @@ class Network {
             firebaseId: fuser.uid,
           );
         } catch (e) {
-          debugPrint("Firestore error: $e");
+          debugPrint("firebase_id persist error: $e");
         }
       }
 
@@ -351,19 +338,8 @@ class Network {
         await WebService.setCurrentUser(newUser);
         await userController.initUser();
 
-        // set current user if not set
         if (Utils.isDataEmpty(profile["firebase_id"])) {
           try {
-            final firebaseUser =
-                FirebaseFirestore.instance.collection("users").doc(fUser.uid);
-            await firebaseUser.set({
-              "uid": fUser.uid,
-              "name": profile["name"],
-              "profileImage": profile["profile_image"],
-              "id": profile["id"],
-              "login_type": profile["login_type"],
-              "business_type": profile["business_type"]
-            });
             await userController.updateUser(
                 name: profile["name"],
                 address: profile["address"],
@@ -423,19 +399,8 @@ class Network {
         await WebService.setCurrentUser(newUser);
         await userController.initUser();
 
-        // set current user if not set
         if (Utils.isDataEmpty(profile["firebase_id"])) {
           try {
-            final firebaseUser =
-                FirebaseFirestore.instance.collection("users").doc(socialId);
-            await firebaseUser.set({
-              "uid": socialId,
-              "name": profile["name"],
-              "profileImage": profile["profile_image"],
-              "id": profile["id"],
-              "login_type": profile["login_type"],
-              "business_type": profile["business_type"]
-            });
             await userController.updateUser(
                 name: profile["name"],
                 address: profile["address"],
@@ -838,11 +803,12 @@ class Network {
       required String imageName,
       required String imageId,
       required String creatorId,
-      required String styles}) async {
+      required String styles,
+      List<File>? images}) async {
     final loginToken = await WebService.getUserToken();
     Response response;
     try {
-      FormData formData = FormData.fromMap(NetWorkRequest.addPost(
+      final params = Map<String, dynamic>.from(NetWorkRequest.addPost(
           userController.id.value,
           loginToken,
           creatorId,
@@ -852,8 +818,21 @@ class Network {
           imageName,
           imageId,
           userController.businessType.value));
+      final files = images ?? const <File>[];
+      for (int i = 0; i < files.length && i < 3; i++) {
+        params["post_image_${i + 1}"] = await _optionalImageFile(files[i]);
+      }
+      params.removeWhere((key, value) => value == null);
+      FormData formData = FormData.fromMap(params);
 
-      response = await dio.post(WebService.baseUrl, data: formData);
+      response = await dio.post(
+        WebService.baseUrl,
+        data: formData,
+        options: Options(
+          sendTimeout: 60 * 1000,
+          receiveTimeout: 60 * 1000,
+        ),
+      );
       printMsg(formData.fields.toString());
       final isDataNotEmpty = ApiResponse.checkResponseStatus(response);
 
@@ -1360,7 +1339,8 @@ class Network {
             await WebService.setUserIds(profile['id'].toString());
           }
           if (responseData is Map) {
-            await WebService.setCurrentUser(AppUser.fromJson(responseData));
+            await WebService.setCurrentUser(
+                AppUser.fromJson(Map<String, dynamic>.from(responseData)));
           }
         }
         return profile is Map && profile["user_type"].toString() == "2";
@@ -1609,20 +1589,36 @@ class Network {
       required String imageName,
       required String artistId,
       required String studioId,
-      required String styles}) async {
+      required String styles,
+      List<File>? images}) async {
     final loginToken = await WebService.getUserToken();
     Response response;
     try {
-      FormData formData = FormData.fromMap(NetWorkRequest.updatePostReq(
+      final params = Map<String, dynamic>.from(NetWorkRequest.updatePostReq(
           userController.id.value,
           loginToken,
           styles,
           description,
           artistId,
           studioId,
-          postId,imageId,imageName));
+          postId,
+          imageId,
+          imageName));
+      final files = images ?? const <File>[];
+      for (int i = 0; i < files.length && i < 3; i++) {
+        params["post_image_${i + 1}"] = await _optionalImageFile(files[i]);
+      }
+      params.removeWhere((key, value) => value == null);
+      FormData formData = FormData.fromMap(params);
 
-      response = await dio.post(WebService.baseUrl, data: formData);
+      response = await dio.post(
+        WebService.baseUrl,
+        data: formData,
+        options: Options(
+          sendTimeout: 60 * 1000,
+          receiveTimeout: 60 * 1000,
+        ),
+      );
       printMsg(formData.fields.toString());
 
       final isDataNotEmpty = ApiResponse.checkResponseStatus(response);
@@ -2960,7 +2956,10 @@ class Network {
         }
         await WebService.setUserToken(profile['login_token']);
         await WebService.setUserIds(profile['id'].toString());
-        await WebService.setCurrentUser(AppUser.fromJson(responseData));
+        if (responseData is Map) {
+          await WebService.setCurrentUser(
+              AppUser.fromJson(Map<String, dynamic>.from(responseData)));
+        }
 
         // displayMessage(response.data["msg"].toString(), Colors.blue);
         return true;

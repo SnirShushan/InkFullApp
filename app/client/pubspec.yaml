@@ -4,7 +4,7 @@ description: A new Flutter project.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
 # iOS App Store / TestFlight: marketing version and build number stay aligned.
-version: 1.0.97+97
+version: 1.0.98+98
 
 environment:
 
@@ -68,7 +68,7 @@ dependencies:
   firebase_messaging:
   firebase_storage:
   cloud_firestore:
-  firebase_dynamic_links: ^5.3.2  #New Version Change flutter 3.24 : 6.0.8
+  app_links: ^6.3.3
 
   #notification
   flutter_local_notifications:

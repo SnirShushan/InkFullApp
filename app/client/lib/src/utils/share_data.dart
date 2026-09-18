@@ -7,7 +7,6 @@ import 'package:get/get.dart' as getx;
 import 'package:ink/src/ui/screen/home/controller/post_details_controller.dart';
 import 'package:ink/src/utils/assets.dart';
 import 'package:ink/src/utils/firebase_dynamic_link_helper.dart';
-import 'package:ink/src/utils/webService.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -68,7 +67,8 @@ class ShareData {
         shareLink = await FirebaseDynamicLinkHelper()
             .createShortDynamicLink(linkType: "", userId: userid);
       } catch (_) {
-        shareLink = "https://inkapp.page.link/";
+        shareLink = FirebaseDynamicLinkHelper()
+            .createShareLink(linkType: "", userId: userid);
       }
       postDetailsController.isShareLoading.value = false;
       if (Platform.isIOS) {

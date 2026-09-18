@@ -20,7 +20,6 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../data/model/currentUser.dart';
 import 'common.dart';
-import 'firebase_dynamic_link_helper.dart';
 
 class WebService {
 
@@ -73,7 +72,7 @@ class WebService {
   // static const defaultImageUrl =
   //     "http://192.168.1.59/tattoo/assets/img/defult.png";
 
-  static String appVersion = Platform.isAndroid ? "1.0.67" : "1.0.97";
+  static String appVersion = Platform.isAndroid ? "1.0.67" : "1.0.98";
   static const appToken = "123456";
   static String deviceType = Platform.isAndroid ? "a" : "i";
   static double locationRadius = 100.0;

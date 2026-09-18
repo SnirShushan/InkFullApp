@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { pool } from '../db.js';
 import { assetUrl, publicBases } from '../assets.js';
 import {
@@ -394,6 +395,7 @@ export async function handleUpdateProfile(p) {
     is_register: p.is_register,
     push_enable: p.push_enable,
     location_enable: p.location_enable,
+    firebase_id: p.firebase_id,
   };
   if (String(p.name || '').trim() !== '') {
     fields.is_register = '0';
@@ -561,11 +563,54 @@ export async function handleRemovePost(p) {
   return ok([], 'הפוסט הוסר');
 }
 
-export async function handleAddPost(p) {
+function splitCsv(value) {
+  return String(value || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+async function uploadPostImages(files) {
+  const list = Array.isArray(files) ? files : [];
+  const wanted = list.filter((f) => {
+    const name = String(f?.fieldname || '');
+    return (
+      /^post_image[_-]?\d+$/i.test(name) ||
+      name === 'post_image' ||
+      name === 'image'
+    );
+  });
+  if (!wanted.length) return { names: [], ids: [] };
+  const { uploadImageToR2 } = await import('../r2_upload.js');
+  const names = [];
+  const ids = [];
+  for (const file of wanted) {
+    if (!file?.buffer?.length) continue;
+    const filename = await uploadImageToR2(file, 'assets/uploads/post_images');
+    if (!filename) continue;
+    names.push(`assets/uploads/post_images/${filename}`);
+    ids.push(crypto.randomUUID());
+  }
+  return { names, ids };
+}
+
+export async function handleAddPost(p, files) {
   const auth = await requireAuthLocal(p);
   if (auth.error) return auth.error;
   if (!String(p.description || '').trim()) return fail('יש להזין תיאור');
   const imgType = p.image_type || p.img_type || '0';
+  let imageName = p.image_name || '';
+  let imageId = p.image_id || '';
+  try {
+    const uploaded = await uploadPostImages(files);
+    if (uploaded.names.length) {
+      imageName = uploaded.names.join(',');
+      imageId = uploaded.ids.join(',');
+    }
+  } catch (err) {
+    console.error('AddPost image upload failed', err?.message || err);
+    return fail('העלאת התמונה נכשלה');
+  }
   const [result] = await pool.query(
     `INSERT INTO tbl_post
       (uid, image_name, image_id, img_type, styles, description, status, date_added, view_count)
@@ -573,8 +618,8 @@ export async function handleAddPost(p) {
       (:uid, :image_name, :image_id, :img_type, :styles, :description, '1', NOW(), 0)`,
     {
       uid: p.creator_id || auth.uid,
-      image_name: p.image_name || '',
-      image_id: p.image_id || '',
+      image_name: imageName,
+      image_id: imageId,
       img_type: imgType,
       styles: normalizePostStyles(p.styles || '', imgType),
       description: p.description || '',
@@ -583,12 +628,30 @@ export async function handleAddPost(p) {
   return ok({ post_id: String(result.insertId) }, 'נוספה תמונה חדשה');
 }
 
-export async function handleUpdatePost(p) {
+export async function handleUpdatePost(p, files) {
   const auth = await requireAuthLocal(p);
   if (auth.error) return auth.error;
   const pid = p.pid || p.post_id;
+  let imageName = p.image_name;
+  let imageId = p.image_id;
+  try {
+    const uploaded = await uploadPostImages(files);
+    if (uploaded.names.length) {
+      imageName = [...splitCsv(p.image_name), ...uploaded.names].join(',');
+      imageId = [...splitCsv(p.image_id), ...uploaded.ids].join(',');
+    }
+  } catch (err) {
+    console.error('UpdatePost image upload failed', err?.message || err);
+    return fail('העלאת התמונה נכשלה');
+  }
   const sets = [];
   const params = { pid, uid: auth.uid };
+  if (imageName !== undefined && imageName !== null) {
+    p.image_name = imageName;
+  }
+  if (imageId !== undefined && imageId !== null) {
+    p.image_id = imageId;
+  }
   for (const key of ['styles', 'description', 'image_name', 'image_id', 'img_type']) {
     if (p[key] !== undefined && p[key] !== null) {
       sets.push(`${key} = :${key}`);

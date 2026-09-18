@@ -610,9 +610,9 @@ export async function handleLegacyAction(req) {
       case 'RemovePost':
         return extra.handleRemovePost(p);
       case 'AddPost':
-        return extra.handleAddPost(p);
+        return extra.handleAddPost(p, req.files);
       case 'UpdatePost':
-        return extra.handleUpdatePost(p);
+        return extra.handleUpdatePost(p, req.files);
       case 'GetMyArtist':
         return extra.handleGetMyArtist(p);
       case 'GetMyStudio':
