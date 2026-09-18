@@ -92,7 +92,7 @@ const InkAdmin = (() => {
         <a class="stat" href="#/admin/reports/users"><b>${fmt(data.pendingUserReports)}</b><span>דיווחי משתמשים ממתינים</span></a>
         <a class="stat" href="#/admin/reports/posts"><b>${fmt(data.pendingPostReports)}</b><span>דיווחי פוסטים ממתינים</span></a>
       </section>
-      <p class="notes">המסכים האלה כותבים ישירות ל-MySQL החי. פוש, העלאת תמונת startup ותבנית Metronic לא הועברו.</p>
+        <p class="notes">המסכים האלה כותבים ישירות ל-MySQL החי. תמונת הפתיחה מתעדכנת בהגדרות.</p>
     `;
   }
 
@@ -283,6 +283,9 @@ const InkAdmin = (() => {
     ctx.view.innerHTML = `<p class="empty">טוען הגדרות…</p>`;
     const data = await api('/api/admin/settings');
     const s = data.settings || {};
+    const preview = data.startup_image_url
+      ? `<img class="startup-preview" src="${escAttr(data.startup_image_url)}" alt="תמונת פתיחה נוכחית" />`
+      : `<p class="notes">עדיין לא הועלתה תמונת פתיחה.</p>`;
     ctx.view.innerHTML = `
       <form class="admin-form" id="settingsForm">
         <label>אימייל מנהל
@@ -301,6 +304,19 @@ const InkAdmin = (() => {
           <button class="btn" type="submit">שמירה</button>
         </div>
       </form>
+      <section class="admin-form startup-block">
+        <h3>תמונה בפתיחת האפליקציה</h3>
+        <p class="notes">מוצגת בפעם הראשונה שהאפליקציה נפתחת (ואחרי 6 ימים שוב). מומלץ תמונה אנכית לאייפון.</p>
+        <div id="startupPreview">${preview}</div>
+        <form id="startupForm">
+          <label>העלאת תמונה חדשה
+            <input name="startup_image" type="file" accept="image/*" required />
+          </label>
+          <div>
+            <button class="btn" type="submit">עדכון תמונה</button>
+          </div>
+        </form>
+      </section>
     `;
     ctx.view.querySelector('#settingsForm').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -311,6 +327,32 @@ const InkAdmin = (() => {
           body: JSON.stringify(Object.fromEntries(form.entries())),
         });
         ctx.view.insertAdjacentHTML('afterbegin', `<p class="flash ok">ההגדרות נשמרו.</p>`);
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+    ctx.view.querySelector('#startupForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fileInput = e.target.startup_image;
+      if (!fileInput?.files?.[0]) {
+        alert('בחרו תמונה');
+        return;
+      }
+      const body = new FormData();
+      body.append('startup_image', fileInput.files[0]);
+      try {
+        const res = await fetch('/api/admin/settings/startup-image', {
+          method: 'POST',
+          body,
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(json.error || 'העלאה נכשלה');
+        const box = ctx.view.querySelector('#startupPreview');
+        if (box && json.startup_image_url) {
+          box.innerHTML = `<img class="startup-preview" src="${escAttr(json.startup_image_url)}?t=${Date.now()}" alt="תמונת פתיחה נוכחית" />`;
+        }
+        ctx.view.insertAdjacentHTML('afterbegin', `<p class="flash ok">תמונת הפתיחה עודכנה.</p>`);
+        e.target.reset();
       } catch (err) {
         alert(err.message);
       }

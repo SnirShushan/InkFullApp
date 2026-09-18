@@ -422,6 +422,24 @@ tbody tr:hover { background: #24242e; }
   padding: 9px 10px;
   color: inherit;
 }
+.startup-block {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+  max-width: 520px;
+}
+.startup-block h3 {
+  margin: 0;
+  font-size: 16px;
+}
+.startup-preview {
+  display: block;
+  max-width: 280px;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--line);
+  background: #111;
+}
 .flash {
   margin: 0 0 16px;
   padding: 10px 12px;

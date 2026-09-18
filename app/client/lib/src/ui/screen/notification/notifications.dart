@@ -443,7 +443,8 @@ class _NotificationScreenState extends State<NotificationScreen>
                                                     .profileImage ??
                                                 ""),
                                     tattooRequest: notificationController
-                                        .tattooRequestsList[index]);
+                                        .tattooRequestsList[index],
+                                    markAsRead: isNotBusiness == true);
                               } else {
                                 return Padding(
                                   padding: const EdgeInsets.all(10.0),

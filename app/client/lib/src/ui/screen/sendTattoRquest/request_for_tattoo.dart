@@ -1021,43 +1021,20 @@ class _ScreenTattooRequestState extends State<ScreenTattooRequest>
               animationController.repeat();
             });
             await _addImagesList();
-            List<RequestImages> imgList = [];
-            if (imgListController.imgList.isNotEmpty) {
-              // await FireBaseApi.userRequestImagesUpload(
-              //     imgList: imgListController.imgList.value,
-              //     imgNameList: imgList);
-              imgListController.WithcaptureImage(
-                      bid: _requestBusinessId,
-                      screenshotController:
-                          imgListController.screenshotController,
-                      selectedCreatorId: selectedCreatorId,
-                      tattooSize: tattooSize,
-                      imgListDetails: imgList)
-                  .then((value) {
-                if (!mounted) return;
+            try {
+              await imgListController.sendFullRequest(
+                  bid: _requestBusinessId,
+                  screenshotController: imgListController.screenshotController,
+                  selectedCreatorId: selectedCreatorId,
+                  tattooSize: tattooSize);
+            } finally {
+              if (mounted) {
                 setState(() {
                   isvalidate = true;
                   isLoading = false;
                   animationController.stop();
                 });
-              });
-            } else {
-              imgListController
-                  .captureImage(
-                      bid: _requestBusinessId,
-                      screenshotController:
-                          imgListController.screenshotController,
-                      selectedCreatorId: selectedCreatorId,
-                      tattooSize: tattooSize,
-                      imgListDetails: imgList)
-                  .then((value) {
-                setState(() {
-                  if (!mounted) return;
-                  isvalidate = true;
-                  isLoading = false;
-                  animationController.stop();
-                });
-              });
+              }
             }
           }
         },

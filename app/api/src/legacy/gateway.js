@@ -303,15 +303,10 @@ async function handleGetHomeData(p) {
 
   let unread_request_count = '0';
   try {
-    const userType = String(profile?.user_type ?? '1');
     const [reqCount] = await pool.query(
-      userType === '1'
-        ? `SELECT COUNT(*) AS c FROM tbl_request r
-           INNER JOIN tbl_customer cus ON r.uid = cus.id AND cus.is_delete = '0'
-           WHERE r.uid = :uid AND r.is_read = '2' AND IFNULL(r.business_id, '0') != '0'`
-        : `SELECT COUNT(*) AS c FROM tbl_request r
-           INNER JOIN tbl_customer cus ON r.uid = cus.id AND cus.is_delete = '0'
-           WHERE r.business_id = :uid AND r.is_read = '2'`,
+      `SELECT COUNT(*) AS c FROM tbl_request r
+       INNER JOIN tbl_customer cus ON r.uid = cus.id AND cus.is_delete = '0'
+       WHERE r.business_id = :uid AND r.is_read = '2'`,
       { uid: auth.uid }
     );
     unread_request_count = String(reqCount[0]?.c ?? 0);
@@ -609,7 +604,7 @@ export async function handleLegacyAction(req) {
       case 'UpdateProfileImage':
         return extra.handleUpdateProfileImage(p, firstUpload(req));
       case 'UpdateBusinessProfile':
-        return extra.handleUpdateBusinessProfile(p);
+        return extra.handleUpdateBusinessProfile(p, req.files);
       case 'CheckNameExists':
         return extra.handleCheckNameExists(p);
       case 'RemovePost':
@@ -634,7 +629,7 @@ export async function handleLegacyAction(req) {
       case 'GetTattooRequest':
         return extra.handleGetTattooRequest(p);
       case 'RequestForTattoo':
-        return extra.handleRequestForTattoo(p);
+        return extra.handleRequestForTattoo(p, req.files);
       case 'ReadTattooRequest':
         return extra.handleReadTattooRequest(p);
       case 'ContactUs':

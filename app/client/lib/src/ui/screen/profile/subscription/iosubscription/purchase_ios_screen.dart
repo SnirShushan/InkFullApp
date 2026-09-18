@@ -662,19 +662,14 @@ class _IOSPurchaseScreenState extends State<IOSPurchaseScreen> {
                   // : PurchaseOutlineWidget(
                   : AnimationLoaderButtonWidget(
                       onTap: () async {
-                        if (WebService.isTempPremiumPlanPurchaseLoading ==
-                            false) {
-                          if (productid != _kPremiumMonthlyId ||
-                              productid == "") {
+                        if (WebService.isTempPremiumPlanPurchaseLoading) return;
+                        setState(() => newBasicFreeDBPurchaseLoading = true);
+                        try {
+                          await SubscriptionDbService().basicFreePlanDbServer();
+                        } finally {
+                          if (mounted) {
                             setState(
-                                () => newBasicFreeDBPurchaseLoading = true);
-                            await SubscriptionDbService()
-                                .basicFreePlanDbServer();
-
-                            setState(() {
-                              newBasicFreeDBPurchaseLoading = false;
-                              WebService.isTempBasicPurchaseLoading = true;
-                            });
+                                () => newBasicFreeDBPurchaseLoading = false);
                           }
                         }
                       },
@@ -820,27 +815,8 @@ class _IOSPurchaseScreenState extends State<IOSPurchaseScreen> {
                           title: widget.checkstatus == "0"
                               ? "${isPremiumMonthly.isNotEmpty ? isPremiumMonthly[0].price : "₪99.90"} לחודש\n חודש ראשון מתנה"
                               : "${isPremiumMonthly.isNotEmpty ? isPremiumMonthly[0].price : "₪99.90"} לחודש",
-                          subtitle: tr("purchases.premium_monthly_subtitle")
-                          // subtitle: "חודש ראשון מתנה!",
-                          // title: widget.checkstatus == "0"
-                          //     ? "${addSuffixIfEndsWithDotNine(isPremiumMonthly[0].price)} חודש ראשון חינם "
-                          //     : addSuffixIfEndsWithDotNine(
-                          //         isPremiumMonthly[0].price),
-                          // subtitle: tr("purchases.premium_monthly_subtitle")
+                          subtitle: "",
                           ),
-          Padding(
-            padding: const EdgeInsets.only(top: 8, left: 4, right: 4),
-            child: Text(
-              "מנוי חודשי מתחדש אוטומטית במחיר המוצג. החיוב מחשבון Apple ID. ביטול: הגדרות ← Apple ID ← מנויים, לפחות 24 שעות לפני סוף התקופה. תנאי שימוש ומדיניות פרטיות למטה.",
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: Platform.isIOS ? 11 : 12,
-                height: 1.4,
-                color: const Color(0xFFC0BCC4),
-                fontFamily: 'Arimo',
-              ),
-            ),
-          ),
           SizedBox(height: MediaQuery.of(context).size.height * 0.01),
         ],
       ),

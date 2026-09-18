@@ -440,8 +440,104 @@ export async function handleUpdateProfileImage(p, file) {
   return ok({ profile }, 'תמונת פרופיל עודכנה');
 }
 
-export async function handleUpdateBusinessProfile(p) {
-  return handleUpdateProfile(p);
+export async function handleUpdateBusinessProfile(p, files) {
+  const auth = await requireAuthLocal(p);
+  if (auth.error) return auth.error;
+
+  const name = String(p.name || '').trim();
+  if (name) {
+    const [taken] = await pool.query(
+      `SELECT id FROM tbl_customer
+       WHERE name = :name AND is_delete = '0' AND id != :uid
+       LIMIT 1`,
+      { name, uid: auth.uid }
+    );
+    if (taken.length) return fail('השם כבר קיים', 4);
+  }
+
+  const businessType = String(p.business_type || '2') === '1' ? '1' : '2';
+  const fileList = Array.isArray(files) ? files : [];
+  const sigFile = fileList.find(
+    (f) => f.fieldname === 'signature_image' || f.fieldname === 'files'
+  );
+  let signatureName = '';
+  try {
+    if (sigFile?.buffer?.length) {
+      const { uploadImageToR2 } = await import('../r2_upload.js');
+      signatureName =
+        (await uploadImageToR2(sigFile, 'assets/uploads/signature_images')) || '';
+    }
+  } catch (err) {
+    console.error('signature upload failed', err?.message || err);
+  }
+
+  const fields = {
+    user_type: '2',
+    business_type: businessType,
+    name: name || undefined,
+    address: p.address,
+    city_name: p.city_name,
+    about_text: p.about_text || p.about,
+    address_lat: p.address_lat || p.lat,
+    address_lng: p.address_lng || p.lng,
+    address_place_id: p.address_place_id || p.place_id,
+    styles: p.styles,
+    email: p.email,
+    signature_image: signatureName || undefined,
+  };
+  const sets = ["user_type = '2'", "business_type = :business_type", 'date_updated = NOW()', 'register_date = NOW()'];
+  const params = { uid: auth.uid, business_type: businessType };
+  for (const [k, v] of Object.entries(fields)) {
+    if (k === 'user_type' || k === 'business_type') continue;
+    if (v === undefined || v === null || String(v) === '') continue;
+    sets.push(`${k} = :${k}`);
+    params[k] = v;
+  }
+
+  try {
+    await pool.query(
+      `UPDATE tbl_customer SET ${sets.join(', ')}, is_business = '1' WHERE id = :uid`,
+      params
+    );
+  } catch (err) {
+    console.error('UpdateBusinessProfile is_business failed', err?.message || err);
+    await pool.query(
+      `UPDATE tbl_customer SET ${sets.join(', ')} WHERE id = :uid`,
+      params
+    );
+  }
+
+  const memberIds = String(p.member_ids || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  for (const memberId of memberIds) {
+    try {
+      const artistId = businessType === '1' ? memberId : auth.uid;
+      const studioId = businessType === '1' ? auth.uid : memberId;
+      const [ex] = await pool.query(
+        `SELECT id FROM tbl_artist_business_map
+         WHERE uid = :uid AND bid = :bid LIMIT 1`,
+        { uid: artistId, bid: studioId }
+      );
+      if (ex.length) continue;
+      await pool.query(
+        `INSERT INTO tbl_artist_business_map
+          (uid, bid, req_status, date_added, date_updated)
+         VALUES (:uid, :bid, '0', NOW(), NOW())`,
+        { uid: artistId, bid: studioId }
+      );
+    } catch (err) {
+      console.error('UpdateBusinessProfile member map failed', err?.message || err);
+    }
+  }
+
+  const profile = await getUserProfile(auth.uid, true);
+  if (profile) profile.styles_he = await styleNamesHe(profile.styles);
+  return ok(
+    { profile, styles_list: await getStyleList() },
+    'פרופיל עיסקי עודכן בהצלחה'
+  );
 }
 
 export async function handleCheckNameExists(p) {
@@ -694,24 +790,26 @@ async function mapTattooRequestRow(r) {
     back_side: r.back_side || '',
     front_data: r.front_data || '',
     back_data: r.back_data || '',
-    front_data_image: r.front_data_image
-      ? assetUrl(String(r.front_data_image).trim(), 'body')
-      : '',
-    back_data_image: r.back_data_image
-      ? assetUrl(String(r.back_data_image).trim(), 'body')
-      : '',
+    front_data_image: resolveRequestMedia(r.front_data_image),
+    back_data_image: resolveRequestMedia(r.back_data_image),
     image1_id: str(r.image1_id),
     image2_id: str(r.image2_id),
     image3_id: str(r.image3_id),
-    image1_name: r.image1_name || '',
-    image2_name: r.image2_name || '',
-    image3_name: r.image3_name || '',
+    image1_name: resolveRequestMedia(r.image1_name),
+    image2_name: resolveRequestMedia(r.image2_name),
+    image3_name: resolveRequestMedia(r.image3_name),
     is_read: str(r.is_read || '1'),
     status: str(r.status || '1'),
     is_contact_request: str(r.is_contact_request || '0'),
     date_added: toIsoDate(r.date_added),
     date_updated: toIsoDate(r.date_updated),
-    request_images: parseRequestImages(r.request_images),
+    request_images: parseRequestImages(r.request_images).map((img) => {
+      if (!img || typeof img !== 'object') return img;
+      return {
+        ...img,
+        imageUrl: resolveRequestMedia(img.imageUrl || img.name),
+      };
+    }),
     business_row: business_row || {
       id: str(r.business_id),
       name: r.name || '',
@@ -744,19 +842,19 @@ export async function handleGetTattooRequest(p) {
     for (const r of rows) {
       try {
         const mapped = await mapTattooRequestRow(r);
-        if (mapped) list.push(mapped);
+        if (!mapped) continue;
+        if (isSent) mapped.is_read = '1';
+        list.push(mapped);
       } catch (err) {
         console.error('mapTattooRequestRow failed', r?.id, err?.message || err);
       }
     }
     let unread = 0;
     try {
-      const unreadWhere = isSent
-        ? `r.uid = :uid AND IFNULL(r.business_id, '0') != '0' AND r.is_read = '2'`
-        : `r.business_id = :uid AND r.is_read = '2'`;
       const [[countRow]] = await pool.query(
         `SELECT COUNT(*) AS c FROM tbl_request r
-         WHERE ${unreadWhere}`,
+         INNER JOIN tbl_customer cus ON r.uid = cus.id AND cus.is_delete = '0'
+         WHERE r.business_id = :uid AND r.is_read = '2'`,
         { uid: auth.uid }
       );
       unread = Number(countRow?.c ?? 0);
@@ -771,7 +869,25 @@ export async function handleGetTattooRequest(p) {
   }
 }
 
-export async function handleRequestForTattoo(p) {
+function shortImageName(v) {
+  const s = String(v ?? '').trim();
+  if (!s) return '';
+  try {
+    const raw = /^https?:\/\//i.test(s) ? decodeURIComponent(new URL(s).pathname) : s;
+    const base = raw.replace(/^.*[\\/]/, '').split('?')[0];
+    return String(base || s).slice(0, 255);
+  } catch {
+    return s.replace(/^.*[\\/]/, '').slice(0, 255);
+  }
+}
+
+function resolveRequestMedia(v) {
+  const s = String(v ?? '').trim();
+  if (!s) return '';
+  return assetUrl(s, 'body');
+}
+
+export async function handleRequestForTattoo(p, files) {
   const auth = await requireAuthLocal(p);
   if (auth.error) return auth.error;
   const businessId = String(p.business_id || p.bid || '').trim();
@@ -779,39 +895,103 @@ export async function handleRequestForTattoo(p) {
     return fail('לא ניתן לשלוח את הפנייה. נסו שוב.');
   }
 
+  const clip = (v, n) => String(v ?? '').slice(0, n);
+  const fileList = Array.isArray(files) ? files : [];
+  const frontFile = fileList.find((f) => f.fieldname === 'front_data_image');
+  const backFile = fileList.find((f) => f.fieldname === 'back_data_image');
+  const exampleFiles = [1, 2, 3].map((n) =>
+    fileList.find(
+      (f) =>
+        f.fieldname === `example_image_${n}` ||
+        f.fieldname === `request_image_${n}` ||
+        f.fieldname === `image${n}`
+    )
+  );
+  let frontImageName = clip(shortImageName(p.front_data_image), 255);
+  let backImageName = clip(shortImageName(p.back_data_image), 255);
+  const uploadedExamples = [];
+  try {
+    const { uploadImageToR2 } = await import('../r2_upload.js');
+    if (frontFile?.buffer?.length) {
+      frontImageName = (await uploadImageToR2(frontFile, 'assets/uploads/body_images')) || frontImageName;
+    }
+    if (backFile?.buffer?.length) {
+      backImageName = (await uploadImageToR2(backFile, 'assets/uploads/body_images')) || backImageName;
+    }
+    for (const file of exampleFiles) {
+      if (!file?.buffer?.length) continue;
+      const name = await uploadImageToR2(file, 'assets/uploads/body_images');
+      if (!name) continue;
+      uploadedExamples.push({
+        imageId: '',
+        name,
+        imageUrl: resolveRequestMedia(name),
+        uid: String(auth.uid),
+      });
+    }
+  } catch (err) {
+    console.error('RequestForTattoo image upload failed', err?.message || err);
+  }
+
   let requestImagesRaw = p.request_images || '';
   if (requestImagesRaw && typeof requestImagesRaw !== 'string') {
     requestImagesRaw = JSON.stringify(requestImagesRaw);
   }
-  const parsedImages = parseRequestImages(requestImagesRaw);
+  let parsedImages = parseRequestImages(requestImagesRaw);
+  if (uploadedExamples.length) {
+    parsedImages = uploadedExamples.map((uploaded, i) => ({
+      ...(parsedImages[i] || {}),
+      ...uploaded,
+      imageId: parsedImages[i]?.imageId || uploaded.imageId,
+    }));
+  }
+  parsedImages = parsedImages.map((img) => {
+    if (!img || typeof img !== 'object') return img;
+    const name = shortImageName(img.name || img.imageUrl);
+    return {
+      ...img,
+      name,
+      imageUrl: resolveRequestMedia(img.imageUrl || name),
+      uid: img.uid || String(auth.uid),
+    };
+  });
   const imageFields = {
-    image1_id: p.image1_id || parsedImages[0]?.imageId || '',
-    image2_id: p.image2_id || parsedImages[1]?.imageId || '',
-    image3_id: p.image3_id || parsedImages[2]?.imageId || '',
-    image1_name: p.image1_name || parsedImages[0]?.imageUrl || '',
-    image2_name: p.image2_name || parsedImages[1]?.imageUrl || '',
-    image3_name: p.image3_name || parsedImages[2]?.imageUrl || '',
+    image1_id: clip(p.image1_id || parsedImages[0]?.imageId, 255),
+    image2_id: clip(p.image2_id || parsedImages[1]?.imageId, 255),
+    image3_id: clip(p.image3_id || parsedImages[2]?.imageId, 255),
+    image1_name: clip(
+      shortImageName(p.image1_name || parsedImages[0]?.name || parsedImages[0]?.imageUrl),
+      255
+    ),
+    image2_name: clip(
+      shortImageName(p.image2_name || parsedImages[1]?.name || parsedImages[1]?.imageUrl),
+      255
+    ),
+    image3_name: clip(
+      shortImageName(p.image3_name || parsedImages[2]?.name || parsedImages[2]?.imageUrl),
+      255
+    ),
   };
 
   const payload = {
     uid: auth.uid,
     business_id: businessId,
-    name: p.name || '',
-    tattoo_size: p.tattoo_size || '',
-    styles: p.styles || '',
-    description: p.description || '',
-    artists_uid: p.artists_uid || '',
-    email: p.email || '',
-    phone: p.phone || '',
+    name: clip(p.name, 255),
+    tattoo_size: clip(p.tattoo_size, 255),
+    styles: String(p.styles || ''),
+    description: String(p.description || ''),
+    artists_uid: clip(p.artists_uid, 255),
+    email: clip(p.email, 255),
+    phone: clip(p.phone, 64),
     ...imageFields,
-    request_images: requestImagesRaw || JSON.stringify(parsedImages),
-    front_side: p.front_side || '',
-    back_side: p.back_side || '',
-    front_data: p.front_data || '',
-    back_data: p.back_data || '',
-    front_data_image: p.front_data_image || '',
-    back_data_image: p.back_data_image || '',
-    is_contact_request: p.is_contact_request || '0',
+    request_images: JSON.stringify(parsedImages),
+    front_side: String(p.front_side || ''),
+    back_side: String(p.back_side || ''),
+    front_data: String(p.front_data || ''),
+    back_data: String(p.back_data || ''),
+    front_data_image: frontImageName,
+    back_data_image: backImageName,
+    is_contact_request: clip(p.is_contact_request || '0', 8),
     is_read: '2',
   };
 
@@ -833,19 +1013,61 @@ export async function handleRequestForTattoo(p) {
     console.error('RequestForTattoo insert failed', e?.message || e);
     return fail('לא ניתן לשלוח את הפנייה');
   }
+
+  try {
+    await notifyBusinessTattooRequest(auth.uid, businessId, payload.name);
+  } catch (err) {
+    console.error('RequestForTattoo notify failed', err?.message || err);
+  }
   return ok({ sent: '1' }, 'הפנייה נשלחה');
+}
+
+async function notifyBusinessTattooRequest(senderId, businessId, senderName) {
+  const [targets] = await pool.query(
+    `SELECT id, user_type, push_enable, udid, firebase_id, device_type
+     FROM tbl_customer
+     WHERE id = :id AND is_delete = '0' LIMIT 1`,
+    { id: businessId }
+  );
+  const target = targets[0];
+  if (!target) return;
+  const title = `${senderName || 'משתמש'} שלח לך בקשה`;
+  const token = String(target.udid || target.firebase_id || '').trim();
+  if (String(target.push_enable) !== '1' || !token) return;
+  const { sendPush } = await import('../push.js');
+  await sendPush({
+    token,
+    title,
+    body: '',
+    deviceType: target.device_type,
+    data: {
+      screen: 'notification',
+      is_request: '1',
+      pid: '0',
+      badge_count: '1',
+      description: '',
+    },
+  });
 }
 
 export async function handleReadTattooRequest(p) {
   const auth = await requireAuthLocal(p);
   if (auth.error) return auth.error;
+  const requestId = String(p.request_id || p.rid || p.id || '').trim();
+  const isRead = String(p.is_read || '1');
+  const type = String(p.type || '').toLowerCase();
+  if (!requestId || type === 'sent') {
+    return ok([], 'Success');
+  }
   try {
-    if (p.rid || p.id) {
-      await pool.query(`UPDATE tbl_request SET is_read = '1' WHERE id = :id`, {
-        id: p.rid || p.id,
-      });
-    }
-  } catch (_) {}
+    await pool.query(
+      `UPDATE tbl_request SET is_read = :is_read, date_updated = NOW()
+       WHERE id = :id AND business_id = :uid`,
+      { id: requestId, uid: auth.uid, is_read: isRead }
+    );
+  } catch (e) {
+    console.error('ReadTattooRequest failed', e?.message || e);
+  }
   return ok([], 'Success');
 }
 

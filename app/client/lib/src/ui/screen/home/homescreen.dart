@@ -273,11 +273,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               ),
               NewUserWidget(homeScreenController: _homeScreenController),
               dividerHome(size),
-
-              SizedBox(
-                height: MediaQuery.of(context).size.height * 0.02,
-              ),
-
               HomePostGridWidget(homeScreenController: _homeScreenController)
             ],
               ),
@@ -349,9 +344,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       {required BuildContext context,
       required String title,
       required VoidCallback onTap}) {
-    var size = MediaQuery.of(context).size;
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: size.height * 0.02),
+      padding: const EdgeInsets.only(top: 8, bottom: 8),
       child: InkWell(
         splashColor: Colors.grey,
         onTap: onTap,
@@ -377,9 +371,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   Padding buildtitlebold(
       {required BuildContext context, required String title}) {
-    var size = MediaQuery.of(context).size;
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: size.height * 0.02),
+      padding: const EdgeInsets.only(top: 8, bottom: 8),
       child: Text(
         tr(title),
         style: Theme.of(context).textTheme.titleLarge!.copyWith(

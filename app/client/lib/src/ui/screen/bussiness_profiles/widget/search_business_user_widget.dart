@@ -22,8 +22,8 @@ class SearchBusinessUserWidget extends StatelessWidget {
     var size = MediaQuery.of(context).size;
     return Container(
       padding: EdgeInsets.only(
-        top: size.height * 0.02,
-        bottom: size.height * 0.02,
+        top: size.height * 0.01,
+        bottom: 8,
       ), //symmetric(horizontal: 10.0, vertical: 10.0),
       color: bgBlack,
       child: Row(

@@ -116,7 +116,8 @@ class RequestListTile extends StatelessWidget {
                                               color: const Color(0xFFDFDCE3),
                                               fontWeight: FontWeight.w700,
                                             )),
-                                    if (tattooRequest.isread.toString() == "2")
+                                    if (markAsRead &&
+                                        tattooRequest.isread.toString() == "2")
                                       buildDottedTextSpan(context),
                                   ],
                                 ),

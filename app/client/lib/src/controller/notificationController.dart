@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:ink/src/controller/artistsListController.dart';
 import 'package:ink/src/data/model/currentUser.dart';
 import 'package:ink/src/data/source/network/user_api.dart';
+import 'package:ink/src/ui/screen/home/controller/home_screen_controller.dart';
 import 'package:ink/src/utils/webService.dart';
 
 import '../ui/screen/notification/models/notificationModel.dart';
@@ -128,6 +129,8 @@ class NotificationController extends GetxController {
 
     try {
       isLoadingRequest.value = isTempLoading;
+      AppUser currentUser = await WebService.getCurrentUser();
+      userTypes.value = currentUser.profile?.userType?.toString() ?? "";
       await Network.getTattooRequestsData(startIndexRequest, limitRequest,
               type: type)
           .then((res) async {
@@ -154,8 +157,13 @@ class NotificationController extends GetxController {
 
           tattooRequestsList.refresh();
 
-          messageUnreadCount.value = "0";
-          messageUnreadCount.value = WebService.unreadMessage;
+          final unread = WebService.unreadMessage;
+          final isCustomer = userTypes.value == "1";
+          messageUnreadCount.value = isCustomer ? "0" : unread;
+          if (isCustomer) {
+            WebService.unreadMessage = "0";
+          }
+          _syncHomeRequestBadge();
         }
       });
     } finally {
@@ -167,7 +175,28 @@ class NotificationController extends GetxController {
   //Update Message Count
   Future readMessageController({requestId, isRead}) async {
     await Network.readTattooRequestApi(requestId: requestId, isRead: isRead);
+    final idx = tattooRequestsList
+        .indexWhere((r) => r.id?.toString() == requestId.toString());
+    if (idx >= 0 && tattooRequestsList[idx].isread == "2") {
+      tattooRequestsList[idx].isread = "1";
+      tattooRequestsList.refresh();
+      final current = int.tryParse(messageUnreadCount.value) ?? 0;
+      if (current > 0) {
+        messageUnreadCount.value = "${current - 1}";
+        WebService.unreadMessage = messageUnreadCount.value;
+      }
+      _syncHomeRequestBadge();
+    }
     return;
+  }
+
+  void _syncHomeRequestBadge() {
+    try {
+      if (Get.isRegistered<HomeScreenController>()) {
+        Get.find<HomeScreenController>().unreadRequestCount.value =
+            WebService.unreadMessage.isEmpty ? "0" : WebService.unreadMessage;
+      }
+    } catch (_) {}
   }
 
   //old

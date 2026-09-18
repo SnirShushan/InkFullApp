@@ -1,6 +1,16 @@
 import { Router } from 'express';
+import multer from 'multer';
+import { startupPublicUrl, uploadStartupImage } from './r2.js';
 
-const SETTINGS_FIELDS = ['admin_email', 'admin_phone', 'package_name', 'post_limit'];
+const SETTINGS_FIELDS = ['admin_email', 'admin_phone', 'package_name', 'post_limit', 'startup_image'];
+const uploadImage = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 8 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const ok = /^image\/(jpeg|jpg|png|gif|webp)$/i.test(file.mimetype || '');
+    cb(ok ? null : new Error('יש להעלות קובץ תמונה'), ok);
+  },
+});
 
 const PLAN_LABELS = {
   subscription_premium_5day: 'פרימיום 5 ימים',
@@ -39,6 +49,31 @@ function wrap(fn) {
 
 function countOf(rows) {
   return Number(rows?.[0]?.c || 0);
+}
+
+function cleanDate(value) {
+  if (value == null) return '';
+  const raw = String(value).trim();
+  if (!raw || raw.startsWith('0000-00-00') || raw === 'null') return '';
+  return raw;
+}
+
+async function upsertSetting(pool, field, value) {
+  const [rows] = await pool.query(
+    `SELECT id FROM tbl_settings WHERE field_name = :field LIMIT 1`,
+    { field }
+  );
+  if (rows[0]) {
+    await pool.query(
+      `UPDATE tbl_settings SET field_value = :value WHERE field_name = :field LIMIT 1`,
+      { value, field }
+    );
+    return;
+  }
+  await pool.query(
+    `INSERT INTO tbl_settings (field_name, field_value) VALUES (:field, :value)`,
+    { field, value }
+  );
 }
 
 export function createAdminRouter(getLivePool) {
@@ -98,10 +133,14 @@ export function createAdminRouter(getLivePool) {
         `SELECT
            c.id, c.name, c.email, c.phone, c.cnt_code, c.user_type, c.business_type,
            c.status, c.city_name,
-           COALESCE(NULLIF(c.register_date, '0000-00-00 00:00:00'), c.date_added) AS register_date,
-           c.login_date, c.post_limit, c.sub_id,
+           CAST(c.register_date AS CHAR) AS register_date,
+           CAST(c.date_added AS CHAR) AS date_added,
+           CAST(c.login_date AS CHAR) AS login_date,
+           c.post_limit, c.sub_id,
            c.profile_image, c.register_type,
-           s.product_id AS plan_name, s.expire_date, s.is_sub_active
+           s.product_id AS plan_name,
+           CAST(s.expire_date AS CHAR) AS expire_date,
+           s.is_sub_active
          FROM tbl_customer c
          LEFT JOIN tbl_subscription s ON s.id = c.sub_id
          WHERE c.is_delete = '0' AND c.user_type = :type ${search}
@@ -116,10 +155,16 @@ export function createAdminRouter(getLivePool) {
         limit,
         total,
         pages: Math.max(1, Math.ceil(total / limit)),
-        rows: rows.map((row) => ({
-          ...row,
-          plan_label: PLAN_LABELS[row.plan_name] || row.plan_name || '',
-        })),
+        rows: rows.map((row) => {
+          const registerDate = cleanDate(row.register_date) || cleanDate(row.date_added);
+          return {
+            ...row,
+            register_date: registerDate,
+            login_date: cleanDate(row.login_date),
+            expire_date: cleanDate(row.expire_date),
+            plan_label: PLAN_LABELS[row.plan_name] || row.plan_name || '',
+          };
+        }),
       });
     })
   );
@@ -189,7 +234,7 @@ export function createAdminRouter(getLivePool) {
         params
       );
       const [rows] = await pool.query(
-        `SELECT r.id, r.uid, r.reported_by_uid, r.comment, r.status, r.date_added,
+        `SELECT r.id, r.uid, r.reported_by_uid, r.comment, r.status, CAST(r.date_added AS CHAR) AS date_added,
                 u.name AS user_name, reporter.name AS reported_by
          FROM tbl_report_users r
          LEFT JOIN tbl_customer u ON u.id = r.uid
@@ -224,7 +269,7 @@ export function createAdminRouter(getLivePool) {
         params
       );
       const [rows] = await pool.query(
-        `SELECT r.id, r.owner, r.reported_by_uid, r.pid, r.comment, r.status, r.date_added,
+        `SELECT r.id, r.owner, r.reported_by_uid, r.pid, r.comment, r.status, CAST(r.date_added AS CHAR) AS date_added,
                 owner.name AS owner_name, reporter.name AS reported_by, p.image_name AS post_image
          FROM tbl_report_posts r
          LEFT JOIN tbl_customer owner ON owner.id = r.owner
@@ -306,7 +351,7 @@ export function createAdminRouter(getLivePool) {
       );
       const [rows] = await pool.query(
         `SELECT r.id, r.name, r.phone, r.email, r.tattoo_size, r.styles, r.description,
-                r.business_id, r.uid, r.date_added, r.is_contact_request, r.is_read,
+                r.business_id, r.uid, CAST(r.date_added AS CHAR) AS date_added, r.is_contact_request, r.is_read,
                 biz.name AS business_name, cust.name AS customer_name
          FROM tbl_request r
          LEFT JOIN tbl_customer biz ON biz.id = r.business_id
@@ -331,7 +376,10 @@ export function createAdminRouter(getLivePool) {
       );
       const settings = Object.fromEntries(SETTINGS_FIELDS.map((f) => [f, '']));
       for (const row of rows) settings[row.field_name] = row.field_value ?? '';
-      res.json({ settings });
+      res.json({
+        settings,
+        startup_image_url: startupPublicUrl(settings.startup_image),
+      });
     })
   );
 
@@ -342,15 +390,36 @@ export function createAdminRouter(getLivePool) {
       const body = req.body || {};
       const updated = [];
       for (const field of SETTINGS_FIELDS) {
+        if (field === 'startup_image') continue;
         if (!Object.prototype.hasOwnProperty.call(body, field)) continue;
         const value = String(body[field] ?? '');
-        await pool.query(
-          `UPDATE tbl_settings SET field_value = :value WHERE field_name = :field LIMIT 1`,
-          { value, field }
-        );
+        await upsertSetting(pool, field, value);
         updated.push(field);
       }
       res.json({ ok: true, updated });
+    })
+  );
+
+  router.post(
+    '/settings/startup-image',
+    uploadImage.single('startup_image'),
+    wrap(async (req, res) => {
+      const pool = poolOrThrow();
+      if (!req.file) {
+        res.status(400).json({ error: 'לא נבחרה תמונה' });
+        return;
+      }
+      const filename = await uploadStartupImage(req.file);
+      if (!filename) {
+        res.status(503).json({ error: 'העלאה נכשלה. חסר חיבור ל-R2.' });
+        return;
+      }
+      await upsertSetting(pool, 'startup_image', filename);
+      res.json({
+        ok: true,
+        startup_image: filename,
+        startup_image_url: startupPublicUrl(filename),
+      });
     })
   );
 

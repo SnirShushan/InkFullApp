@@ -59,28 +59,26 @@ class _BusinessProfilesState extends State<BusinessProfiles> {
             Expanded(
               child: NotificationListener<ScrollNotification>(
                 onNotification: _onScroll,
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 12.0),
-                  child: Obx(
-                    () => controller.isLoading.value &&
-                            controller.businessList.isEmpty
-                        ? Utils.showProgress()
-                        : controller.businessList.isEmpty
-                            ? showNoFoundWidget()
-                            : ListView.builder(
-                                controller:
-                                    controller.scrollControllerBusinessProfile,
-                                itemCount: controller.businessList.length,
-                                itemBuilder: (context, index) {
-                                  return Padding(
-                                      padding:
-                                          const EdgeInsets.only(bottom: 10),
-                                      child: TattooArtistCard(
-                                          businessUserListModel:
-                                              controller.businessList[index]));
-                                },
-                              ),
-                  ),
+                child: Obx(
+                  () => controller.isLoading.value &&
+                          controller.businessList.isEmpty
+                      ? Utils.showProgress()
+                      : controller.businessList.isEmpty
+                          ? showNoFoundWidget()
+                          : ListView.builder(
+                              controller:
+                                  controller.scrollControllerBusinessProfile,
+                              padding: const EdgeInsets.only(top: 8, bottom: 16),
+                              itemCount: controller.businessList.length,
+                              itemBuilder: (context, index) {
+                                return Padding(
+                                    padding:
+                                        const EdgeInsets.only(bottom: 10),
+                                    child: TattooArtistCard(
+                                        businessUserListModel:
+                                            controller.businessList[index]));
+                              },
+                            ),
                 ),
               ),
             ),

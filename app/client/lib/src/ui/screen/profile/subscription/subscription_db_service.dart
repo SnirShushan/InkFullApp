@@ -24,7 +24,7 @@ import '../../../../data/source/network/user_api.dart';
 class SubscriptionDbService {
   String userId = "";
   bool purchaseData = true;
-  static late bool fromRegistration;
+  static bool fromRegistration = false;
 
   static Dio dio = Dio();
 
@@ -256,30 +256,41 @@ class SubscriptionDbService {
   Future<void> basicFreePlanDbServer() async {
     try {
       final value = await Network.basicFreePlanApi();
-
-      if (value != false) {
-        if (fromRegistration) {
-          final changed = await Network.changeUserTypeApi();
-          if (changed == true) {
-            SharedPreferences prefs = await SharedPreferences.getInstance();
-            await prefs.setBool("isBusiness", true);
-            getx.Get.offAll(
-              BusinessDashBoard(initialIndex: 0),
-              binding: BusinessDashBoardBinding(),
-            );
-          }
-        } else {
-          final StartupController startupController =
-              Get.find<StartupController>();
-
-          await startupController.checkSubscription(); // ✅ wait for refresh
-
-          // ✅ Force UI update
-          startupController.update();
-
-          return;
-        }
+      if (value == false || value == null) {
+        displayMessageIcon(
+          snackposition: getx.SnackPosition.BOTTOM,
+          message: "לא ניתן להפעיל את החבילה החינמית",
+          color: errorColor,
+          imageData: AppAssets.errorIcon,
+        );
+        return;
       }
+
+      if (fromRegistration) {
+        final changed = await Network.changeUserTypeApi();
+        if (changed == true) {
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          await prefs.setBool("isBusiness", true);
+          await WebService.setIsBusiness(true);
+          getx.Get.offAll(
+            BusinessDashBoard(initialIndex: 0),
+            binding: BusinessDashBoardBinding(),
+          );
+        } else {
+          displayMessageIcon(
+            snackposition: getx.SnackPosition.BOTTOM,
+            message: "לא ניתן להקים את הפרופיל העסקי",
+            color: errorColor,
+            imageData: AppAssets.errorIcon,
+          );
+        }
+        return;
+      }
+
+      final StartupController startupController =
+          Get.find<StartupController>();
+      await startupController.checkSubscription();
+      startupController.update();
     } catch (e) {
       displayMessageIcon(
         snackposition: getx.SnackPosition.BOTTOM,

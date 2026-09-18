@@ -219,8 +219,13 @@ export async function handleCheckSubscription(p) {
 export async function handleFreePlan(p) {
   const auth = await requireAuth(p);
   if (auth.error) return auth.error;
-  await activateFreePlan(auth.uid);
-  return ok({ is_premium: '0', is_sub_active: '1' }, 'Success');
+  try {
+    await activateFreePlan(auth.uid);
+    return ok({ is_premium: '0', is_sub_active: '1' }, 'Success');
+  } catch (e) {
+    console.error('FreePlanSubscription failed', e?.message || e);
+    return fail('לא ניתן להפעיל את החבילה החינמית');
+  }
 }
 
 async function upsertPaidSub({

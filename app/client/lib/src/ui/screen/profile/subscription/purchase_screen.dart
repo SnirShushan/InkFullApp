@@ -873,12 +873,13 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
               ? buildProductBuyText(title: "מנוי לחבילה זאת")
               : AnimationLoaderButtonWidget(
                   onTap: () async {
-                    if (startupController.subscriptionModel.productId !=
-                        _kPremiumMonthlyId) {
-                      setState(() => newBasicFreeDBPurchaseLoading = true);
+                    setState(() => newBasicFreeDBPurchaseLoading = true);
+                    try {
                       await SubscriptionDbService().basicFreePlanDbServer();
-
-                      setState(() => newBasicFreeDBPurchaseLoading = false);
+                    } finally {
+                      if (mounted) {
+                        setState(() => newBasicFreeDBPurchaseLoading = false);
+                      }
                     }
                   },
                   colors: newBasicFreeDBPurchaseLoading
@@ -1078,7 +1079,7 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
                               widget.checkstatus == "0"
                           ? "${"₪99.90 לחודש"}\n חודש ראשון מתנה"
                           : "₪99.90 לחודש",
-            subtitle: tr("purchases.premium_monthly_subtitle")),
+            subtitle: ""),
           SizedBox(height: MediaQuery.of(context).size.height * 0.01),
         ],
       ),

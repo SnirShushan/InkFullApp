@@ -43,13 +43,14 @@ class FireBaseApi {
   static Future userRequestImagesUpload(
       {required List imgList, required List<RequestImages> imgNameList}) async {
     AppUser user = await WebService.getCurrentUser();
+    final uid = user.profile?.id ?? folderUid();
 
     for (int i = 0; i < imgList.length; i++) {
       File file = File(imgList[i].path);
 
       final fileName = basename(file.path);
 
-      final path = "requestTattooImages/${user.profile!.id}/$fileName";
+      final path = "requestTattooImages/$uid/$fileName";
 
       final ref = FirebaseStorage.instance.ref().child(path);
 
@@ -57,8 +58,8 @@ class FireBaseApi {
 
       final imageUrl = await snapshots.ref.getDownloadURL();
 
-      RequestImages image = RequestImages(
-          name: fileName, imageUrl: imageUrl, uid: user.profile!.id!);
+      RequestImages image =
+          RequestImages(name: fileName, imageUrl: imageUrl, uid: uid);
       imgNameList.add(image);
 
       final docImage = fireStore.collection('requestTattooImages').doc();

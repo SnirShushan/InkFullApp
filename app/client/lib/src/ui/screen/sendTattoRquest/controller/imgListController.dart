@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:ink/src/controller/userController.dart';
 import 'package:ink/src/data/model/currentUser.dart';
-import 'package:ink/src/data/source/network/firebase_api.dart';
 import 'package:ink/src/ui/screen/sendTattoRquest/sending_request_success.dart';
 import 'package:ink/src/utils/assets.dart';
 import 'package:ink/src/utils/colors.dart';
@@ -50,77 +49,125 @@ class ImgListController extends GetxController {
     imgList.refresh();
   }
 
+  String _selectedStyles() {
+    final names = WebService.changeUserStyleList
+        .map((v) => (v?.name ?? '').toString().trim())
+        .where((name) => name.isNotEmpty)
+        .toList();
+    return names.join(',');
+  }
+
+  String _bodyPartsJson() {
+    try {
+      return jsonEncode(bodyParts.value.toJson());
+    } catch (e) {
+      WebService.printMsg('body parts json failed: $e');
+      return '';
+    }
+  }
+
+  Future<File?> _tryCaptureBody(screenshotController) async {
+    if (screenshotController == null) return null;
+    try {
+      final capturedImage = await screenshotController.capture(
+          delay: const Duration(milliseconds: 80));
+      if (capturedImage == null || capturedImage.isEmpty) return null;
+      final directory = await getTemporaryDirectory();
+      final file = File('${directory.path}/$directoryName/$fileName.png');
+      await file.parent.create(recursive: true);
+      await file.writeAsBytes(capturedImage, flush: true);
+      return file;
+    } catch (e) {
+      WebService.printMsg('body screenshot failed: $e');
+      return null;
+    }
+  }
+
+  List<File> _exampleImageFiles() {
+    final files = <File>[];
+    for (final item in imgList) {
+      final path = (item?.path ?? '').toString();
+      if (path.isEmpty) continue;
+      final file = File(path);
+      if (file.existsSync()) files.add(file);
+    }
+    return files;
+  }
+
+  Future sendFullRequest({
+    screenshotController,
+    selectedCreatorId,
+    tattooSize,
+    List<RequestImages>? imgListDetails,
+    bid,
+  }) async {
+    final bidStr = (bid ?? '').toString().trim();
+    if (bidStr.isEmpty || bidStr == '0') {
+      displayMessageIcon(
+          message: "לא ניתן לשלוח את הפנייה",
+          snackposition: SnackPosition.BOTTOM,
+          color: errorColor,
+          imageData: AppAssets.errorIcon);
+      return false;
+    }
+
+    styleList = _selectedStyles();
+    final isFront = WebService.isBodySideFront;
+    final bodyJson = _bodyPartsJson();
+    final shot = await _tryCaptureBody(screenshotController);
+    final exampleImages = _exampleImageFiles();
+    final requestImages = imgListDetails ?? <RequestImages>[];
+
+    try {
+      AppUser user = await WebService.getCurrentUser();
+      final sent = await Network.requestTattooApi(
+          name: user.profile?.name ?? "",
+          phone: user.profile?.phone ?? "",
+          description: aboutController.text,
+          tattooSize: tattooSize ?? "",
+          frontData: isFront ? bodyJson : "",
+          backData: isFront ? "" : bodyJson,
+          artistId: selectedCreatorId ?? "",
+          businessId: bidStr,
+          requestImages: jsonEncode(requestImages),
+          exampleImages: exampleImages,
+          backDataImage: isFront ? File("") : (shot ?? File("")),
+          frontDataImage: isFront ? (shot ?? File("")) : File(""),
+          styles: styleList,
+          isContactRequest: "1");
+      if (sent == true) {
+        Get.off(const SendingRequestSuccess());
+        return true;
+      }
+      displayMessageIcon(
+          message: "לא ניתן לשלוח את הפנייה",
+          snackposition: SnackPosition.BOTTOM,
+          color: errorColor,
+          imageData: AppAssets.errorIcon);
+      return false;
+    } catch (e) {
+      WebService.printMsg(e.toString());
+      displayMessageIcon(
+          message: "לא ניתן לשלוח את הפנייה",
+          snackposition: SnackPosition.BOTTOM,
+          color: errorColor,
+          imageData: AppAssets.errorIcon);
+      return false;
+    }
+  }
+
   Future WithcaptureImage(
       {screenshotController,
       selectedCreatorId,
       tattooSize,
       required List<RequestImages> imgListDetails,
-      bid}) async {
-    Directory? directory = await getTemporaryDirectory();
-    String path = directory.path;
-    await Directory('$path/$directoryName').create(recursive: true);
-    await screenshotController
-        .capture(delay: const Duration(milliseconds: 100))
-        .then((capturedImage) async {
-      File("$path/$directoryName/$fileName.png")
-          .writeAsBytesSync(capturedImage!);
-
-      final File file = File("$path/$directoryName/$fileName.png");
-      styleList = "";
-      if (WebService.changeUserStyleList != []) {
-        WebService.changeUserStyleList.forEach((v) async {
-          if (v == WebService.changeUserStyleList.last) {
-            styleList += "${v.name}";
-          } else {
-            styleList += "${v.name} ,";
-          }
-        });
-      }
-
-      await FireBaseApi.userRequestImagesUpload(
-              imgList: imgList, imgNameList: imgListDetails)
-          .then((value) async {
-        try {
-          AppUser user = await WebService.getCurrentUser();
-          final sent = await Network.requestTattooApi(
-              name: user.profile?.name ?? "",
-              phone: user.profile?.phone ?? "",
-              description: aboutController.text,
-              tattooSize: tattooSize,
-              frontData: WebService.isBodySideFront
-                  ? bodyParts.value.toJson().toString()
-                  : "",
-              backData: WebService.isBodySideFront
-                  ? ""
-                  : bodyParts.value.toJson().toString(),
-              artistId: selectedCreatorId,
-              businessId: bid,
-              requestImages: jsonEncode(imgListDetails),
-              backDataImage: File(""),
-              frontDataImage: file,
-              styles: styleList,
-              isContactRequest: "1");
-          if (sent == true) {
-            Get.off(const SendingRequestSuccess());
-          } else {
-            displayMessageIcon(
-                message: "לא ניתן לשלוח את הפנייה",
-                snackposition: SnackPosition.BOTTOM,
-                color: errorColor,
-                imageData: AppAssets.errorIcon);
-          }
-        } catch (e) {
-          WebService.printMsg(e.toString());
-          displayMessageIcon(
-              message: "$e",
-              snackposition: SnackPosition.BOTTOM,
-              color: errorColor,
-              imageData: AppAssets.errorIcon);
-        }
-      }).catchError((onError) {
-        WebService.printMsg(onError);
-      });
-    });
+      bid}) {
+    return sendFullRequest(
+        screenshotController: screenshotController,
+        selectedCreatorId: selectedCreatorId,
+        tattooSize: tattooSize,
+        imgListDetails: imgListDetails,
+        bid: bid);
   }
 
   Future captureImage(
@@ -128,69 +175,13 @@ class ImgListController extends GetxController {
       selectedCreatorId,
       tattooSize,
       required List<RequestImages> imgListDetails,
-      bid}) async {
-    Directory? directory = await getTemporaryDirectory();
-    String path = directory.path;
-    await Directory('$path/$directoryName').create(recursive: true);
-
-    await screenshotController
-        .capture(delay: const Duration(milliseconds: 100))
-        .then((capturedImage) async {
-      File("$path/$directoryName/$fileName.png")
-          .writeAsBytesSync(capturedImage!);
-
-      final File file = File("$path/$directoryName/$fileName.png");
-      styleList = "";
-      WebService.changeUserStyleList.forEach((v) async {
-        if (v == WebService.changeUserStyleList.last) {
-          styleList += "${v.name}";
-        } else {
-          styleList += "${v.name} ,";
-        }
-      });
-
-      try {
-        AppUser user = await WebService.getCurrentUser();
-        await Network.requestTattooApi(
-                name: user.profile?.name ?? "",
-                phone: user.profile?.phone ?? "",
-                description: aboutController.text,
-                tattooSize: tattooSize,
-                frontData: WebService.isBodySideFront
-                    ? bodyParts.value.toJson().toString()
-                    : "",
-                backData: WebService.isBodySideFront
-                    ? ""
-                    : bodyParts.value.toJson().toString(),
-                artistId: selectedCreatorId,
-                businessId: bid,
-                requestImages: jsonEncode(imgListDetails),
-                backDataImage: File(""),
-                frontDataImage: file,
-                styles: styleList,
-                isContactRequest: "1")
-            .then((value) {
-          if (value == true) {
-            Get.off(const SendingRequestSuccess());
-          } else {
-            displayMessageIcon(
-                message: "לא ניתן לשלוח את הפנייה",
-                snackposition: SnackPosition.BOTTOM,
-                color: errorColor,
-                imageData: AppAssets.errorIcon);
-          }
-        });
-      } catch (e) {
-        WebService.printMsg(e.toString());
-        displayMessageIcon(
-            message: "$e",
-            snackposition: SnackPosition.BOTTOM,
-            color: errorColor,
-            imageData: AppAssets.errorIcon);
-      }
-    }).catchError((onError) {
-      WebService.printMsg(onError);
-    });
+      bid}) {
+    return sendFullRequest(
+        screenshotController: screenshotController,
+        selectedCreatorId: selectedCreatorId,
+        tattooSize: tattooSize,
+        imgListDetails: imgListDetails,
+        bid: bid);
   }
 
   Future directSendRequest({bid}) async {

@@ -920,6 +920,31 @@ class Network {
 
   //===================== request tattoo ================
 
+  static String _fileBasename(String path) {
+    final normalized = path.replaceAll('\\', '/');
+    final i = normalized.lastIndexOf('/');
+    final name = i >= 0 ? normalized.substring(i + 1) : normalized;
+    final clean = name.split('?').first.trim();
+    return clean.isEmpty ? 'image.jpg' : clean;
+  }
+
+  static MediaType _imageMediaType(String path) {
+    final lower = path.toLowerCase();
+    if (lower.endsWith('.png')) return MediaType('image', 'png');
+    if (lower.endsWith('.webp')) return MediaType('image', 'webp');
+    if (lower.endsWith('.gif')) return MediaType('image', 'gif');
+    return MediaType('image', 'jpeg');
+  }
+
+  static Future<MultipartFile?> _optionalImageFile(File? file) async {
+    if (file == null || file.path.isEmpty || !file.existsSync()) return null;
+    return MultipartFile.fromFile(
+      file.path,
+      filename: _fileBasename(file.path),
+      contentType: _imageMediaType(file.path),
+    );
+  }
+
   //request for tattoo
   static Future requestTattooApi(
       {required String name,
@@ -934,11 +959,12 @@ class Network {
       required requestImages,
       required File? backDataImage,
       required File? frontDataImage,
-      required String styles}) async {
+      required String styles,
+      List<File>? exampleImages}) async {
     final loginToken = await WebService.getUserToken();
     Response response;
     try {
-      final params = {
+      final params = <String, dynamic>{
         "action": "RequestForTattoo",
         "uid": userController.id.value,
         "login_token": loginToken,
@@ -953,69 +979,52 @@ class Network {
         "artists_uid": artistId,
         "business_id": businessId,
         "request_images": requestImages,
-        "back_data_image": isContactRequest == "2"
-            ? null
-            : (backDataImage != null &&
-                    backDataImage.path.isNotEmpty &&
-                    backDataImage.existsSync())
-                ? await MultipartFile.fromFile(backDataImage.path,
-                    filename: backDataImage.uri.toString())
-                : null,
-        "front_data_image": isContactRequest == "2"
-            ? null
-            : (frontDataImage != null &&
-                    frontDataImage.path.isNotEmpty &&
-                    frontDataImage.existsSync())
-                ? await MultipartFile.fromFile(frontDataImage.path,
-                    filename: frontDataImage.uri.toString(),
-                    contentType: MediaType('image', 'png'))
-                : null,
         "device_type": WebService.deviceType,
         "app_version": WebService.appVersion,
         "app_token": WebService.appToken,
-        // "files": isContactRequest == "2"
-        //     ? null
-        //     : frontDataImage!.existsSync()
-        //         ? await MultipartFile.fromFile(frontDataImage.path,
-        //             filename: frontDataImage.uri.toString(),
-        //             contentType: MediaType('image', 'png'))
-        //         : null,
       };
 
+      if (isContactRequest != "2") {
+        params["back_data_image"] = await _optionalImageFile(backDataImage);
+        params["front_data_image"] = await _optionalImageFile(frontDataImage);
+        final extras = exampleImages ?? const <File>[];
+        for (int i = 0; i < extras.length && i < 3; i++) {
+          params["example_image_${i + 1}"] =
+              await _optionalImageFile(extras[i]);
+        }
+      }
+
+      params.removeWhere((key, value) => value == null);
       FormData formData = FormData.fromMap(params);
 
       printMsg(formData.fields.toString());
-      response = await dio.post(WebService.baseUrl, data: formData);
+      response = await dio.post(
+        WebService.baseUrl,
+        data: formData,
+        options: Options(
+          sendTimeout: 60 * 1000,
+          receiveTimeout: 60 * 1000,
+        ),
+      );
 
       final isDataNotEmpty = ApiResponse.checkResponseStatus(response);
       if (isDataNotEmpty) {
-        final responseData = response.data["data"];
-        if (responseData != null || responseData != '') {
-          final _facebookEvenetParams = {
+        try {
+          await FacebookEvents.addTattooRequestLog(params: {
             "action": "RequestForTattoo",
             "uid": userController.id.value,
-            "login_token": loginToken,
             "name": name,
-            "phone": phone,
             "tattoo_size": tattooSize,
             "styles": styles,
-            "front_data": frontData,
-            "back_data": backData,
-            "is_contact_request": isContactRequest, //1=false 2=true
-            "description": description,
-            "artists_uid": artistId,
+            "is_contact_request": isContactRequest,
             "business_id": businessId,
-            "request_images": requestImages,
             "device_type": WebService.deviceType,
             "app_version": WebService.appVersion,
-            "app_token": WebService.appToken,
-          };
-
-          await FacebookEvents.addTattooRequestLog(
-              params: _facebookEvenetParams);
-
-          return true;
+          });
+        } catch (e) {
+          WebService.printMsg('facebook request log failed: $e');
         }
+        return true;
       }
       return false;
     } on SocketException catch (_) {
@@ -1269,6 +1278,10 @@ class Network {
     final loginToken = await WebService.getUserToken();
     Response response;
 
+    if (!getx.Get.isRegistered<ChangeUserTypeController>()) {
+      WebService.printMsg('ChangeUserTypeController missing');
+      return false;
+    }
     final _changeUserTypeController = getx.Get.find<ChangeUserTypeController>();
     try {
       final params = {
@@ -1306,67 +1319,51 @@ class Network {
             : null,
       };
 
+      params.removeWhere((key, value) => value == null);
       FormData formData = await FormData.fromMap(params);
 
       response = await dio.post(WebService.baseUrl, data: formData);
       final isDataNotEmpty = ApiResponse.checkResponseStatus(response);
       if (isDataNotEmpty) {
-        final eventParams = {
-          "action": "UpdateBusinessProfile",
-          'uid': userController.id.value,
-          'login_token': loginToken,
-          'business_type':
-              _changeUserTypeController.isStudioSelected.value ? "1" : "2",
-          'name': _changeUserTypeController.nameController.text,
-          'address': _changeUserTypeController.addressController.text,
-          'address_lat': WebService.lat,
-          'address_lng': WebService.lang,
-          'about_text': _changeUserTypeController.aboutController.text,
-          'device_type': WebService.deviceType,
-          'app_version': WebService.appVersion,
-          'app_token': WebService.appToken,
-        };
-        if (_changeUserTypeController.isStudioSelected.value == true) {
-          await FacebookEvents.studioProfileCreationEvent(params: eventParams);
-        } else {
-          await FacebookEvents.artistProfileCreationEvent(params: eventParams);
-        }
-        /* await FacebookEvents.subscriptionEvent(
-          amount: WebService.purchasePrice,
-          currency: WebService.purchaseCurrency,
-          params: eventParams);*/
-
-        if (WebService.selectedPlan == 0) {
-          await FacebookEvents.subscriptionBasicEvent(
-              amount: WebService.purchasePrice,
-              // currency: WebService.purchaseCurrency,
-              params: eventParams);
-        } else {
-          await FacebookEvents.subscriptionPremiumEvent(
-              amount: WebService.purchasePrice,
-              // currency: WebService.purchaseCurrency,
-              params: eventParams);
+        try {
+          final eventParams = {
+            "action": "UpdateBusinessProfile",
+            'uid': userController.id.value,
+            'name': _changeUserTypeController.nameController.text,
+            'business_type':
+                _changeUserTypeController.isStudioSelected.value ? "1" : "2",
+            'device_type': WebService.deviceType,
+            'app_version': WebService.appVersion,
+          };
+          if (_changeUserTypeController.isStudioSelected.value == true) {
+            await FacebookEvents.studioProfileCreationEvent(params: eventParams);
+          } else {
+            await FacebookEvents.artistProfileCreationEvent(params: eventParams);
+          }
+        } catch (e) {
+          WebService.printMsg('facebook business profile log failed: $e');
         }
 
         await WebService.clearUserData();
-        final responseData = await response.data["data"];
-        // if (responseData != null || responseData != '') {
-        //   if (responseData['profile'] != null &&
-        //       responseData['profile'] != "") {
-        final profile = await responseData['profile'];
-        if (profile["user_type"].toString() == "2") {
+        final responseData = response.data["data"];
+        final profile = responseData is Map ? responseData['profile'] : null;
+        if (profile is Map && profile["user_type"].toString() == "2") {
           await WebService.setIsBusiness(true);
         } else {
           await WebService.setIsBusiness(false);
         }
-        await WebService.setUserToken(profile['login_token']);
-        await WebService.setUserIds(profile['id'].toString());
-        await WebService.setCurrentUser(AppUser.fromJson(responseData));
-
-        // displayMessage(response.data["msg"].toString(), Colors.blue);
-        return true;
-        // }
-        // }
+        if (profile is Map) {
+          if (profile['login_token'] != null) {
+            await WebService.setUserToken(profile['login_token']);
+          }
+          if (profile['id'] != null) {
+            await WebService.setUserIds(profile['id'].toString());
+          }
+          if (responseData is Map) {
+            await WebService.setCurrentUser(AppUser.fromJson(responseData));
+          }
+        }
+        return profile is Map && profile["user_type"].toString() == "2";
       }
       return false;
     } on SocketException catch (_) {
@@ -2520,8 +2517,11 @@ class Network {
       final isDataNotEmpty = ApiResponse.checkResponseStatus(response);
       if (isDataNotEmpty) {
         final responseData = response.data["data"];
-        WebService.unreadMessage =
-            responseData["unread_request_count"].toString();
+        final incomingUnread =
+            (responseData["unread_request_count"] ?? "0").toString();
+        WebService.unreadMessage = userController.userType.value == "1"
+            ? "0"
+            : incomingUnread;
 
         return responseData["request_list"];
       }

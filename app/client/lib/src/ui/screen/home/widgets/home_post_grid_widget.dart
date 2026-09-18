@@ -193,9 +193,8 @@ class _HomePostGridWidgetState extends State<HomePostGridWidget> {
 
   Padding buildTitleBold(
       {required BuildContext context, required String title}) {
-    var size = MediaQuery.of(context).size;
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: size.height * 0.02),
+      padding: const EdgeInsets.only(top: 4, bottom: 8),
       child: Text(
         tr(title),
         style: Theme.of(context).textTheme.titleLarge!.copyWith(

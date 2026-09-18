@@ -39,11 +39,15 @@ function contentType(filename, mime) {
  * @returns {Promise<string|null>} basename stored in DB
  */
 export async function uploadProfileImageToR2(file) {
+  return uploadImageToR2(file, 'assets/uploads/profile_images');
+}
+
+export async function uploadImageToR2(file, folder = 'assets/uploads/profile_images') {
   const client = r2();
   const bucket = process.env.R2_BUCKET;
   if (!client || !bucket || !file?.buffer?.length) return null;
 
-  const original = String(file.originalname || file.filename || 'profile.jpg');
+  const original = String(file.originalname || file.filename || 'image.jpg');
   let ext = path.extname(original).toLowerCase();
   if (!ext || ext.length > 5) {
     const mime = String(file.mimetype || '');
@@ -61,7 +65,7 @@ export async function uploadProfileImageToR2(file) {
   const pad = (n) => String(n).padStart(2, '0');
   const stamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}-${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
   const filename = `${stamp}-${crypto.randomInt(1e9, 2e9)}${ext}`;
-  const key = `assets/uploads/profile_images/${filename}`;
+  const key = `${folder.replace(/\/$/, '')}/${filename}`;
 
   await client.send(
     new PutObjectCommand({
