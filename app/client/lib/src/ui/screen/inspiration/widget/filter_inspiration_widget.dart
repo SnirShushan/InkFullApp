@@ -105,7 +105,7 @@ class FilterInspirationWidget extends StatelessWidget {
                                     children: [
                                       ColoredBox(
                                           color: kWhite,
-                                          child: buildCachedNetworkImage(
+                                          child: buildStyleIconImage(
                                               height: MediaQuery.of(context)
                                                       .size
                                                       .width *
@@ -114,9 +114,9 @@ class FilterInspirationWidget extends StatelessWidget {
                                                       .size
                                                       .width *
                                                   0.25,
-                                              url: WebService.resolveImageUrl(
-                                                  category.imageName,
-                                                  base: WebService.styleImgUrl),
+                                              imageName: category.imageName,
+                                              name: category.name,
+                                              slug: category.slug,
                                               radius: 8)),
                                       if (controller.selectedStyles!
                                           .contains(category))
@@ -152,7 +152,7 @@ class FilterInspirationWidget extends StatelessWidget {
                             //       fit: BoxFit.cover)),
                             const SizedBox(height: 5),
                             Text(
-                              category.name!,
+                              category.displayName,
                               style: const TextStyle(color: Colors.white),
                             ),
                           ],

@@ -66,9 +66,17 @@ export async function insertCustomer(fields) {
 
 export async function getSettings() {
   const [rows] = await pool.query(
+    `SELECT field_name, field_value FROM tbl_settings`
+  );
+  const settings = {};
+  for (const row of rows) {
+    if (row?.field_name) settings[row.field_name] = row.field_value ?? '';
+  }
+  if (Object.keys(settings).length) return settings;
+  const [wide] = await pool.query(
     `SELECT * FROM tbl_settings ORDER BY id ASC LIMIT 1`
   );
-  return rows[0] || {};
+  return wide[0] || {};
 }
 
 export async function getStyleList() {
@@ -406,7 +414,18 @@ export async function mapPostsForClient(rows, styleNameHw = '') {
   });
 }
 
-export async function getBusinessCards({ styles = '', start = 0, limit = 6, uid = '' } = {}) {
+export async function getBusinessCards({
+  styles = '',
+  start = 0,
+  limit = 6,
+  uid = '',
+  searchTxt = '',
+  recommendedStyles = '',
+  popular = false,
+  closest = false,
+  lat = '',
+  lng = '',
+} = {}) {
   const offset = Math.max(Number(start) || 0, 0);
   const take = Math.min(Math.max(Number(limit) || 6, 1), 200);
   const styleList = String(styles || '')
@@ -425,18 +444,70 @@ export async function getBusinessCards({ styles = '', start = 0, limit = 6, uid 
     });
   }
 
+  const recList = String(recommendedStyles || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  let recSelect = '';
+  const recParams = {};
+  if (recList.length) {
+    recSelect = `, CASE WHEN (${recList
+      .map((_, i) => `FIND_IN_SET(:rs${i}, c.styles) > 0`)
+      .join(' OR ')}) THEN 1 ELSE 0 END AS recommended`;
+    recList.forEach((s, i) => {
+      recParams[`rs${i}`] = s;
+    });
+  }
+
+  const search = String(searchTxt || '').trim();
+  let searchClause = '';
+  const searchParams = {};
+  if (search) {
+    searchClause = 'AND c.name LIKE :searchQ';
+    searchParams.searchQ = `%${search}%`;
+  }
+
+  const latN = Number(lat);
+  const lngN = Number(lng);
+  const hasGeo = Number.isFinite(latN) && Number.isFinite(lngN) && (latN !== 0 || lngN !== 0);
+  let distSelect = '';
+  const geoParams = {};
+  if (closest && hasGeo) {
+    distSelect = `, (SQRT(POW(111.32 * (c.address_lat - :userLat), 2) + POW(111.32 * (:userLng - c.address_lng) * COS(c.address_lat / 57.3), 2))) AS distance`;
+    geoParams.userLat = latN;
+    geoParams.userLng = lngN;
+  }
+
+  const popSelect = popular
+    ? `, (SELECT COUNT(*) FROM tbl_follows f WHERE f.follow_uid = c.id) AS follower_count`
+    : '';
+
   const selfClause = uid ? 'AND c.id <> :selfUid' : '';
   const selfParams = uid ? { selfUid: uid } : {};
+  const extraParams = { ...styleParams, ...selfParams, ...recParams, ...searchParams, ...geoParams };
+
+  let orderBy = 'c.register_date DESC';
+  if (popular) {
+    orderBy = 'follower_count DESC, c.register_date DESC';
+  } else if (closest && hasGeo) {
+    orderBy = '(distance IS NULL), distance ASC, c.register_date DESC';
+  } else if (recList.length) {
+    orderBy = 'recommended DESC, c.register_date DESC';
+  }
 
   const userSelect = `
     SELECT c.id, c.name, c.status, c.profile_image, c.styles, c.business_type,
            c.user_type, c.login_type, c.address, c.about_text, c.city_name
+           ${recSelect}
+           ${distSelect}
+           ${popSelect}
     FROM tbl_customer c
     WHERE c.is_delete = '0'
       AND c.status = '1'
       AND c.user_type = '2'
       ${selfClause}
       ${styleClause}
+      ${searchClause}
   `;
 
   let promotedIds = [];
@@ -449,11 +520,11 @@ export async function getBusinessCards({ styles = '', start = 0, limit = 6, uid 
     promotedIds = promotedIds.filter((id) => String(id) !== String(uid));
   }
 
-  if (promotedIds.length && styleList.length) {
+  if (promotedIds.length && (styleList.length || search)) {
     const { clause, params } = sqlInClause(promotedIds, 'pf');
     const [matched] = await pool.query(
       `${userSelect} AND c.id IN (${clause})`,
-      { ...styleParams, ...selfParams, ...params }
+      { ...extraParams, ...params }
     );
     const allowed = new Set(matched.map((r) => String(r.id)));
     promotedIds = promotedIds.filter((id) => allowed.has(id));
@@ -480,7 +551,7 @@ export async function getBusinessCards({ styles = '', start = 0, limit = 6, uid 
     const { clause, params } = sqlInClause(promotedIds, 'pr');
     const [rows] = await pool.query(
       `${userSelect} AND c.id IN (${clause})`,
-      { ...styleParams, ...selfParams, ...params }
+      { ...extraParams, ...params }
     );
     const byId = new Map(rows.map((r) => [String(r.id), r]));
     promotedUsers = promotedIds.map((id) => byId.get(id)).filter(Boolean);
@@ -490,9 +561,9 @@ export async function getBusinessCards({ styles = '', start = 0, limit = 6, uid 
     ? await pool.query(
         `${userSelect}
          ${excludeClause}
-         ORDER BY c.register_date DESC
+         ORDER BY ${orderBy}
          LIMIT ${regularLimit} OFFSET ${regularOffset}`,
-        { ...styleParams, ...selfParams, ...excludeParams }
+        { ...extraParams, ...excludeParams }
       )
     : [[]];
 

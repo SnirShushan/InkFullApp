@@ -1,6 +1,5 @@
 import 'dart:ui' as ui;
 
-import 'package:country_picker/country_picker.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -592,129 +591,56 @@ class _RegistrationScreenState extends State<RegistrationScreen>
               borderRadius: BorderRadius.circular(8),
               color: socialoginbtn,
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Flexible(
-                  child: TextFormField(
-                    readOnly: _readOnlyphone,
-                    textDirection: ui.TextDirection.ltr,
-                    style: const TextStyle(color: kWhite),
-                    autofocus: false,
-                    controller: _phoneController,
-                    maxLines: 1,
-                    onChanged: (txt) {
-
-                      if (txt.startsWith('0972') || txt.startsWith('972')||txt.startsWith('097-2') || txt.startsWith('97-2')) {
-                        // Show error, disable submit, etc.
-
-                        displayMessageIcon(
-                            message: "אין צורך להקליד קידומת מדינה 972",
-                            color: errorColor,
-                            snackposition: SnackPosition.BOTTOM,
-                            imageData: AppAssets.errorIcon);
-
-                        _phoneController.text="";
-                      }
-                      setState(() {
-                        // Update the error state based on the input
-                        var value = txt.replaceAll(RegExp(r'[^0-9]'), '');
-                        _phoneerror = value.length != 10;
-                      });
-                    },
-                    cursorColor: kWhite,
-                    keyboardType: TextInputType.phone,
-                    inputFormatters: <TextInputFormatter>[
-                      FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(10),
-                      NumberFormatterWidget()
-                    ],
-                    textAlign: TextAlign.left,
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                    validator: (str) {
-
-                      var value = str?.replaceAll(RegExp(r'[^0-9]'), '');
-                      if (str == null || str.isEmpty) {
-                        _phoneerror = true;
-
-                        return '';
-                      } else if (value?.length != 10) {
-                        _phoneerror = true;
-
-                        return '';
-                      } else if (value!.startsWith('972') ||
-                          value.startsWith('0972')||value.startsWith('97-2') ||
-                          value.startsWith('097-2')) {
-                        return  "אין צורך להקליד קידומת מדינה 972";
-                      } else {
-                        _phoneerror = false;
-
-                        return null;
-                      }
-                    },
-                    autofillHints: [AutofillHints.telephoneNumber],
-                    decoration: const InputDecoration(
-                      filled: true,
-                      fillColor: Colors.transparent,
-                      contentPadding:
-                          EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                      border: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      errorBorder: InputBorder.none,
-                      disabledBorder: InputBorder.none,
-                      errorMaxLines: 1,
-                      errorStyle: TextStyle(
-                        height: 0,
-                        color: Colors.transparent,
-                        fontSize: 0,
-                      ),
-                      labelStyle: TextStyle(color: kWhite),
-                      hintStyle: TextStyle(color: defaultGrey),
-                      hintText: "050-000-0000",
-                    ),
-                    textInputAction: TextInputAction.done,
-                  ),
-                ),
-                InkWell(
-
-                  splashColor: Colors.grey,
-                  onTap: () => showCountryPicker(
-                    context: context,
-                    countryListTheme: CountryListThemeData(
-                      bottomSheetHeight: Get.size.height * 0.8,
-                      backgroundColor: kBlack,
-                      textStyle: const TextStyle(color: kWhite),
-                      searchTextStyle: const TextStyle(color: kWhite),
-                      inputDecoration: InputDecoration(
-                        hintStyle: const TextStyle(color: kWhite),
-                        fillColor: signInButtonColor,
-                        filled: true,
-                        isDense: true,
-                        border: OutlineInputBorder(
-                          gapPadding: 0.0,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                    ),
-                    favorite: <String>['IL'],
-                    showPhoneCode: true,
-                    onSelect: (Country country) {
-                      if (_readOnlyphone == false) {
-                        setState(() {
-                          WebService.countryCode = country.phoneCode;
-                        });
-                      }
-                    },
-                  ),
-                  child: Text(
-                    "${WebService.countryCode} +",
-                    style: const TextStyle(color: kWhite),
-                  ),
-                ),
-                SizedBox(width: size.width * 0.03),
+            child: TextFormField(
+              readOnly: _readOnlyphone,
+              textDirection: ui.TextDirection.ltr,
+              style: const TextStyle(color: kWhite, height: 1.2),
+              autofocus: false,
+              controller: _phoneController,
+              maxLines: 1,
+              onChanged: (txt) {
+                final value = txt.replaceAll(RegExp(r'[^0-9]'), '');
+                if (value.startsWith('972') || value.startsWith('0972')) {
+                  displayMessageIcon(
+                      message: "אין צורך להקליד קידומת מדינה 972",
+                      color: errorColor,
+                      snackposition: SnackPosition.BOTTOM,
+                      imageData: AppAssets.errorIcon);
+                  _phoneController.clear();
+                  setState(() => _phoneerror = true);
+                  return;
+                }
+                setState(() {
+                  _phoneerror = value.isNotEmpty &&
+                      (value.length != 10 || !value.startsWith('05'));
+                });
+              },
+              cursorColor: kWhite,
+              keyboardType: TextInputType.phone,
+              inputFormatters: <TextInputFormatter>[
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(10),
+                NumberFormatterWidget()
               ],
+              textAlign: TextAlign.left,
+              autovalidateMode: AutovalidateMode.disabled,
+              autofillHints: const [AutofillHints.telephoneNumber],
+              decoration: const InputDecoration(
+                filled: true,
+                fillColor: Colors.transparent,
+                contentPadding:
+                    EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                border: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                errorBorder: InputBorder.none,
+                disabledBorder: InputBorder.none,
+                isDense: true,
+                labelStyle: TextStyle(color: kWhite),
+                hintStyle: TextStyle(color: defaultGrey),
+                hintText: "050-000-0000",
+              ),
+              textInputAction: TextInputAction.done,
             ),
           ),
           if (_phoneerror)
@@ -813,9 +739,10 @@ class _RegistrationScreenState extends State<RegistrationScreen>
           final emailError = !RegExp(
                   r"^([a-zA-Z0-9_\-\.]+)@([a-zA-Z0-9_\-\.]+)\.([a-zA-Z]{2,5})$")
               .hasMatch(_emailController.text);
+          final phoneDigits =
+              _phoneController.text.replaceAll(RegExp(r'[^0-9]'), '');
           final phoneError =
-              _phoneController.text.replaceAll(RegExp(r'[^0-9]'), '').length !=
-                  10;
+              phoneDigits.length != 10 || !phoneDigits.startsWith('05');
 
           setState(() {
             _nameerror = nameError;

@@ -140,48 +140,32 @@ class _ScreenTattooRequestState extends State<ScreenTattooRequest>
       //     ],
       //   ),
       // ),
-      body: Column(
-        children: [
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.all(size.height * 0.02),
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    buildTitle(context, size, textTheme),
-                    SizedBox(height: size.height * 0.03),
-                    buildSendingRequestAdvice(size, textTheme),
-                    SizedBox(height: size.height * 0.03),
-                    buildNotes(size, textTheme),
-                    SizedBox(height: size.height * 0.03),
-                    buildTattoSize(context, size, textTheme),
-                    buildStyleList(context, size, textTheme),
-                    buildLocationChoose(context, size, textTheme),
-                    buildTattoArtist(context, size, textTheme),
-                    buildAdditionalNotes(context, size, textTheme),
-                    buildBtnSubmit(context: context, size: size),
-                    if (Platform.isAndroid)
-                      SizedBox(
-                        height: MediaQuery.of(context).size.height * 0.05,
-                      )
-                  ],
+      body: Padding(
+        padding: EdgeInsets.all(size.height * 0.02),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              buildTitle(context, size, textTheme),
+              SizedBox(height: size.height * 0.03),
+              buildSendingRequestAdvice(size, textTheme),
+              SizedBox(height: size.height * 0.03),
+              buildNotes(size, textTheme),
+              SizedBox(height: size.height * 0.03),
+              buildTattoSize(context, size, textTheme),
+              buildStyleList(context, size, textTheme),
+              buildImageUpload(context, size, textTheme),
+              buildLocationChoose(context, size, textTheme),
+              buildTattoArtist(context, size, textTheme),
+              buildAdditionalNotes(context, size, textTheme),
+              buildBtnSubmit(context: context, size: size),
+              if (Platform.isAndroid)
+                SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.05,
                 ),
-              ),
-            ),
+            ],
           ),
-          Material(
-            color: bgBlack,
-            child: SafeArea(
-              top: false,
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(
-                    size.height * 0.02, 8, size.height * 0.02, 8),
-                child: buildImageUpload(context, size, textTheme),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

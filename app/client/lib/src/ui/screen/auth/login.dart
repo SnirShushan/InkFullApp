@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 
-import 'package:country_picker/country_picker.dart';
 import 'package:crypto/crypto.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -364,135 +363,85 @@ class _LoginScreenState extends State<LoginScreen>
                     color: _hasError1 ? errorColor : defaultGrey, width: 2),
                 borderRadius: BorderRadius.circular(12),
                 color: textEditingColor),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Flexible(
-                    child: TextField(
-                  style: const TextStyle(color: kWhite),
-                  autofocus: false,
-                  controller: phoneController,
-                  maxLines: 1,
-                  enableInteractiveSelection: true,
-                  onChanged: (txt) async {
-                    final value = txt.replaceAll(RegExp(r'[^0-9]'), '');
-                    if (txt.isEmpty) {
-                      setState(() {
-                        loginvalidation = "login.phone_number_incorrect";
-                      });
-                      return;
+            child: TextField(
+              style: const TextStyle(color: kWhite, height: 1.2),
+              autofocus: false,
+              controller: phoneController,
+              maxLines: 1,
+              enableInteractiveSelection: true,
+              onChanged: (txt) async {
+                final value = txt.replaceAll(RegExp(r'[^0-9]'), '');
+                if (txt.isEmpty) {
+                  setState(() {
+                    loginvalidation = "login.phone_number_incorrect";
+                  });
+                  return;
+                }
+                if (['0972', '972'].any(value.startsWith)) {
+                  phoneController.value = const TextEditingValue(
+                    text: '',
+                    selection: TextSelection.collapsed(offset: 0),
+                  );
+                  setState(() {
+                    loginvalidation = "login.phone_number_incorrect";
+                  });
+                  return;
+                }
+
+                final isIsraeliMobile =
+                    value.length == 10 && value.startsWith('05');
+                setState(() {
+                  if (!isIsraeliMobile) {
+                    loginvalidation = "login.phone_number_invalid";
+                  } else {
+                    loginvalidation = "";
+                    _hasError1 = false;
+                  }
+                });
+
+                if (isIsraeliMobile && isLoading != true) {
+                  if (widget.oldnumber != "") {
+                    if (widget.oldnumber == phoneController.text) {
+                      Get.to(() => CodeVerification(
+                          phoneNumber: phoneController.text,
+                          strVerificationId: widget.strVerificationId,
+                          strResendToken: widget.strResendToken));
+                    } else {
+                      await _startLogin();
                     }
-                    // Block typing country code into the local number field
-                    if (WebService.countryCode == "972" &&
-                        ['0972', '972'].any(value.startsWith)) {
-                      phoneController.value = const TextEditingValue(
-                        text: '',
-                        selection: TextSelection.collapsed(offset: 0),
-                      );
-                      setState(() {
-                        loginvalidation = "login.phone_number_incorrect";
-                      });
-                      return;
-                    }
-
-                    setState(() {
-                      if (value.length != 10) {
-                        loginvalidation = "login.phone_number_invalid";
-                      } else {
-                        loginvalidation = "";
-                        _hasError1 = false;
-                      }
-                    });
-
-                    // Do not assign phoneController.text here — it resets
-                    // selection to -1 and breaks further typing on Android.
-                    if (value.length == 10 && isLoading != true) {
-                      if (widget.oldnumber != "") {
-                        if (widget.oldnumber == phoneController.text) {
-                          Get.to(() => CodeVerification(
-                              phoneNumber: phoneController.text,
-                              strVerificationId: widget.strVerificationId,
-                              strResendToken: widget.strResendToken));
-                        } else {
-                          await _startLogin();
-                        }
-                      } else {
-                        await _startLogin();
-                      }
-                    }
-                  },
-                  textDirection: ui.TextDirection.ltr,
-
-                  cursorColor: kWhite,
-
-                  keyboardType: TextInputType.number,
-                  inputFormatters: <TextInputFormatter>[
-                    FilteringTextInputFormatter.digitsOnly,
-                    LengthLimitingTextInputFormatter(10),
-                    NumberFormatterWidget()
-                  ],
-                  textAlign: TextAlign.left,
-
-                  decoration: const InputDecoration(
-                      filled: true,
-                      fillColor: Colors.transparent,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 8),
-                      border: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      errorBorder: InputBorder.none,
-                      disabledBorder: InputBorder.none,
-                      errorMaxLines: 1,
-                      errorText: null,
-                      errorStyle: TextStyle(
-                        height: 0,
-                        color: Colors.transparent,
-                        fontSize: 0,
-                      ),
-                      floatingLabelBehavior: FloatingLabelBehavior.never,
-                      labelStyle: TextStyle(color: kWhite),
-                      hintStyle: TextStyle(color: defaultGrey),
-                      hintText: "050-000-0000"),
-                  // hintText: "מספר טלפון"),
-                  textInputAction: TextInputAction.next,
-                  onSubmitted: (_) {
-                    FocusScope.of(context).unfocus(); // closes the keyboard
-                  },
-                )),
-                InkWell(
-                    splashColor: Colors.grey,
-                    onTap: () => showCountryPicker(
-                          context: context,
-                          countryListTheme: CountryListThemeData(
-                              bottomSheetHeight:
-                                  MediaQuery.of(context).size.height * 0.8,
-                              backgroundColor: kBlack,
-                              textStyle: const TextStyle(color: kWhite),
-                              searchTextStyle: const TextStyle(color: kWhite),
-                              inputDecoration: InputDecoration(
-                                  // hintText:"txt_search",
-                                  hintStyle: const TextStyle(color: kWhite),
-                                  fillColor: signInButtonColor,
-                                  filled: true,
-                                  isDense: true,
-                                  border: OutlineInputBorder(
-                                      gapPadding: 0.0,
-                                      borderRadius:
-                                          BorderRadius.circular(10)))),
-                          favorite: <String>['IL'],
-                          showPhoneCode: true,
-                          // optional. Shows phone code before the country name.
-                          onSelect: (Country country) {
-                            setState(() {
-                              WebService.countryCode = country.phoneCode;
-                            });
-                          },
-                        ),
-                    child: Text("${WebService.countryCode} +",
-                        style: const TextStyle(color: textEditingColor2))),
-                SizedBox(width: size.width * 0.03)
+                  } else {
+                    await _startLogin();
+                  }
+                }
+              },
+              textDirection: ui.TextDirection.ltr,
+              cursorColor: kWhite,
+              keyboardType: TextInputType.number,
+              inputFormatters: <TextInputFormatter>[
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(10),
+                NumberFormatterWidget()
               ],
+              textAlign: TextAlign.left,
+              decoration: const InputDecoration(
+                  filled: true,
+                  fillColor: Colors.transparent,
+                  contentPadding:
+                      EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                  border: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  errorBorder: InputBorder.none,
+                  disabledBorder: InputBorder.none,
+                  isDense: true,
+                  floatingLabelBehavior: FloatingLabelBehavior.never,
+                  labelStyle: TextStyle(color: kWhite),
+                  hintStyle: TextStyle(color: defaultGrey),
+                  hintText: "050-000-0000"),
+              textInputAction: TextInputAction.next,
+              onSubmitted: (_) {
+                FocusScope.of(context).unfocus();
+              },
             ),
           ),
           if (_hasError1)

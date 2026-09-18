@@ -4,15 +4,9 @@ import 'dart:io';
 import 'package:easy_localization/easy_localization.dart' as localization;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_google_places_hoc081098/flutter_google_places_hoc081098.dart'
-    as fg;
-import 'package:flutter_google_places_hoc081098/google_maps_webservice_places.dart'
-    as gmwp;
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
-import 'package:google_api_headers/google_api_headers.dart';
-import 'package:googlemaps_flutter_webservices/places.dart' as gm;
 import 'package:image_picker/image_picker.dart';
 import 'package:ink/src/controller/StartupController.dart';
 import 'package:ink/src/data/model/currentUser.dart';
@@ -25,6 +19,7 @@ import 'package:ink/src/ui/screen/profile/subscription/iosubscription/purchase_i
 import 'package:ink/src/ui/screen/profile/subscription/purchase_screen.dart';
 import 'package:ink/src/ui/widgets/button/animation_loader_button_widget.dart';
 import 'package:ink/src/ui/widgets/button/custom_gradient_btn_child_widget.dart';
+import 'package:ink/src/ui/widgets/israel_address_field.dart';
 import 'package:ink/src/ui/widgets/unfocus_widget.dart';
 import 'package:ink/src/ui/widgets/upgrade_dialog.dart';
 import 'package:ink/src/utils/assets.dart';
@@ -516,76 +511,28 @@ class _EditProfile extends State<EditProfile>
                 color: titleTextWhiteColor, fontWeight: FontWeight.w400),
           ),
           SizedBox(height: size.height * 0.01),
-          TextFormField(
-              onTap: () async {
-                var place = await fg.PlacesAutocomplete.show(
-                    context: context,
-                    apiKey: WebService.googleApiKey,
-                    mode: fg.Mode.overlay,
-                    language: 'he',
-                    region: 'il',
-                    components: [
-                      const gmwp.Component(gmwp.Component.country, 'IL')
-                    ],
-                    onError: (err) {
-                      WebService.printMsg(err.errorMessage.toString());
-                    });
-
-                if (place != null) {
-                  final plist = gm.GoogleMapsPlaces(
-                    apiKey: WebService.googleApiKey,
-                    apiHeaders: await const GoogleApiHeaders().getHeaders(),
-                  );
-                  String placeId = place.placeId ?? "0";
-                  final detail = await plist.getDetailsByPlaceId(placeId);
-                  final geometry = detail.result.geometry!;
-                  String cityName = '';
-                  final addressComponents =
-                      await detail.result.addressComponents;
-                  for (var component in addressComponents) {
-                    if (component.types.contains('locality')) {
-                      cityName = component.longName;
-                      if (cityName == "") {
-                        cityName = component.shortName;
-                      }
-                      break;
-                    }
-                  }
-                  WebService.placeId = placeId;
-                  WebService.lat = geometry.location.lat;
-                  WebService.lang = geometry.location.lng;
-                  WebService.address = place.description!;
-                  WebService.cityName = cityName;
-
-                  print("cityName $cityName");
-                  _controller.addressController.value.text = place.description!;
-                }
-              },
-              autofocus: false,
-              readOnly: true,
-              controller: _controller.addressController.value,
-              keyboardType: TextInputType.streetAddress,
-              style: Theme.of(context).textTheme.titleMedium!.copyWith(
-                  color: titleTextWhiteColor,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w400),
-              decoration: InputDecoration(
-                hintStyle: hintStyle,
-                hintText: localization.tr("user_to_business.address_hint"),
-                contentPadding: const EdgeInsets.all(12),
-                filled: true,
-                fillColor: socialoginbtn,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                suffixIcon: _controller.addressController.value.text.isNotEmpty
-                    ? Padding(
-                        padding: const EdgeInsetsDirectional.all(16.0),
-                        child:
-                            SvgPicture.asset(AppAssets.correct_transparentIcon),
-                      ) //Image.asset(AppAssets.correct_transparentIcon)
-                    : null,
-              )),
+          IsraelAddressField(
+            controller: _controller.addressController.value,
+            hintText: localization.tr("user_to_business.address_hint"),
+            hintStyle: hintStyle,
+            style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                color: titleTextWhiteColor,
+                fontSize: 16,
+                fontWeight: FontWeight.w400),
+            decoration: InputDecoration(
+              hintStyle: hintStyle,
+              hintText: localization.tr("user_to_business.address_hint"),
+              contentPadding: const EdgeInsets.all(12),
+              filled: true,
+              fillColor: socialoginbtn,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            showCheckWhenFilled: true,
+            onTextChanged: (_) => setState(() {}),
+            onSelected: (_) => setState(() {}),
+          ),
         ],
       );
 

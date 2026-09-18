@@ -461,15 +461,25 @@ async function handleGetBusiness(p) {
   const auth = await requireAuth(p);
   if (auth.error) return auth.error;
   const profile = await getUserProfile(auth.uid, true);
+  const explicitStyles = String(p.styles || '').trim();
+  const isRecommended = String(p.is_recommended || '') === '1';
+  const isPopular = String(p.popular || '') === '1';
+  const isClosest = String(p.is_closest || '') === '1';
   const business = await getBusinessCards({
-    styles: p.styles || profile?.styles || '',
+    styles: explicitStyles,
+    recommendedStyles: isRecommended ? profile?.styles || '' : '',
     start: p.start || 0,
-    limit: p.limit || 6,
+    limit: p.limit || 100,
     uid: auth.uid,
+    searchTxt: p.search_txt || '',
+    popular: isPopular,
+    closest: isClosest,
+    lat: p.lat || '',
+    lng: p.lng || '',
   });
   return ok({
     business,
-    is_filter: p.styles ? '1' : '2',
+    is_filter: explicitStyles ? '1' : '2',
     popup_text: '',
   });
 }

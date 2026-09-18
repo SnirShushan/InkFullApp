@@ -27,7 +27,7 @@ class WebService {
   static const String channel = "ink.itapp2u.com/fb_events";
   static const MethodChannel platform = MethodChannel(channel);
 
-  static String countryCode = "972";
+  static const String countryCode = "972";
   static String purchasePrice = "";
   static String purchaseCurrency = "";
   static int selectedPlan = 0;
@@ -73,7 +73,7 @@ class WebService {
   // static const defaultImageUrl =
   //     "http://192.168.1.59/tattoo/assets/img/defult.png";
 
-  static String appVersion = Platform.isAndroid ? "1.0.67" : "1.0.94";
+  static String appVersion = Platform.isAndroid ? "1.0.67" : "1.0.95";
   static const appToken = "123456";
   static String deviceType = Platform.isAndroid ? "a" : "i";
   static double locationRadius = 100.0;

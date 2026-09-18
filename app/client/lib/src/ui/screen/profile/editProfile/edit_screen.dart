@@ -4,12 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_google_places_hoc081098/flutter_google_places_hoc081098.dart';
-import 'package:flutter_google_places_hoc081098/google_maps_webservice_places.dart'
-    as gmwp;
 import 'package:get/get.dart';
-import 'package:google_api_headers/google_api_headers.dart';
-import 'package:googlemaps_flutter_webservices/places.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:ink/src/controller/artistsListController.dart';
 import 'package:ink/src/utils/assets.dart';
@@ -22,6 +17,7 @@ import '../../../../data/model/currentUser.dart';
 import '../../../../data/source/network/user_api.dart';
 import '../../../../utils/colors.dart';
 import '../../../../utils/permissions.dart';
+import '../../../widgets/israel_address_field.dart';
 import '../../../widgets/unfocus_widget.dart';
 import 'addArtist.dart';
 
@@ -202,42 +198,15 @@ class _EditScreenState extends State<EditScreen> {
               SizedBox(
                 width: size.width * 0.6,
                 // width: size.width * (isEditing ? 0.6 : 0.8),
-                child: TextFormField(
-                  onTap: () async {
-                    var place = await PlacesAutocomplete.show(
-                        context: context,
-                        apiKey: WebService.googleApiKey,
-                        mode: Mode.overlay,
-                        language: 'he',
-                        region: 'il',
-                        components: [
-                          const gmwp.Component(gmwp.Component.country, 'IL')
-                        ],
-                        onError: (err) {
-                          WebService.printMsg(err.errorMessage.toString());
-                        });
-
-                    if (place != null) {
-                      final plist = GoogleMapsPlaces(
-                        apiKey: WebService.googleApiKey,
-                        apiHeaders: await const GoogleApiHeaders().getHeaders(),
-                      );
-                      String placeId = place.placeId ?? "0";
-                      final detail = await plist.getDetailsByPlaceId(placeId);
-                      final geometry = detail.result.geometry!;
-                      newPlaceId = placeId;
-                      lat = geometry.location.lat;
-                      lang = geometry.location.lng;
-                      address = place.description!;
-
-                      setState(() {
-                        _addressController.text = address;
-                      });
-                    }
-                  },
-                  readOnly: true,
+                child: IsraelAddressField(
                   controller: _addressController,
+                  applyToWebService: false,
                   decoration: InputDecoration(
+                    hintText: 'חפשו כתובת',
+                    hintStyle: const TextStyle(color: hintTextColor),
+                    filled: true,
+                    fillColor: socialoginbtn,
+                    contentPadding: const EdgeInsets.all(8),
                     border: OutlineInputBorder(
                         borderRadius:
                             BorderRadius.circular(!isEditing ? 20 : 10)),
@@ -249,6 +218,19 @@ class _EditScreenState extends State<EditScreen> {
                             : const SizedBox())
                         : const SizedBox(),
                   ),
+                  onSelected: (place) {
+                    setState(() {
+                      newPlaceId = place.placeId;
+                      lat = place.lat;
+                      lang = place.lng;
+                      address = place.label;
+                    });
+                  },
+                  onTextChanged: (value) {
+                    setState(() {
+                      address = value;
+                    });
+                  },
                 ),
               ),
               if (!isEditing)

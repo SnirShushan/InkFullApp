@@ -4,15 +4,9 @@ import 'dart:io';
 import 'package:easy_localization/easy_localization.dart' as localization;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_google_places_hoc081098/flutter_google_places_hoc081098.dart'
-    as fg;
-import 'package:flutter_google_places_hoc081098/google_maps_webservice_places.dart'
-    as gmwp;
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
-import 'package:google_api_headers/google_api_headers.dart';
-import 'package:googlemaps_flutter_webservices/places.dart' as gm;
 import 'package:ink/src/controller/change_user_type.dart';
 import 'package:ink/src/data/model/currentUser.dart';
 import 'package:ink/src/data/source/network/user_api.dart';
@@ -33,6 +27,7 @@ import 'package:ink/src/utils/webService.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:signature/signature.dart';
 
+import '../../../widgets/israel_address_field.dart';
 import '../../../widgets/unfocus_widget.dart';
 import 'tagmembers.dart';
 
@@ -319,74 +314,15 @@ class _ScreenChangeUserTypeState extends State<ScreenChangeUserType>
                 color: titleTextWhiteColor, fontWeight: FontWeight.w400),
           ).tr(),
           SizedBox(height: size.height * 0.02),
-          TextFormField(
-              onTap: () async {
-                FocusManager.instance.primaryFocus?.unfocus();
-                var place = await fg.PlacesAutocomplete.show(
-                    context: context,
-                    apiKey: WebService.googleApiKey,
-                    mode: fg.Mode.overlay,
-                    language: 'he',
-                    region: 'il',
-                    components: [gmwp.Component(gmwp.Component.country, 'IL')],
-                    onError: (err) {
-                      print(
-                          "err.errorMessage.toString() ${err.errorMessage.toString()}");
-                    });
-
-                if (place != null) {
-                  final plist = gm.GoogleMapsPlaces(
-                    apiKey: WebService.googleApiKey,
-                    apiHeaders: await const GoogleApiHeaders().getHeaders(),
-                  );
-                  String placeId = place.placeId ?? "0";
-                  final detail = await plist.getDetailsByPlaceId(placeId);
-                  final geometry = detail.result.geometry!;
-                  String cityName = '';
-                  final addressComponents =
-                      await detail.result.addressComponents;
-                  for (var component in addressComponents) {
-                    if (component.types.contains('locality')) {
-                      cityName = component.longName;
-                      break;
-                    }
-                  }
-                  WebService.placeId = placeId;
-                  WebService.lat = geometry.location.lat;
-                  WebService.lang = geometry.location.lng;
-                  WebService.address = place.description!;
-                  WebService.cityName = cityName;
-
-                  setState(() {
-                    changeUserTypeController.addressController.text =
-                        WebService.address;
-                  });
-                }
-              },
-              autofocus: false,
-              readOnly: true,
-              controller: changeUserTypeController.addressController,
-              keyboardType: TextInputType.streetAddress,
-              style: textStyle,
-              decoration: InputDecoration(
-                hintStyle: hintStyle,
-                hintText: localization.tr("user_to_business.address_hint"),
-                contentPadding: const EdgeInsets.all(8),
-                filled: true,
-                fillColor: socialoginbtn,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                suffixIcon:
-                    changeUserTypeController.addressController.text.isNotEmpty
-                        ? Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: SvgPicture.asset(
-                              AppAssets.correct_transparentIcon,
-                            ),
-                          ) //Image.asset(AppAssets.correct_transparentIcon)
-                        : null,
-              )),
+          IsraelAddressField(
+            controller: changeUserTypeController.addressController,
+            hintText: localization.tr("user_to_business.address_hint"),
+            hintStyle: hintStyle,
+            style: textStyle,
+            showCheckWhenFilled: true,
+            onTextChanged: (_) => setState(() {}),
+            onSelected: (_) => setState(() {}),
+          ),
         ],
       );
 

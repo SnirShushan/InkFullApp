@@ -74,39 +74,44 @@ class TattooRequest {
           json['is_contact_request'].toString() == "2" ? true : false;
     }
     isContactRequestStr = json['is_contact_request'].toString();
-    id = json['id'];
-    name = json['name'];
-    phone = json['phone']??"";
-    email = json['email']??"";
-    tattooSize = json['tattoo_size']??"";
-    image1Id = json['image1_id']??"";
-    image2Id = json['image2_id']??"";
-    image3Id = json['image3_id']??"";
-    image1Name = json['image1_name']??"";
-    image2Name = json['image2_name']??"";
-    image3Name = json['image3_name']??"";
-    styles = json['styles'];
-    frontSide = json['front_side'];
-    backSide = json['back_side'];
-    frontData = json['front_data'];
-    backData = json['back_data'];
-    backDataImage = json['back_data_image'];
-    frontDataImage = json['front_data_image'];
-    description = json['description'];
-    artistsUid = json['artists_uid'];
-    businessId = json['business_id'];
-    uid = json['uid'];
-    dateAdded = json['date_added'];
-    dateUpdated = json['date_updated'];
-    isread = json['is_read'] != "" ? json['is_read'] : "1";
-    cntCode = json['cnt_code'] != "" ? json['cnt_code'] : "";
-    if (json['request_images'] != null &&
-        json['request_images'] != "" &&
-        json['request_images'].toString() != "[]") {
+    id = json['id']?.toString();
+    name = json['name']?.toString();
+    phone = json['phone']?.toString() ?? "";
+    email = json['email']?.toString() ?? "";
+    tattooSize = json['tattoo_size']?.toString() ?? "";
+    image1Id = json['image1_id']?.toString() ?? "";
+    image2Id = json['image2_id']?.toString() ?? "";
+    image3Id = json['image3_id']?.toString() ?? "";
+    image1Name = json['image1_name']?.toString() ?? "";
+    image2Name = json['image2_name']?.toString() ?? "";
+    image3Name = json['image3_name']?.toString() ?? "";
+    styles = json['styles']?.toString();
+    frontSide = json['front_side']?.toString();
+    backSide = json['back_side']?.toString();
+    frontData = json['front_data']?.toString();
+    backData = json['back_data']?.toString();
+    backDataImage = json['back_data_image']?.toString();
+    frontDataImage = json['front_data_image']?.toString();
+    description = json['description']?.toString();
+    artistsUid = json['artists_uid']?.toString();
+    businessId = json['business_id']?.toString();
+    uid = json['uid']?.toString();
+    dateAdded = json['date_added']?.toString();
+    dateUpdated = json['date_updated']?.toString();
+    isread = json['is_read'] != null && json['is_read'].toString() != ""
+        ? json['is_read'].toString()
+        : "1";
+    cntCode = json['cnt_code'] != null && json['cnt_code'].toString() != ""
+        ? json['cnt_code'].toString()
+        : "";
+    if (json['request_images'] is List && json['request_images'].isNotEmpty) {
       requestImages = <RequestImages>[];
-      json['request_images'].forEach((v) {
-        requestImages!.add(new RequestImages.fromJson(v));
-      });
+      for (final v in json['request_images']) {
+        if (v is Map) {
+          requestImages!.add(
+              RequestImages.fromJson(Map<String, dynamic>.from(v)));
+        }
+      }
     }
     artistRow =
         (json['artist_row'] != null && json['artist_row'].toString() != "[]")
@@ -208,23 +213,25 @@ class ArtistRow {
       this.aboutText});
 
   ArtistRow.fromJson(Map<String, dynamic> json) {
-    id = json['id'];
-    name = json['name'];
-    status = json['status'];
-    email = json['email'];
-    phone = json['phone'];
-    cntCode = json['cnt_code'] != "" ? json['cnt_code'] : "";
-    lang = json['lang'];
-    profileImage = json['profile_image'];
-    styles = json['styles'];
-    businessType = json['business_type'];
-    userType = json['user_type'];
-    loginType = json['login_type'];
-    address = json['address'];
-    addressLat = json['address_lat'];
-    addressLng = json['address_lng'];
-    addressPlaceId = json['address_place_id'];
-    aboutText = json['about_text'];
+    id = json['id']?.toString();
+    name = json['name']?.toString();
+    status = json['status']?.toString();
+    email = json['email']?.toString();
+    phone = json['phone']?.toString();
+    cntCode = json['cnt_code'] != null && json['cnt_code'].toString() != ""
+        ? json['cnt_code'].toString()
+        : "";
+    lang = json['lang']?.toString();
+    profileImage = json['profile_image']?.toString();
+    styles = json['styles']?.toString();
+    businessType = json['business_type']?.toString();
+    userType = json['user_type']?.toString();
+    loginType = json['login_type']?.toString();
+    address = json['address']?.toString();
+    addressLat = json['address_lat']?.toString();
+    addressLng = json['address_lng']?.toString();
+    addressPlaceId = json['address_place_id']?.toString();
+    aboutText = json['about_text']?.toString();
   }
 
   Map<String, dynamic> toJson() {

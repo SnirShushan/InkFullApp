@@ -1,20 +1,15 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_google_places_hoc081098/flutter_google_places_hoc081098.dart';
-import 'package:flutter_google_places_hoc081098/google_maps_webservice_places.dart'
-    as gmwp;
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
-import 'package:google_api_headers/google_api_headers.dart';
-import 'package:googlemaps_flutter_webservices/places.dart';
 import 'package:ink/src/controller/businessProfilecontroller.dart';
 import 'package:ink/src/ui/screen/sendTattoRquest/widget/custom_checkbox_widget.dart';
 import 'package:ink/src/ui/widgets/button/custom_gradient_btn_widget.dart';
+import 'package:ink/src/ui/widgets/israel_address_field.dart';
 import 'package:ink/src/utils/assets.dart';
 import 'package:ink/src/utils/colors.dart';
 import 'package:ink/src/utils/common.dart';
-import 'package:ink/src/utils/webService.dart';
 
 class SearchBusinessUserWidget extends StatelessWidget {
   final BusinessProfileController businessProfileController;
@@ -514,29 +509,31 @@ class SearchBusinessUserWidget extends StatelessWidget {
                           height: MediaQuery.of(context).size.height * 0.03),
 
                       //address
-                      SizedBox(
-                        height: 48,
-                        child: TextField(
-                          controller:
-                              businessProfileController.addressController,
-                          onTap: () async {
-                            Navigator.of(context).pop();
-                            changeAddress(context, controller);
-                          },
-                          canRequestFocus: false,
-                          decoration: InputDecoration(
-                              hintText: 'חפשו עיר',
-                              hintStyle:
-                                  const TextStyle(color: placeholdertxtColor),
-                              filled: true,
-                              fillColor: styleBgColor,
-                              contentPadding:
-                                  const EdgeInsets.symmetric(horizontal: 12.0),
-                              border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  borderSide: BorderSide.none)),
-                          style: const TextStyle(color: titleTextWhiteColor),
-                        ),
+                      IsraelAddressField(
+                        controller:
+                            businessProfileController.addressController,
+                        hintText: 'חפשו עיר',
+                        hintStyle:
+                            const TextStyle(color: placeholdertxtColor),
+                        style: const TextStyle(color: titleTextWhiteColor),
+                        applyToWebService: false,
+                        decoration: InputDecoration(
+                            hintText: 'חפשו עיר',
+                            hintStyle:
+                                const TextStyle(color: placeholdertxtColor),
+                            filled: true,
+                            fillColor: styleBgColor,
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12.0, vertical: 12),
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide.none)),
+                        onSelected: (place) {
+                          controller.lat.value = place.lat.toString();
+                          controller.lng.value = place.lng.toString();
+                          controller.isAsPerLocation.value = true;
+                          controller.isCurrentLocationSelected.value = false;
+                        },
                       ),
 
                       SizedBox(
@@ -603,7 +600,7 @@ class SearchBusinessUserWidget extends StatelessWidget {
                                           children: [
                                             ColoredBox(
                                                 color: kWhite,
-                                                child: buildCachedNetworkImage(
+                                                child: buildStyleIconImage(
                                                     height:
                                                         MediaQuery.of(context)
                                                                 .size
@@ -614,11 +611,10 @@ class SearchBusinessUserWidget extends StatelessWidget {
                                                                 .size
                                                                 .width *
                                                             0.2,
-                                                    url: WebService
-                                                        .resolveImageUrl(
-                                                            category.imageName,
-                                                            base: WebService
-                                                                .styleImgUrl),
+                                                    imageName:
+                                                        category.imageName,
+                                                    name: category.name,
+                                                    slug: category.slug,
                                                     radius: 10)),
                                             if (controller.selectedStyles!.value
                                                 .contains(category))
@@ -657,7 +653,7 @@ class SearchBusinessUserWidget extends StatelessWidget {
                                   //       fit: BoxFit.cover)),
                                   const SizedBox(height: 5),
                                   Text(
-                                    category.name!,
+                                    category.displayName,
                                     style: const TextStyle(color: Colors.white),
                                   ),
                                 ],
@@ -696,91 +692,5 @@ class SearchBusinessUserWidget extends StatelessWidget {
             ),
           );
         });
-  }
-
-  changeAddress(
-      BuildContext context, BusinessProfileController controller) async {
-    var place = await PlacesAutocomplete.show(
-        context: context,
-        apiKey: WebService.googleApiKey,
-        mode: Mode.overlay,
-        language: 'he',
-        region: 'il',
-        components: [const gmwp.Component(gmwp.Component.country, 'IL')],
-        onError: (err) {
-          // displayMessageIcon(
-          //     message: err.errorMessage.toString(),
-          //     color: errorColor,
-          //     imageData: AppAssets.errorIcon);
-        });
-
-    if (place != null) {
-      final plist = GoogleMapsPlaces(
-          apiKey: WebService.googleApiKey,
-          apiHeaders: await const GoogleApiHeaders().getHeaders());
-      String placeId = place.placeId ?? "0";
-      final detail = await plist.getDetailsByPlaceId(placeId);
-      if (detail.result != null) {
-        print(detail.result);
-        final geometry = detail.result.geometry!;
-        print("geometry $geometry");
-
-        controller.lat.value = geometry.location.lat.toString();
-        controller.lng.value = geometry.location.lng.toString();
-        controller.addressController.text = place.description!;
-        controller.isAsPerLocation.value = true;
-        // controller.setCurrentLocation(isEnabled: false);
-
-        controller.isCurrentLocationSelected.value = false;
-
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _showFilterBottomSheet(Get.context!, controller);
-        });
-      }
-    }
-  }
-
-  void changeAddressSorting(
-      BuildContext context, BusinessProfileController controller) async {
-    var place = await PlacesAutocomplete.show(
-        context: context,
-        apiKey: WebService.googleApiKey,
-        mode: Mode.overlay,
-        language: 'he',
-        region: 'il',
-        components: [const gmwp.Component(gmwp.Component.country, 'IL')],
-        onError: (err) {
-          // displayMessageIcon(
-          //     message: err.errorMessage.toString(),
-          //     color: errorColor,
-          //     imageData: AppAssets.errorIcon);
-        });
-
-    if (place != null) {
-      final plist = GoogleMapsPlaces(
-          apiKey: WebService.googleApiKey,
-          apiHeaders: await const GoogleApiHeaders().getHeaders());
-      String placeId = place.placeId ?? "0";
-      final detail = await plist.getDetailsByPlaceId(placeId);
-      if (detail.result != null) {
-        print(detail.result);
-        final geometry = detail.result.geometry!;
-        print("geometry $geometry");
-
-        controller.lat.value = geometry.location.lat.toString();
-        controller.lng.value = geometry.location.lng.toString();
-        controller.addressController.text = place.description!;
-        controller.isAsPerLocation.value = true;
-        // controller.setCurrentLocation(isEnabled: false);
-
-        controller.isCurrentLocationSelected.value = false;
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _showSortBottomSheet(
-            Get.context!,
-            controller,
-          );
-        });
-      }
-    }
   }
 }

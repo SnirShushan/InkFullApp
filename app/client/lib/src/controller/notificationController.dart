@@ -142,9 +142,15 @@ class NotificationController extends GetxController {
               startIndexRequest += 10;
             }
           }
-          tattooRequestsList.addAll(newList.map((item) {
-            return TattooRequest.fromJson(item as Map<String, dynamic>);
-          }).toList());
+          for (final item in newList) {
+            try {
+              tattooRequestsList.add(
+                TattooRequest.fromJson(Map<String, dynamic>.from(item as Map)),
+              );
+            } catch (e) {
+              debugPrint('TattooRequest parse failed: $e');
+            }
+          }
 
           tattooRequestsList.refresh();
 

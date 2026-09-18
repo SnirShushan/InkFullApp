@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 
-import 'package:country_picker/country_picker.dart';
 import 'package:easy_localization/easy_localization.dart' as localization;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -483,131 +482,69 @@ class _EditingDetails extends State<EditingDetails>
               borderRadius: BorderRadius.circular(8),
               color: socialoginbtn,
             ),
-            child: Row(
-              children: [
-                Flexible(
-                    child: TextField(
-                  focusNode: _focusNode,
-                  enabled: userController.loginType.value.toString() == "1"
-                      ? false
-                      : true,
-                  readOnly: userController.loginType.value.toString() == "1"
-                      ? true
-                      : false,
-                  textDirection: ui.TextDirection.ltr,
-                  controller: widget
-                      .businessProfileMenuController.phoneController.value,
-                  onChanged: (txt) {
-                    if (userController.loginType.value.toString() != "1") {
-                      var value = txt.replaceAll(new RegExp(r'[^0-9]'), '');
-                      if (txt == null || txt == "") {
-                        loginvalidation = "login.phone_number_incorrect";
-                      } else if (txt.startsWith('0972') ||
-                          txt.startsWith('972') ||
-                          txt.startsWith('097-2') ||
-                          txt.startsWith('97-2')) {
-                        // Show error, disable submit, etc.
-
-                        displayMessageIcon(
-                            message: "אין צורך להקליד קידומת מדינה 972",
-                            color: errorColor,
-                            snackposition: SnackPosition.BOTTOM,
-                            imageData: AppAssets.errorIcon);
-                        txt = "";
-                        widget
-                            .businessProfileMenuController.phoneController.value
-                            .clear();
-                      } else if (value.length != 10) {
-                        loginvalidation = "מספר הטלפון חייב להיות בן 10 ספרות";
-                      } else {
-                        loginvalidation = "";
-
-                        widget.businessProfileMenuController.userphoneError
-                            .value = false;
-                      }
-
-                      widget.businessProfileMenuController.phoneController.value
-                          .text = txt;
-                      setState(() {});
-                    }
-                  },
-                  maxLines: 1,
-                  style: const TextStyle(color: kWhite),
-                  autofocus: false,
-                  cursorColor: kWhite,
-                  keyboardType: TextInputType.phone,
-                  inputFormatters: <TextInputFormatter>[
-                    FilteringTextInputFormatter.digitsOnly,
-                    LengthLimitingTextInputFormatter(10),
-                    NumberFormatterWidget()
-                  ],
-                  textAlign: TextAlign.left,
-                  autofillHints: [AutofillHints.telephoneNumber],
-                  decoration: const InputDecoration(
-                    filled: true,
-                    fillColor: Colors.transparent,
-                    contentPadding:
-                        EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                    border: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    errorBorder: InputBorder.none,
-                    disabledBorder: InputBorder.none,
-                    errorMaxLines: 1,
-                    errorStyle: TextStyle(
-                      height: 0,
-                      color: Colors.transparent,
-                      fontSize: 0,
-                    ),
-                    labelStyle: TextStyle(color: kWhite),
-                    hintStyle: TextStyle(color: defaultGrey),
-                    hintText: "050-000-0000",
-                  ),
-                  textInputAction: TextInputAction.done,
-                )),
-                userController.loginType.value.toString() == "1"
-                    ? Text(
-                        "${WebService.countryCode} +",
-                        style: const TextStyle(color: kWhite),
-                      )
-                    : InkWell(
-                        splashColor: Colors.grey,
-                        onTap: () => showCountryPicker(
-                          context: context,
-                          countryListTheme: CountryListThemeData(
-                            bottomSheetHeight: Get.size.height * 0.8,
-                            backgroundColor: kBlack,
-                            textStyle: const TextStyle(color: kWhite),
-                            searchTextStyle: const TextStyle(color: kWhite),
-                            inputDecoration: InputDecoration(
-                              hintStyle: const TextStyle(color: kWhite),
-                              fillColor: signInButtonColor,
-                              filled: true,
-                              isDense: true,
-                              border: OutlineInputBorder(
-                                gapPadding: 0.0,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                          ),
-                          favorite: <String>['IL'],
-                          showPhoneCode: true,
-                          onSelect: (Country country) {
-                            if (userController.loginType.value.toString() !=
-                                "1") {
-                              setState(() {
-                                WebService.countryCode = country.phoneCode;
-                              });
-                            }
-                          },
-                        ),
-                        child: Text(
-                          "${WebService.countryCode} +",
-                          style: const TextStyle(color: kWhite),
-                        ),
-                      ),
-                SizedBox(width: size.width * 0.03),
+            child: TextField(
+              focusNode: _focusNode,
+              enabled: userController.loginType.value.toString() == "1"
+                  ? false
+                  : true,
+              readOnly: userController.loginType.value.toString() == "1"
+                  ? true
+                  : false,
+              textDirection: ui.TextDirection.ltr,
+              controller:
+                  widget.businessProfileMenuController.phoneController.value,
+              onChanged: (txt) {
+                if (userController.loginType.value.toString() != "1") {
+                  var value = txt.replaceAll(RegExp(r'[^0-9]'), '');
+                  if (txt.isEmpty) {
+                    loginvalidation = "login.phone_number_incorrect";
+                  } else if (value.startsWith('0972') ||
+                      value.startsWith('972')) {
+                    displayMessageIcon(
+                        message: "אין צורך להקליד קידומת מדינה 972",
+                        color: errorColor,
+                        snackposition: SnackPosition.BOTTOM,
+                        imageData: AppAssets.errorIcon);
+                    widget.businessProfileMenuController.phoneController.value
+                        .clear();
+                  } else if (value.length != 10 || !value.startsWith('05')) {
+                    loginvalidation = "מספר הטלפון חייב להיות ישראלי בן 10 ספרות";
+                  } else {
+                    loginvalidation = "";
+                    widget.businessProfileMenuController.userphoneError.value =
+                        false;
+                  }
+                  setState(() {});
+                }
+              },
+              maxLines: 1,
+              style: const TextStyle(color: kWhite, height: 1.2),
+              autofocus: false,
+              cursorColor: kWhite,
+              keyboardType: TextInputType.phone,
+              inputFormatters: <TextInputFormatter>[
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(10),
+                NumberFormatterWidget()
               ],
+              textAlign: TextAlign.left,
+              autofillHints: const [AutofillHints.telephoneNumber],
+              decoration: const InputDecoration(
+                filled: true,
+                fillColor: Colors.transparent,
+                contentPadding:
+                    EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                border: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                errorBorder: InputBorder.none,
+                disabledBorder: InputBorder.none,
+                isDense: true,
+                labelStyle: TextStyle(color: kWhite),
+                hintStyle: TextStyle(color: defaultGrey),
+                hintText: "050-000-0000",
+              ),
+              textInputAction: TextInputAction.done,
             ),
           ),
           SizedBox(width: size.width * 0.03),

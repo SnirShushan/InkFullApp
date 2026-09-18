@@ -387,7 +387,6 @@ class _BusinessProfileMenuScreenState extends State<BusinessProfileMenuScreen> {
       child: InkWell(
         onTap: () => _openLanguageSheet(context),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
@@ -397,22 +396,20 @@ class _BusinessProfileMenuScreenState extends State<BusinessProfileMenuScreen> {
                   color: dividerGray,
                   fontWeight: FontWeight.w400),
             ),
-            Row(
-              children: [
-                Text(
-                  isEnglish
-                      ? tr('sideDrawer.language_english')
-                      : tr('sideDrawer.language_hebrew'),
-                  style: Theme.of(context).textTheme.titleMedium!.copyWith(
-                      fontSize: 16,
-                      color: titleTextWhiteColor,
-                      fontWeight: FontWeight.w400),
-                ),
-                Padding(
-                  padding: EdgeInsets.only(left: size.width * 0.02),
-                  child: SvgPicture.asset(AppAssets.backside),
-                ),
-              ],
+            const Spacer(),
+            Text(
+              isEnglish
+                  ? tr('sideDrawer.language_english')
+                  : tr('sideDrawer.language_hebrew'),
+              style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                  fontSize: 16,
+                  color: titleTextWhiteColor,
+                  fontWeight: FontWeight.w400),
+            ),
+            const SizedBox(width: 12),
+            Padding(
+              padding: EdgeInsets.only(left: size.width * 0.02),
+              child: SvgPicture.asset(AppAssets.backside),
             ),
           ],
         ),

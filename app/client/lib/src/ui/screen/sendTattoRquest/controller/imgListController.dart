@@ -77,15 +77,12 @@ class ImgListController extends GetxController {
         });
       }
 
-      Get.off(const SendingRequestSuccess());
       await FireBaseApi.userRequestImagesUpload(
               imgList: imgList, imgNameList: imgListDetails)
           .then((value) async {
         try {
-          // final NotificationController requestListController =
-          //     Get.put(NotificationController());
           AppUser user = await WebService.getCurrentUser();
-          await Network.requestTattooApi(
+          final sent = await Network.requestTattooApi(
               name: user.profile!.name!,
               phone: user.profile!.phone!,
               description: aboutController.text,
@@ -103,6 +100,15 @@ class ImgListController extends GetxController {
               frontDataImage: file,
               styles: styleList,
               isContactRequest: "1");
+          if (sent == true) {
+            Get.off(const SendingRequestSuccess());
+          } else {
+            displayMessageIcon(
+                message: "לא ניתן לשלוח את הפנייה",
+                snackposition: SnackPosition.BOTTOM,
+                color: errorColor,
+                imageData: AppAssets.errorIcon);
+          }
         } catch (e) {
           WebService.printMsg(e.toString());
           displayMessageIcon(
@@ -163,7 +169,17 @@ class ImgListController extends GetxController {
                 frontDataImage: file,
                 styles: styleList,
                 isContactRequest: "1")
-            .then((value) => Get.off(const SendingRequestSuccess()));
+            .then((value) {
+          if (value == true) {
+            Get.off(const SendingRequestSuccess());
+          } else {
+            displayMessageIcon(
+                message: "לא ניתן לשלוח את הפנייה",
+                snackposition: SnackPosition.BOTTOM,
+                color: errorColor,
+                imageData: AppAssets.errorIcon);
+          }
+        });
       } catch (e) {
         WebService.printMsg(e.toString());
         displayMessageIcon(

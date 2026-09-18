@@ -366,6 +366,8 @@ buildCachedNetworkImage(
       final cacheW = (w * dpr).round().clamp(64, 1200);
       final cacheH = (h * dpr).round().clamp(64, 1200);
       final resolved = WebService.resolveImageUrl(url?.toString());
+      final localIcon = localStyleIconFromUrl(url?.toString()) ??
+          localStyleIconFromUrl(resolved);
       return Container(
         height: height,
         width: width,
@@ -376,7 +378,10 @@ buildCachedNetworkImage(
                 ? errorWidget ??
                     Image.asset(AppAssets.galleryPlaceholder,
                         width: width, fit: BoxFit.cover)
-                : CachedNetworkImage(
+                : localIcon != null
+                    ? Image.asset(localIcon,
+                        height: height, width: width, fit: BoxFit.cover)
+                    : CachedNetworkImage(
                     alignment: Alignment.center,
                     imageUrl: resolved,
                     fit: BoxFit.cover,
@@ -405,7 +410,28 @@ const ColorFilter kInvertStyleIconFilter = ColorFilter.matrix(<double>[
   0, 0, 0, 1, 0,
 ]);
 
+String? localStyleIconFromUrl(String? url) {
+  final raw = (url ?? '').trim();
+  if (raw.isEmpty) return null;
+  final u = raw.toLowerCase();
+  final file = u.split('/').last.split('?').first;
+  final inStylesFolder =
+      u.contains('/styles/') || u.contains('images/styles');
+  final isRelativeIcon = !u.startsWith('http') &&
+      (file == 'cover-up.png' ||
+          file == 'cover-up-v2.png' ||
+          file == 'cover_up.png' ||
+          file == 'sketch.png' ||
+          file == 'sketch-v2.png');
+  if (!inStylesFolder && !isRelativeIcon) return null;
+  if (file.contains('sketch')) return 'assets/images/styles/sketch.png';
+  if (file.contains('cover')) return 'assets/images/styles/cover_up.png';
+  return null;
+}
+
 String? localStyleIconAsset({String? name, String? slug, String? imageName}) {
+  final fromFile = localStyleIconFromUrl(imageName);
+  if (fromFile != null) return fromFile;
   final key = '${name ?? ''} ${slug ?? ''} ${imageName ?? ''}'.toLowerCase();
   if (key.contains('sketch') || key.contains('סקיצה')) {
     return 'assets/images/styles/sketch.png';
