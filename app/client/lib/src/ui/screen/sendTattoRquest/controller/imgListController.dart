@@ -83,8 +83,8 @@ class ImgListController extends GetxController {
         try {
           AppUser user = await WebService.getCurrentUser();
           final sent = await Network.requestTattooApi(
-              name: user.profile!.name!,
-              phone: user.profile!.phone!,
+              name: user.profile?.name ?? "",
+              phone: user.profile?.phone ?? "",
               description: aboutController.text,
               tattooSize: tattooSize,
               frontData: WebService.isBodySideFront
@@ -152,8 +152,8 @@ class ImgListController extends GetxController {
       try {
         AppUser user = await WebService.getCurrentUser();
         await Network.requestTattooApi(
-                name: user.profile!.name!,
-                phone: user.profile!.phone!,
+                name: user.profile?.name ?? "",
+                phone: user.profile?.phone ?? "",
                 description: aboutController.text,
                 tattooSize: tattooSize,
                 frontData: WebService.isBodySideFront
@@ -198,15 +198,25 @@ class ImgListController extends GetxController {
       // final NotificationController requestListController =
       //     Get.put(NotificationController());
       AppUser user = await WebService.getCurrentUser();
+      final bidStr = (bid ?? '').toString().trim();
+      if (bidStr.isEmpty || bidStr == '0') {
+        isNewRequestLoading.value = false;
+        displayMessageIcon(
+            message: "לא ניתן לשלוח את הפנייה",
+            snackposition: SnackPosition.BOTTOM,
+            color: errorColor,
+            imageData: AppAssets.errorIcon);
+        return false;
+      }
       await Network.requestTattooApi(
-              name: user.profile!.name!,
+              name: user.profile?.name ?? "",
               description: "",
-              phone: user.profile!.phone!,
+              phone: user.profile?.phone ?? "",
               tattooSize: "",
               frontData: "",
               backData: "",
               artistId: "",
-              businessId: bid,
+              businessId: bidStr,
               requestImages: "",
               backDataImage: File(""),
               frontDataImage: File(""),

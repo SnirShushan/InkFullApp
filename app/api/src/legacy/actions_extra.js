@@ -809,6 +809,8 @@ export async function handleRequestForTattoo(p) {
     back_side: p.back_side || '',
     front_data: p.front_data || '',
     back_data: p.back_data || '',
+    front_data_image: p.front_data_image || '',
+    back_data_image: p.back_data_image || '',
     is_contact_request: p.is_contact_request || '0',
     is_read: '2',
   };
@@ -816,39 +818,22 @@ export async function handleRequestForTattoo(p) {
   try {
     await pool.query(
       `INSERT INTO tbl_request
-        (uid, business_id, name, tattoo_size, styles, description, artists_uid,
-         email, phone, image1_id, image2_id, image3_id, image1_name, image2_name, image3_name,
-         request_images, front_side, back_side, front_data, back_data, is_contact_request,
-         is_read, date_added)
+        (uid, business_id, name, phone, email, tattoo_size, styles, description, artists_uid,
+         image1_id, image2_id, image3_id, image1_name, image2_name, image3_name,
+         request_images, front_side, back_side, front_data, back_data,
+         front_data_image, back_data_image, is_contact_request, is_read, date_added, date_updated)
        VALUES
-        (:uid, :business_id, :name, :tattoo_size, :styles, :description, :artists_uid,
-         :email, :phone, :image1_id, :image2_id, :image3_id, :image1_name, :image2_name, :image3_name,
-         :request_images, :front_side, :back_side, :front_data, :back_data, :is_contact_request,
-         :is_read, NOW())`,
+        (:uid, :business_id, :name, :phone, :email, :tattoo_size, :styles, :description, :artists_uid,
+         :image1_id, :image2_id, :image3_id, :image1_name, :image2_name, :image3_name,
+         :request_images, :front_side, :back_side, :front_data, :back_data,
+         :front_data_image, :back_data_image, :is_contact_request, :is_read, NOW(), NOW())`,
       payload
     );
   } catch (e) {
     console.error('RequestForTattoo insert failed', e?.message || e);
-    try {
-      await pool.query(
-        `INSERT INTO tbl_request
-          (uid, business_id, name, tattoo_size, description, is_read, date_added)
-         VALUES
-          (:uid, :business_id, :name, :tattoo_size, :description, '2', NOW())`,
-        {
-          uid: auth.uid,
-          business_id: businessId,
-          name: payload.name,
-          tattoo_size: payload.tattoo_size,
-          description: payload.description,
-        }
-      );
-    } catch (err) {
-      console.error('RequestForTattoo fallback insert failed', err?.message || err);
-      return fail('לא ניתן לשלוח את הפנייה');
-    }
+    return fail('לא ניתן לשלוח את הפנייה');
   }
-  return ok([], 'הפנייה נשלחה');
+  return ok({ sent: '1' }, 'הפנייה נשלחה');
 }
 
 export async function handleReadTattooRequest(p) {

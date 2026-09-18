@@ -88,6 +88,12 @@ class _ScreenTattooRequestState extends State<ScreenTattooRequest>
     getUser();
   }
 
+  String get _requestBusinessId {
+    final fromDetails = businessDetailsController.id.value.trim();
+    if (fromDetails.isNotEmpty && fromDetails != '0') return fromDetails;
+    return widget.bId;
+  }
+
   Future getUser() async {
     user = await WebService.getCurrentUser();
 
@@ -248,7 +254,7 @@ class _ScreenTattooRequestState extends State<ScreenTattooRequest>
 
                     imgListController
                         .directSendRequest(
-                            bid: businessDetailsController.id.value)
+                            bid: _requestBusinessId)
                         .then((value) {
                       animationController.stop();
                     });
@@ -1021,7 +1027,7 @@ class _ScreenTattooRequestState extends State<ScreenTattooRequest>
               //     imgList: imgListController.imgList.value,
               //     imgNameList: imgList);
               imgListController.WithcaptureImage(
-                      bid: businessDetailsController.id.value,
+                      bid: _requestBusinessId,
                       screenshotController:
                           imgListController.screenshotController,
                       selectedCreatorId: selectedCreatorId,
@@ -1038,7 +1044,7 @@ class _ScreenTattooRequestState extends State<ScreenTattooRequest>
             } else {
               imgListController
                   .captureImage(
-                      bid: businessDetailsController.id.value,
+                      bid: _requestBusinessId,
                       screenshotController:
                           imgListController.screenshotController,
                       selectedCreatorId: selectedCreatorId,

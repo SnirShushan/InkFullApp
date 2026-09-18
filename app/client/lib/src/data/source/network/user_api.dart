@@ -955,13 +955,17 @@ class Network {
         "request_images": requestImages,
         "back_data_image": isContactRequest == "2"
             ? null
-            : backDataImage!.existsSync()
+            : (backDataImage != null &&
+                    backDataImage.path.isNotEmpty &&
+                    backDataImage.existsSync())
                 ? await MultipartFile.fromFile(backDataImage.path,
                     filename: backDataImage.uri.toString())
                 : null,
         "front_data_image": isContactRequest == "2"
             ? null
-            : frontDataImage!.existsSync()
+            : (frontDataImage != null &&
+                    frontDataImage.path.isNotEmpty &&
+                    frontDataImage.existsSync())
                 ? await MultipartFile.fromFile(frontDataImage.path,
                     filename: frontDataImage.uri.toString(),
                     contentType: MediaType('image', 'png'))
