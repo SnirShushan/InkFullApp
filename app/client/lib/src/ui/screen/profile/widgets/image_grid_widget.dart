@@ -39,9 +39,14 @@ class ImageGrid extends StatelessWidget {
                   ),
                   cacheExtent: 500,
                   itemBuilder: (context, index) {
+                    final post = myPostList[index];
+                    final imageUrl = WebService.resolveImageUrl(post.imageName);
+                    if (imageUrl.isEmpty) {
+                      return const SizedBox.shrink();
+                    }
                     return InkWell(
                       onTap: () => Get.to(() => PostDetails(
-                            postId: myPostList[index].id!,
+                            postId: post.id!,
                             isArtist: isArtist,
                           )),
                       child: Stack(
@@ -51,8 +56,7 @@ class ImageGrid extends StatelessWidget {
                                 0.29,
                             height: size.height *
                                 0.29,
-                            imageUrl: WebService.resolveImageUrl(
-                                myPostList[index].imageName),
+                            imageUrl: imageUrl,
                             fadeInDuration: const Duration(milliseconds: 100),
                             filterQuality: FilterQuality.low,
                             memCacheWidth:
@@ -64,11 +68,15 @@ class ImageGrid extends StatelessWidget {
                                   child:
                                       CircularProgressIndicator()), // Placeholder color
                             ),
-                            errorWidget: (context, url, error) =>
-                                const Icon(Icons.error),
+                            errorWidget: (context, url, error) => Image.asset(
+                              AppAssets.galleryPlaceholder,
+                              width: size.width * 0.29,
+                              height: size.height * 0.29,
+                              fit: BoxFit.cover,
+                            ),
                             fit: BoxFit.cover,
                           ),
-                          if(myPostList[index].isMultipleImages=="1")  Positioned(
+                          if(post.isMultipleImages=="1")  Positioned(
                             top: 10,
                             right: 10,
                             child: SvgPicture.asset(

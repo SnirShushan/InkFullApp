@@ -71,8 +71,16 @@ class _ScreenChangeUserTypeState extends State<ScreenChangeUserType>
     animationController =
         AnimationController(vsync: this, duration: const Duration(seconds: 2));
     base = CurvedAnimation(parent: animationController, curve: Curves.easeOut);
+    changeUserTypeController.nameController.addListener(_refreshSubmit);
+    changeUserTypeController.addressController.addListener(_refreshSubmit);
+    changeUserTypeController.aboutController.addListener(_refreshSubmit);
+    changeUserTypeController.signController.addListener(_refreshSubmit);
     super.initState();
     getUser();
+  }
+
+  void _refreshSubmit() {
+    if (mounted) setState(() {});
   }
 
   Future getUser() async {
@@ -188,6 +196,27 @@ class _ScreenChangeUserTypeState extends State<ScreenChangeUserType>
                               SizedBox(height: Platform.isAndroid?size.height * 0.04:size.height * 0.023),
                             ])));
                   },
+                ),
+              ),
+              Positioned(
+                top: MediaQuery.viewPaddingOf(context).top + 8,
+                right: 12,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      Get.offAll(
+                          () => const DashBoard(
+                                initialIndex: 3,
+                              ),
+                          binding: DashBoardBinding());
+                    },
+                    child: const SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: Icon(Icons.close, color: titleTextColor, size: 22),
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -640,13 +669,11 @@ class _ScreenChangeUserTypeState extends State<ScreenChangeUserType>
       ]);
 
   bool isEnableBtn() {
-    if (changeUserTypeController.nameController.text.isNotEmpty &&
-        changeUserTypeController.addressController.text.isNotEmpty &&
-        changeUserTypeController.nameController.text.isNotEmpty) {
-      return true;
-    } else {
-      return false;
-    }
+    return changeUserTypeController.nameController.text.trim().isNotEmpty &&
+        changeUserTypeController.addressController.text.trim().isNotEmpty &&
+        changeUserTypeController.selectedStyles.isNotEmpty &&
+        changeUserTypeController.aboutController.text.trim().isNotEmpty &&
+        changeUserTypeController.signController.isNotEmpty;
   }
 
   //button
@@ -806,6 +833,10 @@ class _ScreenChangeUserTypeState extends State<ScreenChangeUserType>
 
   @override
   void dispose() {
+    changeUserTypeController.nameController.removeListener(_refreshSubmit);
+    changeUserTypeController.addressController.removeListener(_refreshSubmit);
+    changeUserTypeController.aboutController.removeListener(_refreshSubmit);
+    changeUserTypeController.signController.removeListener(_refreshSubmit);
     animationController.stop();
     animationController.dispose();
     super.dispose();

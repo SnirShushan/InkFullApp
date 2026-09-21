@@ -70,8 +70,7 @@ class UserController extends GetxController {
       pushEnabl.value =
           (user.profile!.pushEnable!.toString() == "1") ? true : false;
 
-      style_list.clear();
-      user.stylesList!.map((e) => style_list.value.add(e)).toList();
+      style_list.assignAll(user.stylesList ?? []);
       update();
     } catch (e) {}
   }

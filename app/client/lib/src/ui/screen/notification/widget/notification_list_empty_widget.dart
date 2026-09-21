@@ -5,8 +5,13 @@ import 'package:ink/src/utils/colors.dart';
 
 class NotificationListEmptyWidget extends StatelessWidget {
   final bool isAlertList;
+  final bool isBusiness;
 
-  const NotificationListEmptyWidget({super.key, required this.isAlertList});
+  const NotificationListEmptyWidget({
+    super.key,
+    required this.isAlertList,
+    this.isBusiness = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +40,11 @@ class NotificationListEmptyWidget extends StatelessWidget {
             ),
             SizedBox(height: size.height * 0.03),
             Text(
-              isAlertList ? "אין התראות חדשות" : 'לא נשלחו פניות למקעקעים',
+              isAlertList
+                  ? "אין התראות חדשות"
+                  : isBusiness
+                      ? 'עדיין לא התקבלו פניות לפרופיל'
+                      : 'לא נשלחו פניות למקעקעים',
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: titleTextWhiteColor,
@@ -47,7 +56,9 @@ class NotificationListEmptyWidget extends StatelessWidget {
             Text(
               isAlertList
                   ? "עקבו אחרי מקעקעים וקבלו התראות\nועדכונים ברגע שיעלו תכנים חדשים"
-                  : 'לאחר שתשלחו פנייה למקעקע,\nתוכלו לצפות בה כאן',
+                  : isBusiness
+                      ? 'כשלקוחות ישלחו פנייה לפרופיל העסקי,\nתוכלו לראות אותן כאן'
+                      : 'לאחר שתשלחו פנייה למקעקע,\nתוכלו לצפות בה כאן',
               textAlign: TextAlign.center,
               style: textTheme.titleMedium!.copyWith(
                 color: titleTextWhiteColor,

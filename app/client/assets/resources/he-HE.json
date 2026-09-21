@@ -255,11 +255,11 @@
     "sending_request_success_btn": "הבנתי"
   },
   "sideDrawer": {
-    "reserved": "שמורים",
+    "reserved": "תמונות שמורות",
     "follow_up_tatto": "מקעקעים במעקב",
     "sent_requests": "פניות ששלחתי למקעקעים",
     "account_operation": "פעולות בחשבון",
-    "editing_details": "עריכת פרטים",
+    "editing_details": "פרטי חשבון",
     "change_favourite_style": "שינוי סגנונות מועדפים",
     "delete_account": "מחיקת חשבון",
     "alerts": "התראות",

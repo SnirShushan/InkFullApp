@@ -202,6 +202,11 @@ class _BusinessProfileMenuScreenState extends State<BusinessProfileMenuScreen> {
                   buildtitle(
                       context: context, title: "sideDrawer.account_operation"),
 
+                  buildtitleback(
+                      title: "sideDrawer.editing_details",
+                      context: context,
+                      onTap: _openEditingDetails),
+
                   //edit styles
                   buildtitleback(
                       title: "sideDrawer.change_favourite_style",

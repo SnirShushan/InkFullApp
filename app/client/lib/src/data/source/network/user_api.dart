@@ -797,6 +797,28 @@ class Network {
   }
 
   // add post
+  static Future<List<StylesList>> getStyleListApi() async {
+    try {
+      final response = await dio.post(
+        WebService.baseUrl,
+        data: FormData.fromMap({
+          "action": "GetStyleList",
+          "app_token": WebService.appToken,
+          "device_type": WebService.deviceType,
+          "app_version": WebService.appVersion,
+        }),
+      );
+      final raw = response.data["data"];
+      final list = raw is List ? raw : <dynamic>[];
+      return list
+          .whereType<Map>()
+          .map((item) => StylesList.fromJson(Map<String, dynamic>.from(item)))
+          .toList();
+    } catch (_) {
+      return <StylesList>[];
+    }
+  }
+
   static Future addPost(
       {required String imageType,
       required String description,

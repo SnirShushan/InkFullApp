@@ -597,7 +597,6 @@ async function uploadPostImages(files) {
 export async function handleAddPost(p, files) {
   const auth = await requireAuthLocal(p);
   if (auth.error) return auth.error;
-  if (!String(p.description || '').trim()) return fail('יש להזין תיאור');
   const imgType = p.image_type || p.img_type || '0';
   let imageName = p.image_name || '';
   let imageId = p.image_id || '';
@@ -611,21 +610,26 @@ export async function handleAddPost(p, files) {
     console.error('AddPost image upload failed', err?.message || err);
     return fail('העלאת התמונה נכשלה');
   }
-  const [result] = await pool.query(
-    `INSERT INTO tbl_post
-      (uid, image_name, image_id, img_type, styles, description, status, date_added, view_count)
-     VALUES
-      (:uid, :image_name, :image_id, :img_type, :styles, :description, '1', NOW(), 0)`,
-    {
-      uid: p.creator_id || auth.uid,
-      image_name: imageName,
-      image_id: imageId,
-      img_type: imgType,
-      styles: normalizePostStyles(p.styles || '', imgType),
-      description: p.description || '',
-    }
-  );
-  return ok({ post_id: String(result.insertId) }, 'נוספה תמונה חדשה');
+  try {
+    const [result] = await pool.query(
+      `INSERT INTO tbl_post
+        (uid, image_name, image_id, img_type, styles, description, status, date_added, view_count)
+       VALUES
+        (:uid, :image_name, :image_id, :img_type, :styles, :description, '1', NOW(), 0)`,
+      {
+        uid: p.creator_id || auth.uid,
+        image_name: imageName,
+        image_id: imageId,
+        img_type: imgType,
+        styles: normalizePostStyles(p.styles || '', imgType),
+        description: String(p.description || '').trim(),
+      }
+    );
+    return ok({ post_id: String(result.insertId) }, 'נוספה תמונה חדשה');
+  } catch (err) {
+    console.error('AddPost insert failed', err?.message || err);
+    return fail('לא ניתן להעלות את הפוסט');
+  }
 }
 
 export async function handleUpdatePost(p, files) {

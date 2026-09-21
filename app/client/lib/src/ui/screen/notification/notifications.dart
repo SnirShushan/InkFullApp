@@ -388,7 +388,11 @@ class _NotificationScreenState extends State<NotificationScreen>
                 Obx(() => notificationController.isLoadingRequest.value
                     ? const Center(child: CircularProgressIndicator())
                     : notificationController.tattooRequestsList.isEmpty
-                        ? const NotificationListEmptyWidget(isAlertList: false)
+                        ? NotificationListEmptyWidget(
+                            isAlertList: false,
+                            isBusiness:
+                                notificationController.userTypes.value == "2",
+                          )
                         : ListView.builder(
                             shrinkWrap: true,
                             controller:

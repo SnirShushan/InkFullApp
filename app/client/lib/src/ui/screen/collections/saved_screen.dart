@@ -27,7 +27,7 @@ class SavedCollection extends StatelessWidget {
     return Scaffold(
       backgroundColor: bgBlack,
       appBar: AppBarActionButtonWidget(
-        title: "שמורים",
+        title: "תמונות שמורות",
         onPressed: () => Get.to(const CreateNewCollection(
             postModel: null, isRenameEnabled: null, name: null, fid: null)),
         iconName: AppAssets.icPlusWhite,

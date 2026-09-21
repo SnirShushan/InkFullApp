@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -686,53 +687,80 @@ buildButton(
 
 //delete dialog
 Future<void> buildDeleteDialog(
-    BuildContext context, VoidCallback onDelete) async {
+    BuildContext context, FutureOr<void> Function() onDelete) async {
   showDialog<String>(
     context: context,
     barrierDismissible: false,
-    builder: (BuildContext context) => StatefulBuilder(
-      builder: (context, setState) => AlertDialog(
-        titlePadding: const EdgeInsets.all(1.0),
-        backgroundColor: socialoginbtn,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              const Text("האם אתה בטוח רוצה למחוק?",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                      fontSize: 18,
-                      color: titleTextWhiteColor,
-                      fontWeight: FontWeight.w700)),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        foregroundColor: titleTextWhiteColor,
-                        backgroundColor: const Color(0xFF403D44),
-                      ),
-                      onPressed: () => Navigator.pop(context, 'אל'),
-                      child: const Text("לא")),
-                  const SizedBox(width: 8),
-                  ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        foregroundColor: kWhite,
-                        backgroundColor: errorColor,
-                      ),
-                      onPressed: onDelete,
-                      child: const Text("כן")),
-                ],
-              )
-            ],
+    builder: (BuildContext context) {
+      var loading = false;
+      return StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          titlePadding: const EdgeInsets.all(1.0),
+          backgroundColor: socialoginbtn,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                const Text("האם אתה בטוח רוצה למחוק?",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        fontSize: 18,
+                        color: titleTextWhiteColor,
+                        fontWeight: FontWeight.w700)),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          foregroundColor: titleTextWhiteColor,
+                          backgroundColor: const Color(0xFF403D44),
+                        ),
+                        onPressed: loading
+                            ? null
+                            : () => Navigator.pop(context, 'אל'),
+                        child: const Text("לא")),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          foregroundColor: kWhite,
+                          backgroundColor: errorColor,
+                        ),
+                        onPressed: loading
+                            ? null
+                            : () async {
+                                setState(() => loading = true);
+                                try {
+                                  await onDelete();
+                                } finally {
+                                  if (context.mounted &&
+                                      Navigator.of(context).canPop()) {
+                                    Navigator.pop(context);
+                                  }
+                                }
+                              },
+                        child: loading
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: kWhite,
+                                ),
+                              )
+                            : const Text("כן")),
+                  ],
+                )
+              ],
+            ),
           ),
         ),
-      ),
-    ),
+      );
+    },
   );
 }
 

@@ -200,7 +200,14 @@ class _SketchImageScreenState extends State<SketchImageScreen>
                         spacing: 10.0,
                         runSpacing: 2.0,
                         verticalDirection: VerticalDirection.up,
-                        children: listStyles.map((option) {
+                        children: listStyles.where((option) {
+                          if (imageTypes != "1") return true;
+                          final slug = (option.slug ?? '').toLowerCase();
+                          final name = (option.name ?? '').toLowerCase();
+                          return slug != 'sketch' &&
+                              name != 'sketch' &&
+                              !name.contains('סקיצה');
+                        }).map((option) {
                           return ElevatedButton(
                             onPressed: () => setState(() {
                               if (selectedList.contains(option)) {
@@ -622,7 +629,7 @@ class _SketchImageScreenState extends State<SketchImageScreen>
         List<File> validImages = imageFiles.where((file) {
           return file.path.isNotEmpty && file.existsSync();
         }).toList();
-        await Network.addPost(
+        final sent = await Network.addPost(
           imageType: imageTypes,
           description: aboutTextController.text,
           imageName: "",
@@ -630,23 +637,24 @@ class _SketchImageScreenState extends State<SketchImageScreen>
           styles: styleList,
           creatorId: selectedMemberList.isNotEmpty ? selectedMemberList[0] : "",
           images: validImages,
-        ).then((value) async {
-          final postController = await Get.put(PostController());
-          final myPostsController = await Get.put(MyPostsController());
-          await postController.getPosts().then((value) async {
-            await myPostsController.getMyPosts();
-            setState(() {
-              displayMessageIcon(
-                  message: 'התמונה הועלתה בהצלחה!',
-                  color: const Color(0xFF2E602E),
-                  snackposition: SnackPosition.BOTTOM,
-                  imageData: AppAssets.correct_transparentIcon);
-              animationController.stop();
-            });
-          });
-        });
-
-        Get.deleteAll(force: true);
+        );
+        if (sent != true) {
+          displayMessageIcon(
+              message: "לא ניתן להעלות את התמונה",
+              color: errorColor,
+              snackposition: SnackPosition.BOTTOM,
+              imageData: AppAssets.errorIcon);
+          return;
+        }
+        if (Get.isRegistered<MyPostsController>()) {
+          await Get.find<MyPostsController>().getMyPosts();
+        }
+        displayMessageIcon(
+            message: 'התמונה הועלתה בהצלחה!',
+            color: const Color(0xFF2E602E),
+            snackposition: SnackPosition.BOTTOM,
+            imageData: AppAssets.correct_transparentIcon);
+        animationController.stop();
 
         if (widget.isProfileUpload == true) {
           Get.offAll(

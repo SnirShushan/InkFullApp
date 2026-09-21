@@ -265,6 +265,7 @@ async function handleGetHomeData(p) {
   const auth = await requireAuth(p);
   if (auth.error) return auth.error;
 
+  try {
   const profile = await getUserProfile(auth.uid, true);
   const styles = profile?.styles || '';
   const start = p.start ?? 0;
@@ -326,6 +327,17 @@ async function handleGetHomeData(p) {
     unread_request_count,
     total_post_count: String(countRows[0]?.total ?? 0),
   });
+  } catch (err) {
+    console.error('GetHomeData failed', err?.message || err);
+    return ok({
+      tattos_in_style: [],
+      new_user_list: [],
+      business: [],
+      is_new_notification: '2',
+      unread_request_count: '0',
+      total_post_count: '0',
+    });
+  }
 }
 
 async function handleGetHomePostsNew(p) {

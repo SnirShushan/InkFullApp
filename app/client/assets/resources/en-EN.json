@@ -259,11 +259,11 @@
     "delete_success_msg": "Image deleted"
   },
   "sideDrawer": {
-    "reserved": "Saved",
+    "reserved": "Saved photos",
     "follow_up_tatto": "Followed artists",
     "sent_requests": "Requests I sent to artists",
     "account_operation": "Account",
-    "editing_details": "Edit details",
+    "editing_details": "Account details",
     "change_favourite_style": "Change favorite styles",
     "delete_account": "Delete account",
     "alerts": "Notifications",

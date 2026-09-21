@@ -78,6 +78,15 @@ class _SelectCategoryState extends State<SelectCategory>
               nameEn: "Style $i",
               slug: "Style $i")).obs;
     }
+    if (userController.style_list.isEmpty) {
+      await userController.initUser();
+    }
+    if (userController.style_list.isEmpty) {
+      final fetched = await Network.getStyleListApi();
+      if (fetched.isNotEmpty) {
+        userController.style_list.assignAll(fetched);
+      }
+    }
 
     if (widget.businessProfileMenuController != null) {
       print("ABB");

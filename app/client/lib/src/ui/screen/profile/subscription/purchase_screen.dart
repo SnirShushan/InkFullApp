@@ -424,6 +424,23 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
                                   );
                                 }),
                           ),
+                          if (widget.fromRegistration)
+                            Positioned(
+                              top: MediaQuery.viewPaddingOf(context).top + 4,
+                              left: 8,
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: _exitOpeningProcess,
+                                  child: const SizedBox(
+                                    width: 48,
+                                    height: 48,
+                                    child: Icon(Icons.close,
+                                        color: titleTextColor, size: 22),
+                                  ),
+                                ),
+                              ),
+                            ),
                         ],
                       ),
       ),

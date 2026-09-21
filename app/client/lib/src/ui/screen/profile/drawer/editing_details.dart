@@ -100,7 +100,7 @@ class _EditingDetails extends State<EditingDetails>
           backgroundColor: bgBlack,
           resizeToAvoidBottomInset: true,
           appBar: const AppBarBackButtonWidget(
-              title: "עריכת פרטים",
+              title: "פרטי חשבון",
               titleColor: titleTextWhiteColor,
               iconColor: titleTextWhiteColor),
           bottomSheet: keyboardOpen

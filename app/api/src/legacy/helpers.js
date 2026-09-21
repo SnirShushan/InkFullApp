@@ -253,6 +253,11 @@ export async function getDailyPromotedBusinessIds() {
       AND s.is_sub_active = '1'
       AND s.is_delete = '0'
       AND s.product_id LIKE '%premium%'
+      AND (
+        s.expire_date IS NULL
+        OR s.expire_date = '0000-00-00 00:00:00'
+        OR s.expire_date > NOW()
+      )
     ORDER BY c.id ASC
     `
   );
@@ -398,20 +403,22 @@ export async function queryPosts({
 }
 
 export async function mapPostsForClient(rows, styleNameHw = '') {
-  return rows.map((r) => {
-    const meta = imageMeta(r.image_name, r.image_id);
-    return {
-      id: String(r.id),
-      uid: String(r.uid),
-      styles: r.styles || '',
-      style_name: styleNameHw || '',
-      style_name_hw: styleNameHw || '',
-      img_type: String(r.img_type ?? '0'),
-      view_count: String(r.view_count ?? '0'),
-      date_added: r.date_added != null ? String(r.date_added) : '',
-      ...meta,
-    };
-  });
+  return rows
+    .map((r) => {
+      const meta = imageMeta(r.image_name, r.image_id);
+      return {
+        id: String(r.id),
+        uid: String(r.uid),
+        styles: r.styles || '',
+        style_name: styleNameHw || '',
+        style_name_hw: styleNameHw || '',
+        img_type: String(r.img_type ?? '0'),
+        view_count: String(r.view_count ?? '0'),
+        date_added: r.date_added != null ? String(r.date_added) : '',
+        ...meta,
+      };
+    })
+    .filter((p) => String(p.image_name || p.image_url || '').trim());
 }
 
 export async function getBusinessCards({
@@ -597,14 +604,16 @@ export async function getBusinessCards({
        LIMIT 5`,
       { uid: u.id }
     );
-    const business_img = postRows.map((p) => {
-      const meta = imageMeta(p.image_name, p.image_id);
-      return {
-        post_id: String(p.id),
-        image_url: meta.image_name,
-        is_multiple_image: meta.is_multiple_image,
-      };
-    });
+    const business_img = postRows
+      .map((p) => {
+        const meta = imageMeta(p.image_name, p.image_id);
+        return {
+          post_id: String(p.id),
+          image_url: meta.image_name,
+          is_multiple_image: meta.is_multiple_image,
+        };
+      })
+      .filter((img) => String(img.image_url || '').trim());
     const stylesHe = String(u.styles || '')
       .split(',')
       .map((s) => s.trim())
