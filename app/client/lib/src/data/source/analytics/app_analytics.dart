@@ -4,7 +4,7 @@ import 'dart:math';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/widgets.dart';
-import 'package:get/get.dart';
+import 'package:get/get.dart' hide FormData, MultipartFile;
 import 'package:ink/src/utils/webService.dart';
 
 class AppAnalytics {
@@ -209,7 +209,7 @@ class AppAnalyticsObserver extends NavigatorObserver {
       return;
     }
     if (route is GetPageRoute) {
-      final name = route.routeName;
+      final name = route.routeName ?? '';
       if (name.isNotEmpty && name != '/') {
         AppAnalytics.instance.screen(name);
       }

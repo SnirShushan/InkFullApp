@@ -164,59 +164,54 @@ class SubscriptionDbService {
         };
         print("ABBBC params$params");
 
-        var response = await dio
-            .post(
-          WebService.baseUrl,
-          data: jsonEncode({
-            'receipt_data': appledata.verificationData.serverVerificationData,
-          }),
-          queryParameters: params,
-          options: Options(
-            contentType: Headers.jsonContentType,
-          ),
-        )
-            .then((value) async {
-          purchaseData = false;
-          if (fromRegistration) {
-            await registerUser();
+        try {
+          await dio.post(
+            WebService.baseUrl,
+            data: jsonEncode({
+              'receipt_data': appledata.verificationData.serverVerificationData,
+            }),
+            queryParameters: params,
+            options: Options(
+              contentType: Headers.jsonContentType,
+            ),
+          );
+        } catch (e) {
+          WebService.printMsg('SuccessPurchaseIphone failed: $e');
+        }
+        purchaseData = false;
+        if (fromRegistration) {
+          await registerUser();
+          return;
+        }
+        try {
+          UserController userController = getx.Get.find();
+
+          final purchaseParams = {
+            'action': 'SuccessPurchaseIphone',
+            'user_type': userController.userType.value.toString(),
+            'business_type': userController.businessType.value.toString(),
+            'name': userController.name.value.toString(),
+            'amount': WebService.purchasePrice,
+            'currency_code': WebService.purchaseCurrency,
+            'purchaseID': appledata.purchaseID,
+            'productID': appledata.productID,
+            'uid': userid,
+            'login_token': loginToken,
+            'app_token': WebService.appToken,
+            'app_version': WebService.appVersion,
+            'device_type': WebService.deviceType,
+          };
+
+          if (WebService.selectedPlan == 0) {
+            await FacebookEvents.subscriptionBasicEvent(
+                amount: WebService.purchasePrice.toString(),
+                params: purchaseParams);
           } else {
-            UserController userController = getx.Get.find();
-
-            final purchaseParams = {
-              'action': 'SuccessPurchaseIphone',
-              'user_type': userController.userType.value.toString(),
-              'business_type': userController.businessType.value.toString(),
-              'name': userController.name.value.toString(),
-              'amount': WebService.purchasePrice,
-              'currency_code': WebService.purchaseCurrency,
-              'purchaseID': appledata.purchaseID,
-              'productID': appledata.productID,
-              'uid': userid,
-              'login_token': loginToken,
-              'app_token': WebService.appToken,
-              'app_version': WebService.appVersion,
-              'device_type': WebService.deviceType,
-            };
-
-            /*  await FacebookEvents.subscriptionEvent(
-                amount: WebService.purchasePrice,
-                currency: WebService.purchaseCurrency,
-                params: purchaseParams);*/
-
-            if (WebService.selectedPlan == 0) {
-              await FacebookEvents.subscriptionBasicEvent(
-                  amount: WebService.purchasePrice.toString(),
-                  // currency: WebService.purchaseCurrency,
-                  params: purchaseParams);
-            } else {
-              await FacebookEvents.subscriptionPremiumEvent(
-                  amount: WebService.purchasePrice.toString(),
-                  // currency: WebService.purchaseCurrency,
-                  params: purchaseParams);
-            }
+            await FacebookEvents.subscriptionPremiumEvent(
+                amount: WebService.purchasePrice.toString(),
+                params: purchaseParams);
           }
-        });
-        return response;
+        } catch (_) {}
       } on Exception catch (e) {
         displayMessageIcon(
             snackposition: getx.SnackPosition.BOTTOM,

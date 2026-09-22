@@ -547,7 +547,7 @@ class _IOSPurchaseScreenState extends State<IOSPurchaseScreen> {
     // }
   }
 
-  void handleError(IAPError error) {
+  void handleError(IAPError? error) {
     setState(() {
       _purchasePending = false;
       isProductcustom = false;
@@ -581,7 +581,7 @@ class _IOSPurchaseScreenState extends State<IOSPurchaseScreen> {
       } else {
         if (purchaseDetails.status == PurchaseStatus.error ||
             purchaseDetails.status == PurchaseStatus.canceled) {
-          handleError(purchaseDetails.error!);
+          handleError(purchaseDetails.error);
         } else if (purchaseDetails.status == PurchaseStatus.purchased) {
           final bool valid = await _verifyPurchase(purchaseDetails);
           if (valid) {

@@ -1287,9 +1287,13 @@ class Network {
     }
     final _changeUserTypeController = getx.Get.find<ChangeUserTypeController>();
     try {
+      var uid = userController.id.value.toString();
+      if (uid.isEmpty || uid == 'null') {
+        uid = (await WebService.getUserIds()).toString();
+      }
       final params = {
         "action": "UpdateBusinessProfile",
-        'uid': userController.id.value,
+        'uid': uid,
         'login_token': loginToken,
         'business_type':
             _changeUserTypeController.isStudioSelected.value ? "1" : "2",
@@ -1328,29 +1332,11 @@ class Network {
       response = await dio.post(WebService.baseUrl, data: formData);
       final isDataNotEmpty = ApiResponse.checkResponseStatus(response);
       if (isDataNotEmpty) {
-        try {
-          final eventParams = {
-            "action": "UpdateBusinessProfile",
-            'uid': userController.id.value,
-            'name': _changeUserTypeController.nameController.text,
-            'business_type':
-                _changeUserTypeController.isStudioSelected.value ? "1" : "2",
-            'device_type': WebService.deviceType,
-            'app_version': WebService.appVersion,
-          };
-          if (_changeUserTypeController.isStudioSelected.value == true) {
-            await FacebookEvents.studioProfileCreationEvent(params: eventParams);
-          } else {
-            await FacebookEvents.artistProfileCreationEvent(params: eventParams);
-          }
-        } catch (e) {
-          WebService.printMsg('facebook business profile log failed: $e');
-        }
-
         final responseData = response.data["data"];
         final profile = responseData is Map ? responseData['profile'] : null;
-        final isBusiness =
-            profile is Map && profile["user_type"].toString() == "2";
+        final isBusiness = profile is! Map ||
+            profile["user_type"] == null ||
+            profile["user_type"].toString() == "2";
         await WebService.setIsBusiness(isBusiness);
         if (profile is Map) {
           if (profile['login_token'] != null) {
@@ -1367,6 +1353,26 @@ class Network {
           } catch (e) {
             WebService.printMsg('setCurrentUser after business profile failed: $e');
           }
+        }
+        try {
+          final eventParams = {
+            "action": "UpdateBusinessProfile",
+            'uid': uid,
+            'name': _changeUserTypeController.nameController.text,
+            'business_type':
+                _changeUserTypeController.isStudioSelected.value ? "1" : "2",
+            'device_type': WebService.deviceType,
+            'app_version': WebService.appVersion,
+          };
+          if (_changeUserTypeController.isStudioSelected.value == true) {
+            unawaited(
+                FacebookEvents.studioProfileCreationEvent(params: eventParams));
+          } else {
+            unawaited(
+                FacebookEvents.artistProfileCreationEvent(params: eventParams));
+          }
+        } catch (e) {
+          WebService.printMsg('facebook business profile log failed: $e');
         }
         return isBusiness;
       }

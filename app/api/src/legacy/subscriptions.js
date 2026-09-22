@@ -318,6 +318,7 @@ export async function handleSuccessPurchaseIphone(p) {
     productId = 'monthly_premium_plan';
   }
   if (!productId) return fail('Missing productID');
+  try {
 
   const transactionId = String(
     p.original_transaction_id || p.purchaseID || p.transaction_id || ''
@@ -356,6 +357,10 @@ export async function handleSuccessPurchaseIphone(p) {
     },
     result.already ? 'מנוי כבר מופעל' : 'Success'
   );
+  } catch (err) {
+    console.error('SuccessPurchaseIphone failed', err?.message || err);
+    return fail('לא ניתן להפעיל את המנוי');
+  }
 }
 
 export async function handleAndroidSubscription(p) {
