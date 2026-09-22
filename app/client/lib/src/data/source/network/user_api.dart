@@ -12,6 +12,7 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:ink/src/controller/change_user_type.dart';
 import 'package:ink/src/controller/google_signin_controller.dart';
+import 'package:ink/src/data/source/analytics/app_analytics.dart';
 import 'package:ink/src/data/source/network/firebase_api.dart';
 import 'package:ink/src/data/source/network/requests.dart';
 import 'package:ink/src/ui/screen/auth/login.dart';
@@ -192,6 +193,7 @@ class Network {
 
       AppUser newUser = AppUser.fromJson(responseData.data);
       WebService.setCurrentUser(newUser);
+      AppAnalytics.instance.action('Login');
 
       await userController.initUser();
 
@@ -1345,14 +1347,11 @@ class Network {
           WebService.printMsg('facebook business profile log failed: $e');
         }
 
-        await WebService.clearUserData();
         final responseData = response.data["data"];
         final profile = responseData is Map ? responseData['profile'] : null;
-        if (profile is Map && profile["user_type"].toString() == "2") {
-          await WebService.setIsBusiness(true);
-        } else {
-          await WebService.setIsBusiness(false);
-        }
+        final isBusiness =
+            profile is Map && profile["user_type"].toString() == "2";
+        await WebService.setIsBusiness(isBusiness);
         if (profile is Map) {
           if (profile['login_token'] != null) {
             await WebService.setUserToken(profile['login_token']);
@@ -1360,12 +1359,16 @@ class Network {
           if (profile['id'] != null) {
             await WebService.setUserIds(profile['id'].toString());
           }
-          if (responseData is Map) {
+        }
+        if (responseData is Map) {
+          try {
             await WebService.setCurrentUser(
                 AppUser.fromJson(Map<String, dynamic>.from(responseData)));
+          } catch (e) {
+            WebService.printMsg('setCurrentUser after business profile failed: $e');
           }
         }
-        return profile is Map && profile["user_type"].toString() == "2";
+        return isBusiness;
       }
       return false;
     } on SocketException catch (_) {

@@ -636,6 +636,64 @@ tbody tr.no-row-click { cursor: default; }
 .truth-table td:nth-child(1) { font-weight: 700; width: 22%; }
 .truth-table em { font-style: normal; color: var(--muted); font-size: 13px; }
 
+.analytics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+.analytics-block { margin-bottom: 18px; }
+.analytics-block h3 { margin: 0 0 12px; font-size: 16px; }
+.meter-row {
+  display: grid;
+  grid-template-columns: minmax(88px, 160px) 1fr 52px;
+  gap: 10px;
+  align-items: center;
+  margin: 8px 0;
+}
+.meter-label, .meter-value {
+  color: var(--muted);
+  font-size: 13px;
+}
+.meter-value { text-align: start; font-variant-numeric: tabular-nums; }
+.meter-track {
+  height: 8px;
+  background: #2a2433;
+  overflow: hidden;
+}
+.meter-track span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+.hour-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 150px;
+  padding-top: 8px;
+}
+.hour-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+  height: 100%;
+}
+.hour-bar {
+  width: 100%;
+  max-width: 18px;
+  background: var(--accent);
+  border-radius: 2px 2px 0 0;
+}
+.hour-col small {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
 @media (max-width: 1100px) {
   .spec-layers, .spec-cards { grid-template-columns: 1fr; }
 }
@@ -648,5 +706,7 @@ tbody tr.no-row-click { cursor: default; }
   .workspace { grid-template-columns: 1fr; }
   .sidebar { height: auto; position: relative; top: 0; }
   .nav { max-height: 220px; }
-  .stats, .finance-grid { grid-template-columns: 1fr; }
+  .stats, .finance-grid, .analytics-grid { grid-template-columns: 1fr; }
+  .meter-row { grid-template-columns: 1fr 52px; }
+  .meter-track { grid-column: 1 / -1; order: 3; }
 }

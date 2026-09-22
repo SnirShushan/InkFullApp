@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import multer from 'multer';
 import { startupPublicUrl, uploadStartupImage } from './r2.js';
+import { loadAnalytics } from './analytics.js';
 
 const SETTINGS_FIELDS = ['admin_email', 'admin_phone', 'package_name', 'post_limit', 'startup_image'];
 const uploadImage = multer({
@@ -88,6 +89,14 @@ export function createAdminRouter(getLivePool) {
     }
     return pool;
   }
+
+  router.get(
+    '/analytics',
+    wrap(async (req, res) => {
+      const pool = poolOrThrow();
+      res.json(await loadAnalytics(pool, Number(req.query.days || 30)));
+    })
+  );
 
   router.get(
     '/dashboard',

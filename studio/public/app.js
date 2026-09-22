@@ -127,6 +127,7 @@ function parseHash() {
     else if (path.startsWith('/admin/reports/users')) state.adminSection = 'report-users';
     else if (path.startsWith('/admin/reports/posts')) state.adminSection = 'report-posts';
     else if (path.startsWith('/admin/requests')) state.adminSection = 'requests';
+    else if (path.startsWith('/admin/analytics')) state.adminSection = 'analytics';
     else if (path.startsWith('/admin/settings')) state.adminSection = 'settings';
     else if (path.startsWith('/admin/legacy')) state.adminSection = 'legacy';
     else state.adminSection = 'home';
@@ -141,6 +142,7 @@ function parseHash() {
   state.table = tableMatch ? decodeURIComponent(tableMatch[1]) : null;
   state.page = Number(params.get('page')) || 1;
   state.q = params.get('q') || '';
+  state.days = Number(params.get('days')) || 30;
   state.sort = params.get('sort') || '';
   state.dir = params.get('dir') || 'desc';
   state.limit = Number(params.get('limit')) || 50;
@@ -153,6 +155,7 @@ function hashFor(patch = {}) {
     const section = next.adminSection || 'home';
     const adminPath = {
       home: '#/admin',
+      analytics: '#/admin/analytics',
       users: '#/admin/users',
       business: '#/admin/users/business',
       'report-users': '#/admin/reports/users',
@@ -164,6 +167,7 @@ function hashFor(patch = {}) {
     const adminQs = new URLSearchParams();
     if (next.q) adminQs.set('q', next.q);
     if (next.page && next.page > 1) adminQs.set('page', String(next.page));
+    if (section === 'analytics' && next.days && next.days !== 30) adminQs.set('days', String(next.days));
     const suffix = adminQs.toString();
     return suffix ? `${adminPath}?${suffix}` : adminPath;
   }
@@ -224,6 +228,7 @@ function renderAdmin() {
     section: state.adminSection,
     page: state.page,
     q: state.q,
+    days: state.days,
   });
 }
 

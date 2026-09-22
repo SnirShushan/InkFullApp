@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:ink/src/controller/StartupController.dart';
 import 'package:ink/src/controller/businessProfilecontroller.dart';
+import 'package:ink/src/data/source/analytics/app_analytics.dart';
 import 'package:ink/src/data/source/network/user_api.dart';
 import 'package:ink/src/ui/screen/home/controller/home_screen_controller.dart';
 import 'package:ink/src/ui/screen/inspiration/controller/inspiration_controller.dart';
@@ -158,6 +159,10 @@ class DashBoardController extends GetxController {
 
 
     try {
+      const tabs = ['tab_home', 'tab_inspiration', 'tab_businesses', 'tab_profile'];
+      if (index >= 0 && index < tabs.length) {
+        AppAnalytics.instance.screen(tabs[index]);
+      }
       // Ensure only one branch executes
       if (index == 0) {
         tabIndex = index;

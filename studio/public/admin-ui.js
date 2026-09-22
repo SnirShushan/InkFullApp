@@ -1,6 +1,7 @@
 const InkAdmin = (() => {
   const TITLES = {
     home: ['ניהול האפליקציה', 'סקירה'],
+    analytics: ['אנליטיקה ושימוש', 'מדדים'],
     users: ['משתמשים מהקהל', 'ניהול'],
     business: ['משתמשים עסקיים', 'ניהול'],
     'report-users': ['דיווחים על משתמשים', 'פיקוח'],
@@ -93,6 +94,101 @@ const InkAdmin = (() => {
         <a class="stat" href="#/admin/reports/posts"><b>${fmt(data.pendingPostReports)}</b><span>דיווחי פוסטים ממתינים</span></a>
       </section>
         <p class="notes">המסכים האלה כותבים ישירות ל-MySQL החי. תמונת הפתיחה מתעדכנת בהגדרות.</p>
+        <p class="notes"><a href="#/admin/analytics">מעבר לאנליטיקה</a> — שעות פעילות, מסכים ופעולות.</p>
+    `;
+  }
+
+  function barRows(items, valueKey, labelKey) {
+    const max = Math.max(1, ...items.map((item) => Number(item[valueKey] || 0)));
+    return items
+      .map((item) => {
+        const value = Number(item[valueKey] || 0);
+        const width = Math.max(value ? 4 : 0, Math.round((value / max) * 100));
+        return `<div class="meter-row">
+          <span class="meter-label">${esc(item[labelKey])}</span>
+          <span class="meter-track"><span style="width:${width}%"></span></span>
+          <span class="meter-value">${fmt(value)}</span>
+        </div>`;
+      })
+      .join('');
+  }
+
+  function hourChart(hours) {
+    const max = Math.max(
+      1,
+      ...hours.map((h) => h.events + h.logins + h.posts + h.requests)
+    );
+    return `
+      <div class="hour-chart" dir="ltr">
+        ${hours
+          .map((h) => {
+            const total = h.events + h.logins + h.posts + h.requests;
+            const height = Math.max(total ? 6 : 2, Math.round((total / max) * 120));
+            return `<div class="hour-col" title="${h.hour}:00 · ${total}">
+              <span class="hour-bar" style="height:${height}px"></span>
+              <small>${String(h.hour).padStart(2, '0')}</small>
+            </div>`;
+          })
+          .join('')}
+      </div>`;
+  }
+
+  async function renderAnalytics(ctx) {
+    const days = [7, 30, 90].includes(Number(ctx.days)) ? Number(ctx.days) : 30;
+    ctx.view.innerHTML = `<p class="empty">טוען מדדים…</p>`;
+    const data = await api(`/api/admin/analytics?days=${days}`);
+    const range = [7, 30, 90]
+      .map(
+        (n) =>
+          `<a class="btn ${n === days ? '' : 'ghost'}" href="#/admin/analytics?days=${n}">${n} ימים</a>`
+      )
+      .join('');
+    const screens = data.screens?.length
+      ? barRows(data.screens, 'views', 'label')
+      : `<p class="notes">עדיין אין צפיות מסך מהאפליקציה. הן יופיעו אחרי פרסום הגרסה החדשה.</p>`;
+    const actions = data.actions?.length
+      ? barRows(data.actions, 'count', 'label')
+      : `<p class="notes">עדיין אין פעולות מתועדות. אחרי פריסת ה-API יתחילו להיאסף פעולות כמו התחברות, פוסטים ובקשות.</p>`;
+    ctx.view.innerHTML = `
+      <div class="toolbar">${range}</div>
+      <section class="stats">
+        <div class="stat"><b>${fmt(data.kpis.recent_logins)}</b><span>התחברויות אחרונות</span></div>
+        <div class="stat"><b>${fmt(data.kpis.sessions)}</b><span>סשנים באפליקציה</span></div>
+        <div class="stat"><b>${data.kpis.avg_session_min || 0}</b><span>דקות ממוצע בסשן</span></div>
+      </section>
+      <section class="stats">
+        <div class="stat"><b>${fmt(data.kpis.event_users)}</b><span>משתמשים פעילים באירועים</span></div>
+        <div class="stat"><b>${fmt(data.kpis.posts)}</b><span>פוסטים חדשים</span></div>
+        <div class="stat"><b>${fmt(data.kpis.requests)}</b><span>בקשות קעקוע</span></div>
+      </section>
+      <section class="card analytics-block">
+        <h3>באילו שעות נכנסים יותר</h3>
+        <p class="notes">שעון ישראל. כולל התחברויות אחרונות, פוסטים, בקשות ואירועי אפליקציה.</p>
+        ${hourChart(data.hours || [])}
+      </section>
+      <div class="analytics-grid">
+        <section class="card analytics-block">
+          <h3>מסכים נצפים</h3>
+          ${screens}
+        </section>
+        <section class="card analytics-block">
+          <h3>פעולות נפוצות</h3>
+          ${actions}
+        </section>
+      </div>
+      <section class="card analytics-block">
+        <h3>הרשמות לפי יום</h3>
+        ${
+          data.registrations?.length
+            ? barRows(data.registrations.map((row) => ({ ...row, label: row.day })), 'count', 'label')
+            : `<p class="notes">אין הרשמות בטווח שנבחר.</p>`
+        }
+      </section>
+      <p class="notes">
+        התחברויות, פוסטים ובקשות מגיעים מהדאטהבייס הקיים.
+        זמן שהות, מסכים ופעולות יתמלאו בהדרגה מאירועי האפליקציה החדשים.
+        ${data.has_events ? `נאספו ${fmt(data.kpis.total_events)} אירועים בטווח.` : 'טבלת האירועים עדיין ריקה.'}
+      </p>
     `;
   }
 
@@ -391,6 +487,7 @@ const InkAdmin = (() => {
     highlight(section);
     try {
       if (section === 'home') await renderHome(ctx);
+      else if (section === 'analytics') await renderAnalytics(ctx);
       else if (section === 'users') await renderUsers(ctx, 'regular');
       else if (section === 'business') await renderUsers(ctx, 'business');
       else if (section === 'report-users') await renderReports(ctx, 'users');

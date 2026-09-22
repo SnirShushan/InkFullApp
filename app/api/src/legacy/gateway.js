@@ -20,6 +20,7 @@ import { pool } from '../db.js';
 import * as extra from './actions_extra.js';
 import * as subs from './subscriptions.js';
 import { handleSendSms } from './sms.js';
+import { handleLogAppEvents, logServerAction } from './analytics.js';
 
 function params(req) {
   return { ...(req.query || {}), ...(req.body || {}) };
@@ -557,6 +558,11 @@ export async function handleLegacyAction(req) {
   if (process.env.APP_TOKEN && token && token !== process.env.APP_TOKEN) {
     return fail('Invalid app token');
   }
+
+  if (action === 'LogAppEvents') {
+    return handleLogAppEvents(p);
+  }
+  logServerAction(p, action);
 
   try {
     switch (action) {

@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:ink/src/controller/StartupController.dart';
 import 'package:ink/src/controller/myPostController.dart';
+import 'package:ink/src/data/source/analytics/app_analytics.dart';
 import 'package:ink/src/data/source/network/user_api.dart';
 import 'package:ink/src/ui/screen/home/controller/home_screen_controller.dart';
 import 'package:ink/src/ui/screen/inspiration/controller/inspiration_controller.dart';
@@ -79,6 +80,17 @@ class BusinessDashBoardController extends GetxController {
   //change index
   void changeTabIndex(int index, {bool fromSwipe = false}) async {
     try {
+      const tabs = {
+        0: 'tab_home',
+        1: 'tab_inspiration',
+        2: 'tab_new_post',
+        3: 'tab_businesses',
+        4: 'tab_profile',
+      };
+      final tabName = tabs[index];
+      if (tabName != null) {
+        AppAnalytics.instance.screen(tabName);
+      }
       switch (index) {
         case 2:
           break;

@@ -13,6 +13,7 @@ import { docsRouter } from './routes/docs.js';
 import { legalRouter } from './routes/legal.js';
 import { shareRouter } from './routes/share.js';
 import { handleLegacyAction } from './legacy/gateway.js';
+import { ensureAppEventsTable } from './legacy/analytics.js';
 
 const app = express();
 const port = Number(process.env.PORT || 3000);
@@ -71,6 +72,13 @@ app.use((err, _req, res, _next) => {
 
 const server = app.listen(port, async () => {
   const dbOk = await ping();
+  if (dbOk) {
+    try {
+      await ensureAppEventsTable();
+    } catch (err) {
+      console.error('analytics table ensure failed:', err.message);
+    }
+  }
   console.log(`Ink API listening on http://127.0.0.1:${port}`);
   console.log(`Swagger UI: http://127.0.0.1:${port}/docs`);
   console.log(`DB ping: ${dbOk ? 'ok' : 'FAILED'}`);

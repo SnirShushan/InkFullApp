@@ -42,6 +42,7 @@ export const TABLE_GROUPS = [
     tables: [
       'tbl_settings',
       'tbl_app_log',
+      'tbl_app_events',
       'tbl_login_error_db',
       'debug_app_data',
       'ci_sessions',
@@ -55,6 +56,7 @@ export const TABLE_LABELS = {
   tbl_access_permission: 'Access permissions',
   tbl_admin: 'Admins',
   tbl_app_log: 'App logs',
+  tbl_app_events: 'App analytics events',
   tbl_artist_business_map: 'Artist–studio map',
   tbl_contact_us: 'Contact messages',
   tbl_customer: 'Customers',
