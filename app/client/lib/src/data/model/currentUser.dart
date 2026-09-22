@@ -10,13 +10,17 @@ class AppUser {
   AppUser({this.profile, this.stylesList, this.followers, this.startup_image});
 
   AppUser.fromJson(Map<String, dynamic> json) {
-    profile =
-        json['profile'] != null ? new Profile.fromJson(json['profile']) : null;
-    if (json['styles_list'] != null) {
+    final rawProfile = json['profile'];
+    profile = rawProfile is Map
+        ? Profile.fromJson(Map<String, dynamic>.from(rawProfile))
+        : null;
+    if (json['styles_list'] is List) {
       stylesList = <StylesList>[];
-      json['styles_list'].forEach((v) {
-        stylesList!.add(StylesList.fromJson(v));
-      });
+      for (final v in json['styles_list'] as List) {
+        if (v is Map) {
+          stylesList!.add(StylesList.fromJson(Map<String, dynamic>.from(v)));
+        }
+      }
     }
     // if (json['artist'] != null) {
     //   artist = <Artist>[];

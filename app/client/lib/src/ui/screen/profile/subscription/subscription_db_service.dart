@@ -232,17 +232,23 @@ class SubscriptionDbService {
   //register user
   Future registerUser() async {
     try {
-      Network.changeUserTypeApi().then((value) async {
-        if (value == true) {
-          SharedPreferences prefs = await SharedPreferences.getInstance();
-          await prefs.setBool("isBusiness", true);
-          getx.Get.offAll(
-              BusinessDashBoard(
-                initialIndex: 0,
-              ),
-              binding: BusinessDashBoardBinding());
-        }
-      });
+      final value = await Network.changeUserTypeApi();
+      if (value == true) {
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setBool("isBusiness", true);
+        await WebService.setIsBusiness(true);
+        getx.Get.offAll(
+            BusinessDashBoard(
+              initialIndex: 0,
+            ),
+            binding: BusinessDashBoardBinding());
+        return;
+      }
+      displayMessageIcon(
+          snackposition: getx.SnackPosition.BOTTOM,
+          message: "לא ניתן להקים את הפרופיל העסקי",
+          color: errorColor,
+          imageData: AppAssets.errorIcon);
     } on Exception catch (e) {
       displayMessageIcon(
           snackposition: getx.SnackPosition.BOTTOM,

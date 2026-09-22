@@ -61,7 +61,7 @@ class _ScreenChangeUserTypeState extends State<ScreenChangeUserType>
   final ScrollController scrollController = ScrollController();
 
   final ChangeUserTypeController changeUserTypeController =
-      Get.put(ChangeUserTypeController());
+      Get.put(ChangeUserTypeController(), permanent: true);
   final BusinessListController artistListController =
       Get.put(BusinessListController());
 

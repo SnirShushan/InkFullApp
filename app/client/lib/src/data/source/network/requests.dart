@@ -363,6 +363,7 @@ class NetWorkRequest {
         "image_id": imageId,
         "artist_uid": businessType == "2" ? uid : creatorId,
         "studio_uid": uid,
+        "creator_id": creatorId,
         'device_type': WebService.deviceType,
         'app_version': WebService.appVersion,
         'app_token': WebService.appToken,

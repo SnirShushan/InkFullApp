@@ -114,7 +114,7 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
   }
 
   void _exitOpeningProcess() {
-    if (WebService.isTempPremiumPlanPurchaseLoading) return;
+    WebService.isTempPremiumPlanPurchaseLoading = false;
     Get.offAll(
       () => const DashBoard(initialIndex: 3),
       binding: DashBoardBinding(),
@@ -248,7 +248,7 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
                 child: CircularProgressIndicator(),
               )
             : widget.fromRegistration && _purchasePending
-                ? const PurchaseLoadingWidget()
+                ? PurchaseLoadingWidget(onClose: _exitOpeningProcess)
                 : _purchasePending
                     ? const Stack(
                         clipBehavior: Clip.none,

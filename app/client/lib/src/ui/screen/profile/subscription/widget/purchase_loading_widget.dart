@@ -3,7 +3,9 @@ import 'package:ink/src/utils/assets.dart';
 import 'package:ink/src/utils/colors.dart';
 
 class PurchaseLoadingWidget extends StatelessWidget {
-  const PurchaseLoadingWidget({super.key});
+  final VoidCallback? onClose;
+
+  const PurchaseLoadingWidget({super.key, this.onClose});
 
   @override
   Widget build(BuildContext context) {
@@ -62,7 +64,23 @@ class PurchaseLoadingWidget extends StatelessWidget {
               ],
             ),
           ),
-        )
+        ),
+        if (onClose != null)
+          Positioned(
+            top: MediaQuery.viewPaddingOf(context).top + 4,
+            left: 8,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: onClose,
+                child: const SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: Icon(Icons.close, color: titleTextColor, size: 22),
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }

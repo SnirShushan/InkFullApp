@@ -108,16 +108,27 @@ class _SketchImageScreenState extends State<SketchImageScreen>
     }
   }
 
+  bool _isSketchStyle(StylesList option) {
+    final slug = (option.slug ?? '').toLowerCase();
+    final name = (option.name ?? '').toLowerCase();
+    return slug == 'sketch' || name == 'sketch' || name.contains('סקיצה');
+  }
+
   //get userStyles
   Future getUserStyles() async {
     user = await WebService.getCurrentUser();
-    user.stylesList?.map((doc) {
-      listStyles.add(doc);
-    }).toList();
-    user.stylesList?.map((doc) {
-      filteredListStyles.add(doc);
-    }).toList();
-    setState(() {});
+    var styles = user.stylesList ?? <StylesList>[];
+    if (styles.isEmpty) {
+      final userController = Get.put(UserController());
+      if (userController.style_list.isNotEmpty) {
+        styles = List<StylesList>.from(userController.style_list);
+      } else {
+        styles = await Network.getStyleListApi();
+      }
+    }
+    listStyles = styles.where((s) => !_isSketchStyle(s)).toList();
+    filteredListStyles = List<StylesList>.from(listStyles);
+    if (mounted) setState(() {});
   }
 
   @override
@@ -201,12 +212,7 @@ class _SketchImageScreenState extends State<SketchImageScreen>
                         runSpacing: 2.0,
                         verticalDirection: VerticalDirection.up,
                         children: listStyles.where((option) {
-                          if (imageTypes != "1") return true;
-                          final slug = (option.slug ?? '').toLowerCase();
-                          final name = (option.name ?? '').toLowerCase();
-                          return slug != 'sketch' &&
-                              name != 'sketch' &&
-                              !name.contains('סקיצה');
+                          return !_isSketchStyle(option);
                         }).map((option) {
                           return ElevatedButton(
                             onPressed: () => setState(() {
@@ -646,9 +652,11 @@ class _SketchImageScreenState extends State<SketchImageScreen>
               imageData: AppAssets.errorIcon);
           return;
         }
-        if (Get.isRegistered<MyPostsController>()) {
-          await Get.find<MyPostsController>().getMyPosts();
-        }
+        try {
+          if (Get.isRegistered<MyPostsController>()) {
+            await Get.find<MyPostsController>().getMyPosts();
+          }
+        } catch (_) {}
         displayMessageIcon(
             message: 'התמונה הועלתה בהצלחה!',
             color: const Color(0xFF2E602E),
@@ -670,9 +678,21 @@ class _SketchImageScreenState extends State<SketchImageScreen>
               binding: BusinessDashBoardBinding());
         }
       } catch (e) {
-        isLoading = false;
+        if (mounted) {
+          displayMessageIcon(
+              message: "לא ניתן להעלות את התמונה",
+              color: errorColor,
+              snackposition: SnackPosition.BOTTOM,
+              imageData: AppAssets.errorIcon);
+        }
       } finally {
-        isLoading = false;
+        if (mounted) {
+          setState(() {
+            isLoading = false;
+          });
+        } else {
+          isLoading = false;
+        }
       }
     }
   }

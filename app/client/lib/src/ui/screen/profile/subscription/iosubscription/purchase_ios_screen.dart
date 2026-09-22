@@ -105,7 +105,7 @@ class _IOSPurchaseScreenState extends State<IOSPurchaseScreen> {
   }
 
   void _exitOpeningProcess() {
-    if (WebService.isTempPremiumPlanPurchaseLoading) return;
+    WebService.isTempPremiumPlanPurchaseLoading = false;
     Get.offAll(
       () => const DashBoard(initialIndex: 3),
       binding: DashBoardBinding(),
@@ -227,7 +227,7 @@ class _IOSPurchaseScreenState extends State<IOSPurchaseScreen> {
               child: CircularProgressIndicator(),
             )
           : widget.fromRegistration && _purchasePending
-              ? const PurchaseLoadingWidget()
+              ? PurchaseLoadingWidget(onClose: _exitOpeningProcess)
               : _purchasePending
                   ? const Stack(
                       clipBehavior: Clip.none,
@@ -258,6 +258,10 @@ class _IOSPurchaseScreenState extends State<IOSPurchaseScreen> {
                               right: 20,
                               child: InkWell(
                                 onTap: () {
+                                  if (widget.fromRegistration) {
+                                    _exitOpeningProcess();
+                                    return;
+                                  }
                                   if (WebService
                                           .isTempPremiumPlanPurchaseLoading ==
                                       false) {
@@ -516,24 +520,28 @@ class _IOSPurchaseScreenState extends State<IOSPurchaseScreen> {
     isApiLoading = true;
     try {
       await SubscriptionDbService()
-          .saveSubcriptionsDetailsIOS(purchaseDetails, purchaseStatus)
-          .then((value) {
-        setState(() {
-          if (isProductcustom == true) {
-            productid = purchaseDetails.productID;
-            purchaseSuccessDialog(
-                MediaQuery.of(context).size, context, "זה ייקח כמה שניות");
-          }
-          isProductcustom = false;
-          islimitUrlCount = false;
-          _purchases.add(purchaseDetails);
-          _purchasePending = false;
-        });
+          .saveSubcriptionsDetailsIOS(purchaseDetails, purchaseStatus);
+      if (!mounted) return;
+      setState(() {
+        if (isProductcustom == true) {
+          productid = purchaseDetails.productID;
+          purchaseSuccessDialog(
+              MediaQuery.of(context).size, context, "זה ייקח כמה שניות");
+        }
+        isProductcustom = false;
+        islimitUrlCount = false;
+        _purchases.add(purchaseDetails);
+        _purchasePending = false;
       });
     } catch (e) {
-      isApiLoading = false;
+      if (mounted) {
+        setState(() {
+          _purchasePending = false;
+        });
+      }
     } finally {
       isApiLoading = false;
+      WebService.isTempPremiumPlanPurchaseLoading = false;
     }
 
     // }

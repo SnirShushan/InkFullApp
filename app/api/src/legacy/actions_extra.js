@@ -580,11 +580,12 @@ async function uploadPostImages(files) {
       name === 'image'
     );
   });
-  if (!wanted.length) return { names: [], ids: [] };
+  const candidates = wanted.length ? wanted : list;
+  if (!candidates.length) return { names: [], ids: [] };
   const { uploadImageToR2 } = await import('../r2_upload.js');
   const names = [];
   const ids = [];
-  for (const file of wanted) {
+  for (const file of candidates) {
     if (!file?.buffer?.length) continue;
     const filename = await uploadImageToR2(file, 'assets/uploads/post_images');
     if (!filename) continue;
@@ -610,22 +611,32 @@ export async function handleAddPost(p, files) {
     console.error('AddPost image upload failed', err?.message || err);
     return fail('העלאת התמונה נכשלה');
   }
+  if (!String(imageName || '').trim()) {
+    return fail('העלאת התמונה נכשלה');
+  }
+  const uid = String(auth.uid);
+  const artistUid = String(p.artist_uid || p.creator_id || uid);
+  const studioUid = String(p.studio_uid || uid);
   try {
     const [result] = await pool.query(
       `INSERT INTO tbl_post
-        (uid, image_name, image_id, img_type, styles, description, status, date_added, view_count)
+        (uid, image_name, image_id, img_type, styles, description, status,
+         date_added, date_updated, artist_uid, studio_uid, view_count)
        VALUES
-        (:uid, :image_name, :image_id, :img_type, :styles, :description, '1', NOW(), 0)`,
+        (:uid, :image_name, :image_id, :img_type, :styles, :description, '1',
+         NOW(), NOW(), :artist_uid, :studio_uid, 0)`,
       {
-        uid: p.creator_id || auth.uid,
+        uid,
         image_name: imageName,
         image_id: imageId,
         img_type: imgType,
         styles: normalizePostStyles(p.styles || '', imgType),
         description: String(p.description || '').trim(),
+        artist_uid: artistUid,
+        studio_uid: studioUid,
       }
     );
-    return ok({ post_id: String(result.insertId) }, 'נוספה תמונה חדשה');
+    return ok({ post_id: String(result.insertId) }, 'התמונה הועלתה בהצלחה');
   } catch (err) {
     console.error('AddPost insert failed', err?.message || err);
     return fail('לא ניתן להעלות את הפוסט');
@@ -676,6 +687,7 @@ export async function handleUpdatePost(p, files) {
     return fail('יש להזין תיאור');
   }
   if (sets.length) {
+    sets.push('date_updated = NOW()');
     await pool.query(
       `UPDATE tbl_post SET ${sets.join(', ')} WHERE id = :pid AND uid = :uid`,
       params
