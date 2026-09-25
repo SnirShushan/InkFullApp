@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:ui';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -7,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:ink/src/apps.dart';
+import 'package:ink/src/data/source/analytics/app_error_log.dart';
 import 'package:ink/src/ui/screen/home/imageDetails/post_details.dart';
 import 'package:ink/src/ui/screen/notification/notifications.dart';
 import 'package:ink/src/utils/push_notification.dart';
@@ -14,6 +17,25 @@ import 'package:ink/src/utils/webService.dart';
 
 import 'dependency_injection.dart';
 import 'src/utils/facebook_events/facebook_events.dart';
+
+void _installErrorHooks() {
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    AppErrorLog.instance.capture(
+      type: 'flutter',
+      message: details.exceptionAsString(),
+      stack: details.stack?.toString(),
+    );
+  };
+  PlatformDispatcher.instance.onError = (error, stack) {
+    AppErrorLog.instance.capture(
+      type: 'platform',
+      message: error.toString(),
+      stack: stack.toString(),
+    );
+    return false;
+  };
+}
 
 Future<void> _initializeFirebaseMessaging() async {
   RemoteMessage? message = await FirebaseMessaging.instance.getInitialMessage();
@@ -23,31 +45,36 @@ Future<void> _initializeFirebaseMessaging() async {
   await PushNotificationsManager().init();
 }
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+void main() {
+  runZonedGuarded(() async {
+    WidgetsFlutterBinding.ensureInitialized();
+    _installErrorHooks();
 
-  // Initialize essential servicesn
-  await Firebase.initializeApp();
-  await EasyLocalization.ensureInitialized();
-  await FacebookEvents.facebookAppEvents.setAutoLogAppEventsEnabled(false);
-  // Set up background message handler
-  FirebaseMessaging.onBackgroundMessage(backgroundNotificationMessageHandler);
+    await Firebase.initializeApp();
+    await EasyLocalization.ensureInitialized();
+    await FacebookEvents.facebookAppEvents.setAutoLogAppEventsEnabled(false);
+    FirebaseMessaging.onBackgroundMessage(backgroundNotificationMessageHandler);
 
-  // Decode images at display size; keep a larger RAM cache for R2 grids
-  PaintingBinding.instance.imageCache.maximumSize = 200;
-  PaintingBinding.instance.imageCache.maximumSizeBytes = 160 * 1024 * 1024;
+    PaintingBinding.instance.imageCache.maximumSize = 200;
+    PaintingBinding.instance.imageCache.maximumSizeBytes = 160 * 1024 * 1024;
 
-// Initialize Dependency Injection immediately
-  Future.microtask(() => _initializeFirebaseMessaging());
-  _configureSystemUI();
+    Future.microtask(() => _initializeFirebaseMessaging());
+    _configureSystemUI();
 
-  runApp(EasyLocalization(
-      supportedLocales: const [Locale('he', 'HE'), Locale('en', 'EN')],
-      path: 'assets/resources',
-      fallbackLocale: const Locale('he', 'HE'),
-      startLocale: const Locale('he', 'HE'),
-      useFallbackTranslations: true,
-      child: const MyApp()));
+    runApp(EasyLocalization(
+        supportedLocales: const [Locale('he', 'HE'), Locale('en', 'EN')],
+        path: 'assets/resources',
+        fallbackLocale: const Locale('he', 'HE'),
+        startLocale: const Locale('he', 'HE'),
+        useFallbackTranslations: true,
+        child: const MyApp()));
+  }, (error, stack) {
+    AppErrorLog.instance.capture(
+      type: 'uncaught',
+      message: error.toString(),
+      stack: stack.toString(),
+    );
+  });
 }
 
 void _configureSystemUI() {

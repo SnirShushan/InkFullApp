@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:ink/src/data/source/analytics/app_analytics.dart';
+import 'package:ink/src/data/source/analytics/app_error_log.dart';
 import 'package:ink/src/ui/screen/splash/splashscreen.dart';
 import 'package:ink/src/ui/widgets/ink_page_transition.dart';
 
@@ -40,8 +41,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     } else if (state == AppLifecycleState.inactive ||
         state == AppLifecycleState.paused) {
       AppAnalytics.instance.pause();
+      AppErrorLog.instance.flush();
     } else if (state == AppLifecycleState.detached) {
       AppAnalytics.instance.endSession();
+      AppErrorLog.instance.flush();
     }
   }
 

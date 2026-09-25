@@ -5,12 +5,26 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart' as getx;
 import 'package:get/get_navigation/src/snackbar/snackbar.dart';
+import 'package:ink/src/data/source/analytics/app_error_log.dart';
 import 'package:ink/src/ui/screen/auth/login.dart';
 import 'package:ink/src/utils/assets.dart';
 import 'package:ink/src/utils/bottomsheets.dart';
 import 'package:ink/src/utils/colors.dart';
 import 'package:ink/src/utils/common.dart';
 import 'package:ink/src/utils/webService.dart';
+
+String? _requestAction(Response response) {
+  final data = response.requestOptions.data;
+  if (data is FormData) {
+    for (final field in data.fields) {
+      if (field.key == 'action') return field.value;
+    }
+  } else if (data is Map) {
+    return data['action']?.toString();
+  }
+  final query = response.requestOptions.queryParameters['action'];
+  return query?.toString();
+}
 
 class ApiResponse {
   int status;
@@ -68,6 +82,12 @@ class ApiResponse {
 
       if (status.toString() == "0") {
         WebService.isSessionExpire = false;
+        AppErrorLog.instance.capture(
+          type: 'api',
+          message: msg,
+          action: _requestAction(response),
+          extra: {'status': status},
+        );
         // In develop mode avoid disruptive snackbars for recoverable API gaps
         if (WebService.developerMode || !showSnackbar) {
           WebService.printMsg('API status=0: $msg');
@@ -126,6 +146,11 @@ class ApiResponse {
       }
       return true;
     } catch (e) {
+      AppErrorLog.instance.capture(
+        type: 'api',
+        message: e.toString(),
+        extra: {'where': 'checkResponseStatus'},
+      );
       return false;
     }
   }
@@ -201,6 +226,23 @@ class ApiResponse {
 
   //Exception error
   static handleError(DioError e) {
+    String? action;
+    try {
+      final data = e.requestOptions.data;
+      if (data is FormData) {
+        for (final field in data.fields) {
+          if (field.key == 'action') action = field.value;
+        }
+      } else if (data is Map) {
+        action = data['action']?.toString();
+      }
+    } catch (_) {}
+    AppErrorLog.instance.capture(
+      type: 'network',
+      message: e.message ?? e.type.toString(),
+      action: action,
+      extra: {'dio_type': e.type.toString()},
+    );
     if (e.type == DioErrorType.connectTimeout) {
       Future.delayed(const Duration(seconds: 2), () {
         if (getx.Get.isSnackbarOpen) {

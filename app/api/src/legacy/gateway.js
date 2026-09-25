@@ -21,6 +21,7 @@ import * as extra from './actions_extra.js';
 import * as subs from './subscriptions.js';
 import { handleSendSms } from './sms.js';
 import { handleLogAppEvents, logServerAction } from './analytics.js';
+import { handleLogAppError, handleLoginFailLog, logServerError } from './error_log.js';
 
 function params(req) {
   return { ...(req.query || {}), ...(req.body || {}) };
@@ -562,6 +563,9 @@ export async function handleLegacyAction(req) {
   if (action === 'LogAppEvents') {
     return handleLogAppEvents(p);
   }
+  if (action === 'LogAppError') {
+    return handleLogAppError(p);
+  }
   logServerAction(p, action);
 
   try {
@@ -579,7 +583,7 @@ export async function handleLegacyAction(req) {
       case 'SendSms':
         return handleSendSms(p);
       case 'LoginFailDBLog':
-        return ok([], 'Logged');
+        return handleLoginFailLog(p);
       case 'GetHomeData':
         return handleGetHomeData(p);
       case 'GetHomePostsNew':
@@ -694,6 +698,14 @@ export async function handleLegacyAction(req) {
     }
   } catch (e) {
     console.error('legacy action error', action, e);
+    logServerError({
+      message: e?.message || 'Server error',
+      stack: e?.stack,
+      action,
+      uid: p.uid,
+      deviceType: p.device_type,
+      appVersion: p.app_version,
+    });
     return fail(e.message || 'Server error');
   }
 }

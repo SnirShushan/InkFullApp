@@ -2,6 +2,7 @@ const InkAdmin = (() => {
   const TITLES = {
     home: ['ניהול האפליקציה', 'סקירה'],
     analytics: ['אנליטיקה ושימוש', 'מדדים'],
+    logs: ['לוגים ושגיאות', 'מעקב'],
     users: ['משתמשים מהקהל', 'ניהול'],
     business: ['משתמשים עסקיים', 'ניהול'],
     'report-users': ['דיווחים על משתמשים', 'פיקוח'],
@@ -95,6 +96,7 @@ const InkAdmin = (() => {
       </section>
         <p class="notes">המסכים האלה כותבים ישירות ל-MySQL החי. תמונת הפתיחה מתעדכנת בהגדרות.</p>
         <p class="notes"><a href="#/admin/analytics">מעבר לאנליטיקה</a> — שעות פעילות, מסכים ופעולות.</p>
+        <p class="notes"><a href="#/admin/logs">מעבר ללוגים</a> — שגיאות אפליקציה, סינון לפי טקסט או סוג.</p>
     `;
   }
 
@@ -190,6 +192,136 @@ const InkAdmin = (() => {
         ${data.has_events ? `נאספו ${fmt(data.kpis.total_events)} אירועים בטווח.` : 'טבלת האירועים עדיין ריקה.'}
       </p>
     `;
+  }
+
+  const LOG_TABLES = [
+    { id: 'errors', label: 'שגיאות אפליקציה' },
+    { id: 'legacy', label: 'לוגים ישנים' },
+    { id: 'login', label: 'שגיאות התחברות' },
+    { id: 'events', label: 'אירועי שימוש' },
+  ];
+
+  function logsHash({ table = 'errors', type = '', q = '', page = 1 } = {}) {
+    const params = new URLSearchParams();
+    if (table && table !== 'errors') params.set('table', table);
+    if (type) params.set('type', type);
+    if (q) params.set('q', q);
+    if (page > 1) params.set('page', String(page));
+    const suffix = params.toString();
+    return suffix ? `#/admin/logs?${suffix}` : '#/admin/logs';
+  }
+
+  function logTypeBadge(row) {
+    const kind = row.log_type || '';
+    const cls =
+      kind === 'server' || kind === 'uncaught' || kind === 'platform'
+        ? 'bad'
+        : kind === 'network' || kind === 'api'
+          ? 'warn'
+          : kind === 'login'
+            ? 'warn'
+            : 'good';
+    return `<span class="badge ${cls}">${esc(row.type_label || kind || '—')}</span>`;
+  }
+
+  async function renderLogs(ctx) {
+    const q = ctx.q || '';
+    const type = ctx.logType || '';
+    const table = ctx.logTable || 'errors';
+    ctx.view.innerHTML = `<p class="empty">טוען לוגים…</p>`;
+    const qs = new URLSearchParams({
+      page: String(ctx.page || 1),
+      q,
+      type,
+      table,
+    });
+    const data = await api(`/api/admin/logs?${qs}`);
+    const tables = LOG_TABLES.map(
+      (item) =>
+        `<a class="btn ${item.id === table ? '' : 'ghost'}" href="${logsHash({ table: item.id, q, type: item.id === table ? type : '' })}">${esc(item.label)}</a>`
+    ).join('');
+    const types = [
+      { id: '', label: 'כל הסוגים', count: data.total },
+      ...(data.types || []),
+    ]
+      .map(
+        (item) =>
+          `<a class="filter-chip ${item.id === type ? 'active' : ''}" href="${logsHash({ table, type: item.id, q })}">${esc(item.label)}${item.id ? ` (${fmt(item.count || 0)})` : ''}</a>`
+      )
+      .join('');
+    const from = data.total === 0 ? 0 : (data.page - 1) * data.limit + 1;
+    const to = Math.min(data.total, data.page * data.limit);
+    ctx.view.innerHTML = `
+      <div class="toolbar">${tables}</div>
+      <form class="toolbar" data-logs="1">
+        <input name="q" type="search" placeholder="סינון לפי טקסט, מסך, פעולה או משתמש" value="${escAttr(q)}" />
+        <button class="btn" type="submit">חיפוש</button>
+      </form>
+      <div class="toolbar filter-chips">${types}</div>
+      <div class="table-wrap">
+        ${
+          data.missing
+            ? `<div class="empty">הטבלה עדיין לא קיימת במסד החי.</div>`
+            : data.rows.length === 0
+              ? `<div class="empty">אין לוגים תואמים.</div>`
+              : `<table>
+                  <thead>
+                    <tr>
+                      <th>זמן</th><th>סוג</th><th>הודעה</th><th>מסך / פעולה</th><th>משתמש</th><th>מכשיר</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${data.rows
+                      .map(
+                        (row, idx) => `
+                      <tr data-log="${idx}">
+                        <td>${esc(fmtDate(row.created_at))}</td>
+                        <td>${logTypeBadge(row)}</td>
+                        <td class="log-msg">${esc(clip(row.message || '—', 140))}</td>
+                        <td>${esc(row.screen_name || row.action_name || '—')}</td>
+                        <td>${esc(row.uid || '—')}</td>
+                        <td>${esc((row.device_type === 'i' ? 'iOS' : row.device_type === 'a' ? 'Android' : row.device_type || '—') + (row.app_version ? ` · ${row.app_version}` : ''))}</td>
+                      </tr>`
+                      )
+                      .join('')}
+                  </tbody>
+                </table>`
+        }
+      </div>
+      <div class="pager">
+        <span>${fmt(from)}–${fmt(to)} מתוך ${fmt(data.total)}</span>
+        <div class="pager-btns">
+          <a class="btn ghost" href="${logsHash({ table, type, q, page: Math.max(1, data.page - 1) })}">הקודם</a>
+          <a class="btn ghost" href="${logsHash({ table, type, q, page: Math.min(data.pages, data.page + 1) })}">הבא</a>
+        </div>
+      </div>
+    `;
+    const form = ctx.view.querySelector('form[data-logs]');
+    form?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      location.hash = logsHash({ table, type, q: form.q.value.trim(), page: 1 });
+    });
+    ctx.view.querySelectorAll('tr[data-log]').forEach((tr) => {
+      tr.addEventListener('click', () => {
+        const row = data.rows[Number(tr.dataset.log)];
+        if (!row) return;
+        const drawer = document.getElementById('drawer');
+        const body = document.getElementById('drawerBody');
+        if (!drawer || !body) return;
+        body.innerHTML = `
+          <div class="kv"><dt>זמן</dt><dd>${esc(fmtDate(row.created_at))}</dd></div>
+          <div class="kv"><dt>סוג</dt><dd>${esc(row.type_label || row.log_type || '—')}</dd></div>
+          <div class="kv"><dt>מקור</dt><dd>${esc(row.source || '—')}</dd></div>
+          <div class="kv"><dt>משתמש</dt><dd>${esc(row.uid || '—')}</dd></div>
+          <div class="kv"><dt>מסך</dt><dd>${esc(row.screen_name || '—')}</dd></div>
+          <div class="kv"><dt>פעולה</dt><dd>${esc(row.action_name || '—')}</dd></div>
+          <div class="kv"><dt>הודעה</dt><dd>${esc(row.message || '—')}</dd></div>
+          ${row.extra ? `<div class="kv"><dt>פרטים</dt><dd><pre class="log-stack">${esc(row.extra)}</pre></dd></div>` : ''}
+          ${row.stack ? `<div class="kv"><dt>מחסנית</dt><dd><pre class="log-stack">${esc(row.stack)}</pre></dd></div>` : ''}
+        `;
+        drawer.hidden = false;
+      });
+    });
   }
 
   async function renderUsers(ctx, type) {
@@ -488,6 +620,7 @@ const InkAdmin = (() => {
     try {
       if (section === 'home') await renderHome(ctx);
       else if (section === 'analytics') await renderAnalytics(ctx);
+      else if (section === 'logs') await renderLogs(ctx);
       else if (section === 'users') await renderUsers(ctx, 'regular');
       else if (section === 'business') await renderUsers(ctx, 'business');
       else if (section === 'report-users') await renderReports(ctx, 'users');
