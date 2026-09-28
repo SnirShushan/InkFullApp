@@ -7,6 +7,7 @@ import { createSources } from './sources.js';
 import { loadFinanceRows, readCosts, summarizeFinance, writeCosts } from './finance.js';
 import { buildSpec } from './spec.js';
 import { createAdminRouter } from './admin.js';
+import { loadCampaignDashboard, setCampaignStatus } from './meta-ads.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ADMIN_DIR = path.join(ROOT, 'php-admin');
@@ -179,6 +180,25 @@ app.get('/api/finance/costs', (_req, res) => {
 app.put('/api/finance/costs', (req, res, next) => {
   try {
     res.json(writeCosts(COSTS_PATH, req.body || {}));
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get('/api/campaigns', async (req, res, next) => {
+  try {
+    const range = ['last_7d', 'last_30d', 'last_90d', 'maximum'].includes(req.query.range)
+      ? req.query.range
+      : 'last_30d';
+    res.json(await loadCampaignDashboard({ range }));
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post('/api/campaigns/:id/status', async (req, res, next) => {
+  try {
+    res.json(await setCampaignStatus(req.params.id, req.body?.status));
   } catch (err) {
     next(err);
   }

@@ -11,7 +11,7 @@ const sourceNote = document.getElementById('sourceNote');
 let overview = null;
 let compare = null;
 let studio = null;
-let state = { mode: 'tables', source: 'live', table: null, page: 1, q: '', sort: '', dir: 'desc', limit: 50, adminSection: 'home', logType: '', logTable: 'errors' };
+let state = { mode: 'tables', source: 'live', table: null, page: 1, q: '', sort: '', dir: 'desc', limit: 50, adminSection: 'home', logType: '', logTable: 'errors', range: 'last_30d' };
 
 document.getElementById('drawerClose').onclick = closeDrawer;
 drawer.addEventListener('click', (e) => {
@@ -48,12 +48,13 @@ async function loadSources() {
 }
 
 function setWorkspaceChrome() {
-  document.body.classList.remove('mode-admin', 'mode-tables', 'mode-finance', 'mode-spec', 'mode-legacy');
+  document.body.classList.remove('mode-admin', 'mode-tables', 'mode-finance', 'mode-spec', 'mode-legacy', 'mode-campaigns');
   document.body.classList.add(`mode-${state.mode}`);
   if (state.mode === 'admin' && state.adminSection === 'legacy') {
     document.body.classList.add('mode-legacy');
   }
   document.getElementById('tabAdmin').classList.toggle('active', state.mode === 'admin');
+  document.getElementById('tabCampaigns').classList.toggle('active', state.mode === 'campaigns');
   document.getElementById('tabTables').classList.toggle('active', state.mode === 'tables');
   document.getElementById('tabFinance').classList.toggle('active', state.mode === 'finance');
   document.getElementById('tabSpec').classList.toggle('active', state.mode === 'spec');
@@ -135,6 +136,7 @@ function parseHash() {
   }
   else if (path.startsWith('/finance')) state.mode = 'finance';
   else if (path.startsWith('/spec')) state.mode = 'spec';
+  else if (path.startsWith('/campaigns')) state.mode = 'campaigns';
   else state.mode = 'tables';
   state.source = params.get('source') === 'museum' ? 'museum' : (state.mode === 'finance' || state.mode === 'spec') ? (params.get('source') || 'live') : (params.get('source') === 'live' ? 'live' : params.get('source') === 'museum' ? 'museum' : state.source || 'live');
   if (state.mode === 'tables' && !params.get('source') && !tableMatch) {
@@ -149,6 +151,8 @@ function parseHash() {
   state.sort = params.get('sort') || '';
   state.dir = params.get('dir') || 'desc';
   state.limit = Number(params.get('limit')) || 50;
+  const range = params.get('range');
+  state.range = ['last_7d', 'last_30d', 'last_90d', 'maximum'].includes(range) ? range : 'last_30d';
 }
 
 function hashFor(patch = {}) {
@@ -181,6 +185,9 @@ function hashFor(patch = {}) {
   }
   if (next.mode === 'finance') return `#/finance?${qs}`;
   if (next.mode === 'spec') return `#/spec?${qs}`;
+  if (next.mode === 'campaigns') {
+    return next.range && next.range !== 'last_30d' ? `#/campaigns?range=${encodeURIComponent(next.range)}` : '#/campaigns';
+  }
   if (next.table) {
     if (next.page) qs.set('page', String(next.page));
     if (next.limit) qs.set('limit', String(next.limit));
@@ -212,6 +219,16 @@ async function onRoute() {
   }
   if (state.mode === 'spec') {
     await renderSpec();
+    return;
+  }
+  if (state.mode === 'campaigns') {
+    await InkCampaigns.render({
+      view,
+      title,
+      eyebrow,
+      topActions,
+      range: state.range,
+    });
     return;
   }
   if (!overview || overview.source !== state.source || prevMode !== 'tables') {
