@@ -49,6 +49,8 @@ class _HomePostGridWidgetState extends State<HomePostGridWidget> {
         // 🔸 shimmer while loading
         return GridView.builder(
           shrinkWrap: true,
+          primary: false,
+          padding: EdgeInsets.zero,
           scrollDirection: Axis.vertical,
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -84,6 +86,8 @@ class _HomePostGridWidgetState extends State<HomePostGridWidget> {
                     // 🔸 Grid for each style
                     GridView.builder(
                       shrinkWrap: true,
+                      primary: false,
+                      padding: EdgeInsets.zero,
                       scrollDirection: Axis.vertical,
                       physics: const NeverScrollableScrollPhysics(),
                       gridDelegate:

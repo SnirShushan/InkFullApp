@@ -415,6 +415,16 @@ td.log-msg {
   white-space: normal;
   max-width: 420px;
 }
+.log-user {
+  display: block;
+  font-weight: 650;
+}
+.log-user-contact {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 2px;
+}
 .log-stack {
   white-space: pre-wrap;
   word-break: break-word;
@@ -739,6 +749,8 @@ tbody tr.no-row-click { cursor: default; }
 }
 .campaign-head h2, .account-head h2 { margin: 0 0 6px; font-size: 18px; }
 .campaign-meta, .chip-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.campaign-sections { margin-bottom: 14px; }
+.campaign-sections { margin-bottom: 14px; }
 .campaign-actions { display: flex; gap: 8px; flex-shrink: 0; }
 .advice-list { margin: 10px 0 0; padding: 0 18px 0 0; }
 .advice-list li { margin: 6px 0; line-height: 1.55; }
@@ -754,6 +766,7 @@ tbody tr.no-row-click { cursor: default; }
 .rec h3 { margin: 0 0 4px; font-size: 15px; }
 .rec p { margin: 0; color: var(--muted); line-height: 1.55; }
 .ad-cell { display: flex; gap: 10px; align-items: center; white-space: normal; }
+.ad-cell small { display: block; }
 .ad-thumb { width: 48px; height: 48px; object-fit: cover; background: #111; flex-shrink: 0; }
 .trend {
   display: flex;
@@ -780,6 +793,48 @@ tbody tr.no-row-click { cursor: default; }
 }
 details.campaign-more { margin-top: 12px; }
 details.campaign-more summary { cursor: pointer; color: var(--muted); margin-bottom: 8px; }
+.banner-ok {
+  border: 1px solid #3d5a36;
+  color: var(--good);
+  padding: 10px 12px;
+  margin-bottom: 12px;
+}
+.adset-block {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.adset-block h3 { margin: 0 0 8px; font-size: 15px; }
+.budget-form, .video-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: end;
+  margin: 10px 0;
+}
+.budget-form label, .video-form label {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.budget-form input, .video-form input, .video-form textarea {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  color: inherit;
+  padding: 8px 10px;
+  min-width: 180px;
+}
+.video-form textarea { min-height: 64px; resize: vertical; }
+.video-form { align-items: start; }
+.check-line {
+  display: flex !important;
+  grid-template-columns: none;
+  align-items: center;
+  gap: 6px;
+  align-self: center;
+}
+.video-form .check-line input { min-width: 0; width: auto; }
 
 @media (max-width: 1100px) {
   .spec-layers, .spec-cards { grid-template-columns: 1fr; }

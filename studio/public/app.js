@@ -11,7 +11,7 @@ const sourceNote = document.getElementById('sourceNote');
 let overview = null;
 let compare = null;
 let studio = null;
-let state = { mode: 'tables', source: 'live', table: null, page: 1, q: '', sort: '', dir: 'desc', limit: 50, adminSection: 'home', logType: '', logTable: 'errors', range: 'last_30d' };
+let state = { mode: 'tables', source: 'live', table: null, page: 1, q: '', sort: '', dir: 'desc', limit: 50, adminSection: 'home', logType: '', logTable: 'errors', range: 'last_30d', campaignPanel: 'run' };
 
 document.getElementById('drawerClose').onclick = closeDrawer;
 drawer.addEventListener('click', (e) => {
@@ -136,7 +136,10 @@ function parseHash() {
   }
   else if (path.startsWith('/finance')) state.mode = 'finance';
   else if (path.startsWith('/spec')) state.mode = 'spec';
-  else if (path.startsWith('/campaigns')) state.mode = 'campaigns';
+  else if (path.startsWith('/videos') || path.startsWith('/campaigns')) {
+    state.mode = 'campaigns';
+    state.campaignPanel = path.startsWith('/videos') || path.startsWith('/campaigns/videos') ? 'videos' : 'run';
+  }
   else state.mode = 'tables';
   state.source = params.get('source') === 'museum' ? 'museum' : (state.mode === 'finance' || state.mode === 'spec') ? (params.get('source') || 'live') : (params.get('source') === 'live' ? 'live' : params.get('source') === 'museum' ? 'museum' : state.source || 'live');
   if (state.mode === 'tables' && !params.get('source') && !tableMatch) {
@@ -186,7 +189,8 @@ function hashFor(patch = {}) {
   if (next.mode === 'finance') return `#/finance?${qs}`;
   if (next.mode === 'spec') return `#/spec?${qs}`;
   if (next.mode === 'campaigns') {
-    return next.range && next.range !== 'last_30d' ? `#/campaigns?range=${encodeURIComponent(next.range)}` : '#/campaigns';
+    const path = next.campaignPanel === 'videos' ? '/campaigns/videos' : '/campaigns';
+    return next.range && next.range !== 'last_30d' ? `#${path}?range=${encodeURIComponent(next.range)}` : `#${path}`;
   }
   if (next.table) {
     if (next.page) qs.set('page', String(next.page));
@@ -208,6 +212,12 @@ async function onRoute() {
   const prevSource = state.source;
   const prevMode = state.mode;
   parseHash();
+  const hashPath = (location.hash.replace(/^#/, '') || '/tables').split('?')[0];
+  if (hashPath === '/videos' || hashPath.startsWith('/videos/')) {
+    const range = state.range && state.range !== 'last_30d' ? `?range=${encodeURIComponent(state.range)}` : '';
+    location.hash = `#/campaigns/videos${range}`;
+    return;
+  }
   setWorkspaceChrome();
   if (state.mode === 'admin') {
     await renderAdmin();
@@ -228,6 +238,7 @@ async function onRoute() {
       eyebrow,
       topActions,
       range: state.range,
+      section: state.campaignPanel === 'videos' ? 'videos' : 'campaigns',
     });
     return;
   }

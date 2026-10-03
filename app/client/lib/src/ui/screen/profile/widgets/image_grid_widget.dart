@@ -44,7 +44,8 @@ class ImageGrid extends StatelessWidget {
                     if (imageUrl.isEmpty) {
                       return const SizedBox.shrink();
                     }
-                    return InkWell(
+                    return GestureDetector(
+                      behavior: HitTestBehavior.opaque,
                       onTap: () => Get.to(() => PostDetails(
                             postId: post.id!,
                             isArtist: isArtist,

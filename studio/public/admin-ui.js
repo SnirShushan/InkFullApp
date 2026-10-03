@@ -211,6 +211,15 @@ const InkAdmin = (() => {
     return suffix ? `#/admin/logs?${suffix}` : '#/admin/logs';
   }
 
+  function userCell(row) {
+    const name = String(row.user_name || '').trim();
+    const contact = String(row.user_phone || row.user_email || '').trim();
+    if (!name && !contact) return esc(row.uid || '—');
+    return `<span class="log-user">${esc(name || '—')}</span>${
+      contact ? `<span class="log-user-contact">${esc(contact)}</span>` : ''
+    }`;
+  }
+
   function logTypeBadge(row) {
     const kind = row.log_type || '';
     const cls =
@@ -254,7 +263,7 @@ const InkAdmin = (() => {
     ctx.view.innerHTML = `
       <div class="toolbar">${tables}</div>
       <form class="toolbar" data-logs="1">
-        <input name="q" type="search" placeholder="סינון לפי טקסט, מסך, פעולה או משתמש" value="${escAttr(q)}" />
+        <input name="q" type="search" placeholder="${table === 'events' ? 'סינון לפי טקסט, מסך, שם, טלפון או אימייל' : 'סינון לפי טקסט, מסך, פעולה או משתמש'}" value="${escAttr(q)}" />
         <button class="btn" type="submit">חיפוש</button>
       </form>
       <div class="toolbar filter-chips">${types}</div>
@@ -279,7 +288,7 @@ const InkAdmin = (() => {
                         <td>${logTypeBadge(row)}</td>
                         <td class="log-msg">${esc(clip(row.message || '—', 140))}</td>
                         <td>${esc(row.screen_name || row.action_name || '—')}</td>
-                        <td>${esc(row.uid || '—')}</td>
+                        <td>${userCell(row)}</td>
                         <td>${esc((row.device_type === 'i' ? 'iOS' : row.device_type === 'a' ? 'Android' : row.device_type || '—') + (row.app_version ? ` · ${row.app_version}` : ''))}</td>
                       </tr>`
                       )
@@ -312,7 +321,8 @@ const InkAdmin = (() => {
           <div class="kv"><dt>זמן</dt><dd>${esc(fmtDate(row.created_at))}</dd></div>
           <div class="kv"><dt>סוג</dt><dd>${esc(row.type_label || row.log_type || '—')}</dd></div>
           <div class="kv"><dt>מקור</dt><dd>${esc(row.source || '—')}</dd></div>
-          <div class="kv"><dt>משתמש</dt><dd>${esc(row.uid || '—')}</dd></div>
+          <div class="kv"><dt>משתמש</dt><dd>${esc(row.user_name || row.uid || '—')}${row.user_name && row.uid ? ` · #${esc(row.uid)}` : ''}</dd></div>
+          ${row.user_phone ? `<div class="kv"><dt>טלפון</dt><dd>${esc(row.user_phone)}</dd></div>` : row.user_email ? `<div class="kv"><dt>אימייל</dt><dd>${esc(row.user_email)}</dd></div>` : ''}
           <div class="kv"><dt>מסך</dt><dd>${esc(row.screen_name || '—')}</dd></div>
           <div class="kv"><dt>פעולה</dt><dd>${esc(row.action_name || '—')}</dd></div>
           <div class="kv"><dt>הודעה</dt><dd>${esc(row.message || '—')}</dd></div>

@@ -265,25 +265,28 @@ async function loadEventLogs(pool, { page, limit, offset, q, type }) {
   const where = [];
   if (type) {
     params.type = type;
-    where.push('event_type = :type');
+    where.push('e.event_type = :type');
   }
   if (q) {
     params.q = `%${q}%`;
     where.push(
-      '(event_name LIKE :q OR screen_name LIKE :q OR session_id LIKE :q OR CAST(uid AS CHAR) LIKE :q)'
+      `(e.event_name LIKE :q OR e.screen_name LIKE :q OR e.session_id LIKE :q
+        OR CAST(e.uid AS CHAR) LIKE :q OR c.name LIKE :q OR c.phone LIKE :q OR c.email LIKE :q)`
     );
   }
   const clause = where.length ? `WHERE ${where.join(' AND ')}` : '';
+  const from = `FROM tbl_app_events e LEFT JOIN tbl_customer c ON c.id = e.uid`;
   const [[totalRow]] = await pool.query(
-    `SELECT COUNT(*) AS c FROM tbl_app_events ${clause}`,
+    `SELECT COUNT(*) AS c ${from} ${clause}`,
     params
   );
   const [rows] = await pool.query(
-    `SELECT id, uid, session_id, event_type, event_name, screen_name, duration_ms,
-            device_type, app_version, extra, CAST(created_at AS CHAR) AS created_at
-     FROM tbl_app_events
+    `SELECT e.id, e.uid, e.session_id, e.event_type, e.event_name, e.screen_name, e.duration_ms,
+            e.device_type, e.app_version, e.extra, CAST(e.created_at AS CHAR) AS created_at,
+            c.name AS user_name, c.phone AS user_phone, c.email AS user_email
+     ${from}
      ${clause}
-     ORDER BY id DESC
+     ORDER BY e.id DESC
      LIMIT :limit OFFSET :offset`,
     params
   );
@@ -305,6 +308,9 @@ async function loadEventLogs(pool, { page, limit, offset, q, type }) {
     rows: rows.map((row) => ({
       id: row.id,
       uid: row.uid,
+      user_name: row.user_name || '',
+      user_phone: row.user_phone || '',
+      user_email: row.user_email || '',
       log_type: row.event_type,
       type_label: EVENT_TYPE_LABELS[row.event_type] || row.event_type,
       message: row.event_name || '—',

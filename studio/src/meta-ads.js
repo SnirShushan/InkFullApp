@@ -1,3 +1,4 @@
+import { open } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
@@ -6,6 +7,8 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 dotenv.config({ path: path.join(ROOT, '.env') });
 
 const GRAPH = 'https://graph.facebook.com/v23.0';
+const VIDEO_GRAPH = 'https://graph-video.facebook.com/v23.0';
+const MESSAGING_CTA = new Set(['WHATSAPP_MESSAGE', 'MESSAGE_PAGE', 'INSTAGRAM_MESSAGE']);
 const RANGES = new Set(['last_7d', 'last_30d', 'last_90d', 'maximum']);
 const ZERO_DECIMAL = new Set(['BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 'PYG', 'RWF', 'VND', 'VUV', 'XAF', 'XOF', 'XPF']);
 
@@ -440,15 +443,38 @@ function buildRecommendations(campaigns, currency) {
   return recs.slice(0, 5);
 }
 
+function linkFromCreative(creative) {
+  const spec = creative?.object_story_spec || {};
+  const video = spec.video_data || {};
+  const linkData = spec.link_data || {};
+  const cta = video.call_to_action || linkData.call_to_action || {};
+  const feedLink = (creative?.asset_feed_spec?.link_urls || [])
+    .map((row) => row.website_url)
+    .find((url) => /^https?:\/\//i.test(url || '')) || '';
+  const link = cta?.value?.link || linkData.link || feedLink || '';
+  return /^https?:\/\//i.test(link) ? safeUrl(link) : '';
+}
+
+function defaultLinkFor(ads, adsetId) {
+  for (const ad of ads) {
+    if (String(ad.adset_id) !== String(adsetId)) continue;
+    const link = linkFromCreative(ad.creative);
+    if (link) return link;
+  }
+  return '';
+}
+
 function mapAd(row, insight, objective) {
   const creative = row.creative || {};
   return {
     id: row.id,
+    adsetId: row.adset_id || '',
     name: row.name || creative.title || row.id,
     configuredStatus: row.status || '',
     effectiveStatus: row.effective_status || row.status || '',
     statusLabel: STATUSES[row.effective_status] || STATUSES[row.status] || row.effective_status || '',
     thumbnail: safeUrl(creative.thumbnail_url || creative.image_url || ''),
+    videoCount: Array.isArray(creative.asset_feed_spec?.videos) ? creative.asset_feed_spec.videos.length : 0,
     title: creative.title || '',
     body: creative.body || '',
     metrics: metricsFrom(insight, objective),
@@ -462,13 +488,35 @@ function bestAdOf(ads) {
   return ranked[0] || null;
 }
 
+async function loadAds(id) {
+  const base = 'id,name,status,effective_status,campaign_id,adset_id,creative';
+  let ads;
+  try {
+    ads = await graphAll(`/${id}/ads?fields=${base}{title,body,thumbnail_url,image_url,object_story_spec}&limit=200`);
+  } catch {
+    ads = await graphAll(`/${id}/ads?fields=${base}{title,body,thumbnail_url,image_url}&limit=200`);
+  }
+  try {
+    const feeds = await graphAll(`/${id}/ads?fields=id,creative{asset_feed_spec{link_urls,call_to_action_types,videos}}&limit=200`);
+    const byId = new Map(feeds.map((row) => [row.id, row.creative?.asset_feed_spec]));
+    for (const ad of ads) {
+      const feed = byId.get(ad.id);
+      if (!feed) continue;
+      ad.creative = { ...(ad.creative || {}), asset_feed_spec: feed };
+    }
+  } catch {
+    // The ad list still renders. Upload resolves the store link on its own.
+  }
+  return ads;
+}
+
 async function loadAccount(account, range) {
   const id = account.id;
   const currency = account.currency || 'ILS';
   const [campaignsRaw, adsetsRaw, adsRaw, campaignInsights, adsetInsights, adInsights, accountInsights, daily] = await Promise.all([
     graphAll(`/${id}/campaigns?fields=id,name,status,effective_status,objective,daily_budget,lifetime_budget,bid_strategy,start_time,stop_time,created_time,updated_time&limit=100&filtering=${encodeURIComponent(JSON.stringify([{ field: 'effective_status', operator: 'IN', value: ['ACTIVE', 'PAUSED', 'ARCHIVED', 'WITH_ISSUES', 'IN_PROCESS', 'CAMPAIGN_PAUSED', 'ADSET_PAUSED'] }]))}`),
     graphAll(`/${id}/adsets?fields=id,name,status,effective_status,campaign_id,daily_budget,lifetime_budget,optimization_goal,destination_type,start_time,end_time&limit=200`),
-    graphAll(`/${id}/ads?fields=id,name,status,effective_status,campaign_id,adset_id,creative{title,body,thumbnail_url,image_url}&limit=200`),
+    loadAds(id),
     graphAll(`/${id}/insights?level=campaign&date_preset=${range}&fields=campaign_id,${INSIGHT_FIELDS}&limit=200`),
     graphAll(`/${id}/insights?level=adset&date_preset=${range}&fields=adset_id,campaign_id,${INSIGHT_FIELDS}&limit=300`),
     graphAll(`/${id}/insights?level=ad&date_preset=${range}&fields=ad_id,adset_id,campaign_id,${INSIGHT_FIELDS}&limit=400`),
@@ -493,6 +541,7 @@ async function loadAccount(account, range) {
         optimization: OPTIMIZATION[adset.optimization_goal] || adset.optimization_goal || '',
         dailyBudget: fromMinor(adset.daily_budget, currency),
         lifetimeBudget: fromMinor(adset.lifetime_budget, currency),
+        defaultLink: defaultLinkFor(adsRaw, adset.id),
         metrics: metricsFrom(byAdset.get(adset.id), objective),
       }))
       .sort((a, b) => b.metrics.spend - a.metrics.spend);
@@ -622,30 +671,295 @@ export async function loadCampaignDashboard({ range = 'last_30d' } = {}) {
   };
 }
 
-export async function setCampaignStatus(campaignId, status) {
-  if (!/^\d+$/.test(String(campaignId || ''))) throw httpError('מזהה קמפיין לא תקין', 400);
-  if (status !== 'ACTIVE' && status !== 'PAUSED') throw httpError('אפשר רק להפעיל או לעצור קמפיין', 400);
-  const campaign = await graph(`/${campaignId}?fields=id,name,account_id,status`);
-  const accounts = await discoverAccounts();
-  const allowed = new Set(accounts.filter((account) => !account.inaccessible).map(accountKey));
-  if (!allowed.has(String(campaign.account_id))) {
-    throw httpError('הקמפיין לא שייך לחשבון מודעות שהטוקן יכול לנהל', 403);
-  }
+function accessToken() {
   const token = process.env.META_ACCESS_TOKEN || '';
-  const url = new URL(`${GRAPH}/${campaignId}`);
-  url.searchParams.set('access_token', token);
+  if (!token) throw httpError('META_ACCESS_TOKEN לא מוגדר בשרת', 503);
+  return token;
+}
+
+function clip(value, max) {
+  return String(value || '').replace(/[\u0000-\u001F]/g, '').trim().slice(0, max);
+}
+
+function actIdOf(account) {
+  if (String(account?.id || '').startsWith('act_')) return account.id;
+  return `act_${accountKey(account)}`;
+}
+
+async function graphWrite(pathname, params, { host = GRAPH } = {}) {
+  const url = new URL(String(pathname).startsWith('http') ? pathname : `${host}${pathname}`);
+  url.searchParams.set('access_token', accessToken());
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ status }),
+    body: new URLSearchParams(params),
   });
   const json = await res.json().catch(() => ({}));
   if (!res.ok || json.error) throw httpError(friendlyMetaError(json.error), res.status === 403 ? 403 : 502);
+  return json;
+}
+
+async function graphForm(pathname, form, { host = GRAPH } = {}) {
+  const url = new URL(String(pathname).startsWith('http') ? pathname : `${host}${pathname}`);
+  url.searchParams.set('access_token', accessToken());
+  const res = await fetch(url, { method: 'POST', body: form });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || json.error) throw httpError(friendlyMetaError(json.error), res.status === 403 ? 403 : 502);
+  return json;
+}
+
+async function ownedAccount(accountId) {
+  const accounts = await discoverAccounts();
+  const key = String(accountId || '').replace(/^act_/, '');
+  const account = accounts.find((row) => !row.inaccessible && accountKey(row) === key);
+  if (!account) throw httpError('הפריט לא שייך לחשבון מודעות שהטוקן יכול לנהל', 403);
+  return account;
+}
+
+function assertId(id, label) {
+  if (!/^\d+$/.test(String(id || ''))) throw httpError(`${label} לא תקין`, 400);
+}
+
+function toMinor(amount, currency) {
+  const n = Number(amount);
+  if (!Number.isFinite(n) || n <= 0) throw httpError('תקציב יומי חייב להיות מספר חיובי', 400);
+  if (n > 100000) throw httpError('תקציב יומי גבוה מדי', 400);
+  const factor = ZERO_DECIMAL.has(currency) ? 1 : 100;
+  return String(Math.round(n * factor));
+}
+
+export async function setCampaignStatus(campaignId, status) {
+  assertId(campaignId, 'מזהה קמפיין');
+  if (status !== 'ACTIVE' && status !== 'PAUSED') throw httpError('אפשר רק להפעיל או לעצור קמפיין', 400);
+  const campaign = await graph(`/${campaignId}?fields=id,name,account_id,status`);
+  await ownedAccount(campaign.account_id);
+  await graphWrite(`/${campaignId}`, { status });
   return {
     ok: true,
     id: campaign.id,
     name: campaign.name,
     status,
     statusLabel: STATUSES[status] || status,
+  };
+}
+
+export async function setAdStatus(adId, status) {
+  assertId(adId, 'מזהה מודעה');
+  if (status !== 'ACTIVE' && status !== 'PAUSED') throw httpError('אפשר רק להפעיל או לכבות מודעה', 400);
+  const ad = await graph(`/${adId}?fields=id,name,account_id,status`);
+  await ownedAccount(ad.account_id);
+  await graphWrite(`/${adId}`, { status });
+  return {
+    ok: true,
+    id: ad.id,
+    name: ad.name,
+    status,
+    statusLabel: STATUSES[status] || status,
+  };
+}
+
+export async function setDailyBudget({ level, id, amount }) {
+  assertId(id, 'מזהה');
+  if (level === 'campaign') {
+    const campaign = await graph(`/${id}?fields=id,name,account_id,daily_budget,lifetime_budget`);
+    const account = await ownedAccount(campaign.account_id);
+    if (num(campaign.lifetime_budget) > 0) {
+      throw httpError('לקמפיין הזה יש תקציב כולל. שינוי לתקציב יומי נעשה ב-Ads Manager.', 400);
+    }
+    if (num(campaign.daily_budget) === 0) {
+      throw httpError('התקציב של הקמפיין הזה נקבע בקבוצות המודעות.', 400);
+    }
+    const dailyBudget = toMinor(amount, account.currency);
+    await graphWrite(`/${id}`, { daily_budget: dailyBudget });
+    return { ok: true, id: campaign.id, name: campaign.name, dailyBudget: fromMinor(dailyBudget, account.currency) };
+  }
+  if (level === 'adset') {
+    const adset = await graph(`/${id}?fields=id,name,account_id,campaign_id,daily_budget,lifetime_budget`);
+    const account = await ownedAccount(adset.account_id);
+    if (num(adset.lifetime_budget) > 0) {
+      throw httpError('לקבוצה הזו יש תקציב כולל. שינוי לתקציב יומי נעשה ב-Ads Manager.', 400);
+    }
+    const campaign = await graph(`/${adset.campaign_id}?fields=daily_budget,lifetime_budget`);
+    if (num(campaign.daily_budget) > 0 || num(campaign.lifetime_budget) > 0) {
+      throw httpError('התקציב נקבע על הקמפיין, לא על קבוצת המודעות.', 400);
+    }
+    const dailyBudget = toMinor(amount, account.currency);
+    await graphWrite(`/${id}`, { daily_budget: dailyBudget });
+    return { ok: true, id: adset.id, name: adset.name, dailyBudget: fromMinor(dailyBudget, account.currency) };
+  }
+  throw httpError('רמת תקציב לא תקינה', 400);
+}
+
+function contextFromAds(ads) {
+  for (const ad of ads) {
+    const spec = ad.creative?.object_story_spec || {};
+    const feed = ad.creative?.asset_feed_spec || {};
+    if (!spec.page_id) continue;
+    const video = spec.video_data || {};
+    const linkData = spec.link_data || {};
+    const cta = video.call_to_action || linkData.call_to_action || {};
+    return {
+      pageId: String(spec.page_id),
+      instagramUserId: String(spec.instagram_user_id || spec.instagram_actor_id || ad.creative?.instagram_user_id || ''),
+      link: linkFromCreative(ad.creative),
+      ctaType: String(cta.type || feed.call_to_action_types?.[0] || ''),
+      ctaValue: cta.value || null,
+      title: video.title || feed.titles?.[0]?.text || '',
+      message: video.message || linkData.message || feed.bodies?.[0]?.text || '',
+    };
+  }
+  return null;
+}
+
+async function publishContext(adsetId, campaignId) {
+  const fields = 'creative{object_story_spec,instagram_user_id,asset_feed_spec{link_urls,call_to_action_types,titles,bodies}}';
+  const inSet = await graphAll(`/${adsetId}/ads?fields=${fields}&limit=25`);
+  const fromSet = contextFromAds(inSet);
+  if (fromSet) return fromSet;
+  if (campaignId) {
+    const inCampaign = await graphAll(`/${campaignId}/ads?fields=${fields}&limit=25`);
+    const fromCampaign = contextFromAds(inCampaign);
+    if (fromCampaign) return fromCampaign;
+  }
+  const pages = [
+    ...(await edgeAccounts('/me/accounts?fields=id,name&limit=10')),
+    ...(await edgeAccounts('/me/assigned_pages?fields=id,name&limit=10')),
+  ];
+  if (pages[0]?.id) return { pageId: String(pages[0].id), instagramUserId: '', link: '', ctaType: '', ctaValue: null };
+  return null;
+}
+
+async function uploadVideoFile({ act, filePath, fileSize, title }) {
+  const start = await graphWrite(`/${act}/advideos`, {
+    upload_phase: 'start',
+    file_size: String(fileSize),
+  }, { host: VIDEO_GRAPH });
+  const session = start.upload_session_id;
+  const videoId = start.video_id;
+  if (!session || !videoId) throw httpError('Meta לא פתח העלאה לסרטון', 502);
+  let startOffset = num(start.start_offset);
+  let endOffset = num(start.end_offset);
+  const handle = await open(filePath, 'r');
+  try {
+    for (let step = 0; step < 500 && startOffset < endOffset; step++) {
+      const length = endOffset - startOffset;
+      const buf = Buffer.alloc(length);
+      const { bytesRead } = await handle.read(buf, 0, length, startOffset);
+      if (bytesRead !== length) throw httpError('גודל הסרטון לא תאם את ההעלאה', 502);
+      const form = new FormData();
+      form.set('upload_phase', 'transfer');
+      form.set('upload_session_id', String(session));
+      form.set('start_offset', String(startOffset));
+      form.set('video_file_chunk', new Blob([buf.subarray(0, bytesRead)]), 'chunk.mp4');
+      const next = await graphForm(`/${act}/advideos`, form, { host: VIDEO_GRAPH });
+      const nextStart = num(next.start_offset);
+      const nextEnd = num(next.end_offset);
+      if (nextStart === startOffset && nextEnd === endOffset) throw httpError('העלאת הסרטון נתקעה', 502);
+      startOffset = nextStart;
+      endOffset = nextEnd;
+    }
+  } finally {
+    await handle.close();
+  }
+  if (startOffset < endOffset) throw httpError('העלאת הסרטון לא הושלמה', 502);
+  await graphWrite(`/${act}/advideos`, {
+    upload_phase: 'finish',
+    upload_session_id: String(session),
+    title: title || 'video',
+  }, { host: VIDEO_GRAPH });
+  return String(videoId);
+}
+
+async function waitForThumbnail(videoId) {
+  for (let attempt = 0; attempt < 45; attempt++) {
+    const thumbs = await graph(`/${videoId}/thumbnails`).catch(() => ({ data: [] }));
+    const preferred = (thumbs.data || []).find((row) => row.is_preferred) || thumbs.data?.[0];
+    if (preferred?.uri) return preferred.uri;
+    const video = await graph(`/${videoId}?fields=status,picture`).catch(() => ({}));
+    if (video.status?.video_status === 'error') {
+      const phase = video.status.processing_phase?.errors?.[0]?.message || video.status.uploading_phase?.errors?.[0]?.message;
+      throw httpError(phase || 'Meta לא הצליח לעבד את הסרטון', 502);
+    }
+    if (video.picture) return video.picture;
+    await new Promise((resolve) => setTimeout(resolve, 4000));
+  }
+  throw httpError(`הסרטון עלה ל-Meta (${videoId}) ועדיין בעיבוד. חכו דקה לפני ניסיון נוסף, כדי לא להעלות אותו פעמיים.`, 502);
+}
+
+async function uploadThumbnail(act, imageUrl) {
+  const imgRes = await fetch(imageUrl);
+  if (!imgRes.ok) throw httpError('לא הצלחתי לקרוא תמונת תצוגה של הסרטון', 502);
+  const bytes = Buffer.from(await imgRes.arrayBuffer());
+  const form = new FormData();
+  form.set('filename', new Blob([bytes], { type: 'image/jpeg' }), 'thumb.jpg');
+  const json = await graphForm(`/${act}/adimages`, form);
+  const hash = Object.values(json.images || {})[0]?.hash;
+  if (!hash) throw httpError('Meta לא החזיר תמונת תצוגה לסרטון', 502);
+  return hash;
+}
+
+function callToAction(context, link) {
+  if (MESSAGING_CTA.has(context.ctaType)) {
+    return { type: context.ctaType, value: context.ctaValue || {} };
+  }
+  const type = context.ctaType && /^[A-Z0-9_]+$/.test(context.ctaType) ? context.ctaType : 'LEARN_MORE';
+  const value = { ...(context.ctaValue || {}) };
+  if (link) value.link = link;
+  if (context.applicationId && !value.application) value.application = String(context.applicationId);
+  return { type, value };
+}
+
+export async function createVideoAd({ adsetId, filePath, fileSize, name, title, message, link, activate }) {
+  assertId(adsetId, 'מזהה קבוצת מודעות');
+  if (!filePath || !fileSize) throw httpError('חסר קובץ סרטון', 400);
+  const adset = await graph(`/${adsetId}?fields=id,name,account_id,campaign_id,promoted_object`);
+  const account = await ownedAccount(adset.account_id);
+  const context = await publishContext(adsetId, adset.campaign_id) || { pageId: '', instagramUserId: '', link: '', ctaType: '', ctaValue: null, title: '', message: '' };
+  const storeUrl = /^https?:\/\//i.test(adset.promoted_object?.object_store_url || '') ? adset.promoted_object.object_store_url : '';
+  context.applicationId = /^\d+$/.test(String(adset.promoted_object?.application_id || '')) ? String(adset.promoted_object.application_id) : '';
+  if (!context?.pageId) {
+    throw httpError('לא נמצא עמוד פייסבוק לפרסום. צריך מודעה קיימת בסט, או עמוד משויך למשתמש המערכת.', 400);
+  }
+  const destination = clip(link, 1000) || context.link || storeUrl;
+  if (!MESSAGING_CTA.has(context.ctaType) && !/^https?:\/\/\S+$/i.test(destination)) {
+    throw httpError('צריך קישור שמתחיל ב-http או ב-https. אם בסט כבר יש מודעה, אפשר להשאיר את השדה ריק.', 400);
+  }
+  const adName = clip(name, 200) || clip(title, 200) || 'סרטון';
+  const headline = clip(title, 255) || clip(context.title, 255);
+  const primary = clip(message, 2000) || clip(context.message, 2000);
+  const act = actIdOf(account);
+  const videoId = await uploadVideoFile({ act, filePath, fileSize, title: adName });
+  const thumbUrl = await waitForThumbnail(videoId);
+  const imageHash = await uploadThumbnail(act, thumbUrl);
+  const videoData = {
+    video_id: videoId,
+    image_hash: imageHash,
+    call_to_action: callToAction(context, destination),
+  };
+  if (headline) videoData.title = headline;
+  if (primary) videoData.message = primary;
+  const story = { page_id: context.pageId, video_data: videoData };
+  if (/^\d+$/.test(context.instagramUserId)) story.instagram_user_id = context.instagramUserId;
+  const creative = await graph(`/${act}/adcreatives`, {
+    method: 'POST',
+    body: { name: adName, object_story_spec: story },
+  });
+  const ad = await graph(`/${act}/ads`, {
+    method: 'POST',
+    body: {
+      name: adName,
+      adset_id: String(adsetId),
+      creative: { creative_id: creative.id },
+      status: activate ? 'ACTIVE' : 'PAUSED',
+    },
+  });
+  return {
+    ok: true,
+    id: ad.id,
+    name: adName,
+    adsetId: String(adsetId),
+    videoId,
+    status: activate ? 'ACTIVE' : 'PAUSED',
+    statusLabel: activate ? STATUSES.ACTIVE : STATUSES.PAUSED,
   };
 }

@@ -158,7 +158,9 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen>
                       currentIndex: 3,
                     )
                   : DashboardBottomBar(currentIndex: 2),
-              body: Column(
+              body: Material(
+                type: MaterialType.transparency,
+                child: Column(
                 children: [
                   // Modern edge-to-edge header: status-bar inset + comfortable toolbar
                   Padding(
@@ -307,7 +309,8 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen>
                                 ),
 
                               /// ✅ Share Button
-                              InkWell(
+                              GestureDetector(
+                                behavior: HitTestBehavior.opaque,
                                 onTap: () {
                                   if (businessDetailsController
                                       .id.value.isNotEmpty) {
@@ -454,6 +457,7 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen>
                     }),
                   ),
                 ],
+              ),
               ),
             ),
     );
@@ -648,7 +652,8 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen>
 
   buildContainer(
           {required size, required text, required color, required onClick}) =>
-      InkWell(
+      GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: onClick,
         child: Container(
           width: size.width,
@@ -690,7 +695,8 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  InkWell(
+                  GestureDetector(
+                      behavior: HitTestBehavior.opaque,
                       onTap: () => Get.back(),
                       child: Padding(
                           padding: EdgeInsets.symmetric(
@@ -703,7 +709,8 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen>
                               width: size.width * 0.2,
                               color: kDivider))),
                   SizedBox(height: size.height * 0.03),
-                  InkWell(
+                  GestureDetector(
+                      behavior: HitTestBehavior.opaque,
                       onTap: () {
                         Get.back();
                         showDialog<String>(
@@ -923,7 +930,8 @@ class UserInfo extends StatelessWidget {
           SizedBox(
             height: size.height * 0.01,
           ),
-          InkWell(
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
             onTap: _launchUrl,
             child: Row(
               children: [
@@ -1015,7 +1023,8 @@ class UserInfo extends StatelessWidget {
                           ? businessDetailsController.artistsList[index]
                           : businessDetailsController.studiosList[index];
 
-                  return InkWell(
+                  return GestureDetector(
+                    behavior: HitTestBehavior.opaque,
                     onTap: () async {
                       final artistId = artists.id?.toString() ?? "";
                       if (artistId.isEmpty || artistId == "null") return;

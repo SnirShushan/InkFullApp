@@ -1,13 +1,16 @@
+import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { timingSafeEqual } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
+import multer from 'multer';
 import { createSources } from './sources.js';
 import { loadFinanceRows, readCosts, summarizeFinance, writeCosts } from './finance.js';
 import { buildSpec } from './spec.js';
 import { createAdminRouter } from './admin.js';
-import { loadCampaignDashboard, setCampaignStatus } from './meta-ads.js';
+import { createVideoAd, loadCampaignDashboard, setAdStatus, setCampaignStatus, setDailyBudget } from './meta-ads.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ADMIN_DIR = path.join(ROOT, 'php-admin');
@@ -201,6 +204,81 @@ app.post('/api/campaigns/:id/status', async (req, res, next) => {
     res.json(await setCampaignStatus(req.params.id, req.body?.status));
   } catch (err) {
     next(err);
+  }
+});
+
+app.post('/api/campaigns/:id/budget', async (req, res, next) => {
+  try {
+    res.json(await setDailyBudget({ level: 'campaign', id: req.params.id, amount: req.body?.dailyBudget }));
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post('/api/adsets/:id/budget', async (req, res, next) => {
+  try {
+    res.json(await setDailyBudget({ level: 'adset', id: req.params.id, amount: req.body?.dailyBudget }));
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post('/api/ads/:id/status', async (req, res, next) => {
+  try {
+    res.json(await setAdStatus(req.params.id, req.body?.status));
+  } catch (err) {
+    next(err);
+  }
+});
+
+const videoUpload = multer({
+  storage: multer.diskStorage({
+    destination: os.tmpdir(),
+    filename: (_req, file, cb) => {
+      const ext = path.extname(file.originalname || '').toLowerCase();
+      const safeExt = ['.mp4', '.mov', '.m4v', '.webm'].includes(ext) ? ext : '.mp4';
+      cb(null, `ink-ad-${Date.now()}-${Math.random().toString(16).slice(2)}${safeExt}`);
+    },
+  }),
+  limits: { fileSize: 200 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const name = file.originalname || '';
+    const ok = /^video\/(mp4|quicktime|webm|x-m4v)$/i.test(file.mimetype || '') || /\.(mp4|mov|m4v|webm)$/i.test(name);
+    cb(ok ? null : Object.assign(new Error('אפשר להעלות MP4, MOV או WEBM'), { status: 400 }), ok);
+  },
+});
+
+function receiveVideo(req, res, next) {
+  videoUpload.single('video')(req, res, (err) => {
+    if (!err) return next();
+    if (req.file?.path) fs.unlink(req.file.path, () => {});
+    err.status = err.code === 'LIMIT_FILE_SIZE' ? 413 : (err.status || 400);
+    if (err.code === 'LIMIT_FILE_SIZE') err.message = 'הסרטון גדול מ-200MB';
+    next(err);
+  });
+}
+
+app.post('/api/adsets/:id/video', receiveVideo, async (req, res, next) => {
+  try {
+    if (!req.file) {
+      const err = new Error('חסר קובץ סרטון');
+      err.status = 400;
+      throw err;
+    }
+    res.json(await createVideoAd({
+      adsetId: req.params.id,
+      filePath: req.file.path,
+      fileSize: req.file.size,
+      name: req.body?.name,
+      title: req.body?.title,
+      message: req.body?.message,
+      link: req.body?.link,
+      activate: req.body?.activate === '1' || req.body?.activate === 'true',
+    }));
+  } catch (err) {
+    next(err);
+  } finally {
+    if (req.file?.path) fs.unlink(req.file.path, () => {});
   }
 });
 
