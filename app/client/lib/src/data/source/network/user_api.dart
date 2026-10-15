@@ -458,9 +458,6 @@ class Network {
       // }
     } on SocketException catch (_) {
       noIntenetConnectionPopup();
-      if (getx.Get.isSnackbarOpen) {
-        getx.Get.closeAllSnackbars();
-      }
       return false;
     } on DioError catch (e) {
       ApiResponse.handleError(e);
@@ -1406,11 +1403,10 @@ class Network {
         ApiResponse.sessionExpired(msg: msg);
         return false;
       } else if (status.toString() == "3") {
-        if (getx.Get.isSnackbarOpen) {
-          getx.Get.closeAllSnackbars();
+        final ctx = WebService.homeScaffoldKey.currentContext;
+        if (ctx != null) {
+          ApiResponse.openStoreRedirectDialog(ctx);
         }
-        ApiResponse.openStoreRedirectDialog(
-            WebService.homeScaffoldKey.currentContext!);
         return false;
       }
 
@@ -1604,9 +1600,6 @@ class Network {
 
       return false;
     } catch (e) {
-      if (getx.Get.isSnackbarOpen) {
-        getx.Get.closeAllSnackbars();
-      }
       noIntenetConnectionPopup();
       return false;
     }
@@ -2697,12 +2690,10 @@ class Network {
             ApiResponse.sessionExpired(msg: msg);
             return false;
           } else if (status.toString() == "3") {
-            if (getx.Get.isSnackbarOpen) {
-              getx.Get.closeAllSnackbars();
+            final ctx = WebService.homeScaffoldKey.currentContext;
+            if (ctx != null) {
+              ApiResponse.openStoreRedirectDialog(ctx);
             }
-
-            ApiResponse.openStoreRedirectDialog(
-                WebService.homeScaffoldKey.currentContext!);
             return false;
           }
         }

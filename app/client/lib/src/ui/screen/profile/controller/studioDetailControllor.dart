@@ -98,14 +98,16 @@ class StudioDetailController extends GetxController {
   }
 
   static sessionExpired({msg}) async {
+    safeCloseSnackbars();
     await WebService.clearUserData();
-    displayMessageIcon(
-        message: msg.toString(),
-        snackposition: SnackPosition.BOTTOM,
-        color: errorColor,
-        imageData: AppAssets.errorIcon);
-    // displayMessage(msg.toString(), Colors.red);
     Get.offAll(() => LoginScreen());
+    Future.delayed(const Duration(milliseconds: 500), () {
+      displayMessageIcon(
+          message: msg?.toString() ?? 'alerts.session_expire',
+          snackposition: SnackPosition.BOTTOM,
+          color: errorColor,
+          imageData: AppAssets.errorIcon);
+    });
   }
 
   //get business details

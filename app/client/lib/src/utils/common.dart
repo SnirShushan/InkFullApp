@@ -200,11 +200,39 @@ buildEditText(
 //   ); //snackBar
 // }
 
+bool canShowSnackbar() {
+  try {
+    return Get.overlayContext != null ||
+        Get.key.currentState?.overlay != null;
+  } catch (_) {
+    return false;
+  }
+}
+
+void safeCloseSnackbars() {
+  try {
+    if (Get.isSnackbarOpen) {
+      Get.closeAllSnackbars();
+    }
+  } catch (_) {}
+}
+
+void safeCloseCurrentSnackbar() {
+  try {
+    if (Get.isSnackbarOpen) {
+      Get.closeCurrentSnackbar();
+    }
+  } catch (_) {}
+}
+
 void displayMessageIcon(
-        {required String message,
-        required Color color,
-        snackposition = SnackPosition.TOP,
-        required String imageData}) =>
+    {required String message,
+    required Color color,
+    snackposition = SnackPosition.TOP,
+    required String imageData}) {
+  if (!canShowSnackbar()) return;
+  try {
+    safeCloseSnackbars();
     Get.rawSnackbar(
       messageText: Text(message,
           style: const TextStyle(
@@ -222,14 +250,17 @@ void displayMessageIcon(
       icon: SvgPicture.asset(
         imageData,
       ),
-      // forwardAnimationCurve: Curves.easeOutBack,
     );
+  } catch (_) {}
+}
 
 void displayMessageShareIcon(
     {required String message,
-      required Color color,
-      snackposition = SnackPosition.TOP,
-      required String imageData}) =>
+    required Color color,
+    snackposition = SnackPosition.TOP,
+    required String imageData}) {
+  if (!canShowSnackbar()) return;
+  try {
     Get.rawSnackbar(
       messageText: Text(message,
           style: const TextStyle(
@@ -247,46 +278,58 @@ void displayMessageShareIcon(
       icon: SvgPicture.asset(
         imageData,
       ),
-      // forwardAnimationCurve: Curves.easeOutBack,
     );
+  } catch (_) {}
+}
+
+DateTime? _lastOfflinePopupAt;
 
 void noIntenetConnectionPopup() {
+  final now = DateTime.now();
+  if (_lastOfflinePopupAt != null &&
+      now.difference(_lastOfflinePopupAt!) < const Duration(seconds: 4)) {
+    return;
+  }
+  _lastOfflinePopupAt = now;
   Future.delayed(Duration.zero, () {
-    Get.rawSnackbar(
-      messageText: const Text(
-          "בעקבות בעיה טכנית הפנייה לא נשלחה.\nלתמיכה טכנית חייגו: 053-356-2686",
-          style: TextStyle(
-            fontSize: 14.0, // Logical pixels, may need adjustment
-            fontWeight: FontWeight.normal,
-            color: titleTextWhiteColor,
-          )).tr(),
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: errorColor,
-      borderRadius: 8,
-      margin: const EdgeInsets.all(30.0),
-      padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 0),
-      duration: const Duration(seconds: 2),
-      icon: SvgPicture.asset(
-        AppAssets.errorIcon,
-      ),
-      // forwardAnimationCurve: Curves.easeOutBack,
-    );
+    if (!canShowSnackbar()) return;
+    try {
+      Get.rawSnackbar(
+        messageText: const Text(
+            "בעקבות בעיה טכנית הפנייה לא נשלחה.\nלתמיכה טכנית חייגו: 053-356-2686",
+            style: TextStyle(
+              fontSize: 14.0, // Logical pixels, may need adjustment
+              fontWeight: FontWeight.normal,
+              color: titleTextWhiteColor,
+            )).tr(),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: errorColor,
+        borderRadius: 8,
+        margin: const EdgeInsets.all(30.0),
+        padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 0),
+        duration: const Duration(seconds: 2),
+        icon: SvgPicture.asset(
+          AppAssets.errorIcon,
+        ),
+      );
+    } catch (_) {}
   });
 }
 
 void displayReportMessage(String message, Color color) {
-  Get.rawSnackbar(
-    messageText: Text(message,
-        style: const TextStyle(color: Colors.black, fontSize: 16)),
-    // snackPosition: SnackPosition.BOTTOM,
-    backgroundColor: color,
-    borderRadius: 20,
-    margin: const EdgeInsets.all(20.0),
-    padding: const EdgeInsets.all(20.0),
-    duration: const Duration(seconds: 1),
-    isDismissible: true,
-    // forwardAnimationCurve: Curves.easeOutBack,
-  );
+  if (!canShowSnackbar()) return;
+  try {
+    Get.rawSnackbar(
+      messageText: Text(message,
+          style: const TextStyle(color: Colors.black, fontSize: 16)),
+      backgroundColor: color,
+      borderRadius: 20,
+      margin: const EdgeInsets.all(20.0),
+      padding: const EdgeInsets.all(20.0),
+      duration: const Duration(seconds: 1),
+      isDismissible: true,
+    );
+  } catch (_) {}
 }
 
 buildRequestForTattoImage(

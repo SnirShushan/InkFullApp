@@ -36,8 +36,8 @@ class NetworkController extends GetxController with WidgetsBindingObserver {
 
     if (!_isOnline) {
       noIntenetConnectionPopup();
-    } else if (wasOnline != _isOnline && Get.isSnackbarOpen) {
-      Get.closeCurrentSnackbar();
+    } else if (wasOnline != _isOnline) {
+      safeCloseCurrentSnackbar();
     }
   }
 

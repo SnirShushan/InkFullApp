@@ -1,6 +1,15 @@
-# Codemagic — Ink Flutter client → TestFlight
-# Bundle ID: com.itapp2u.inks | Team: D6F46ZX5U6
+# Codemagic — Ink Flutter client
+# iOS: com.itapp2u.inks → TestFlight
+# Android: com.itapp2u.ink → Google Play (internal track)
 # Project path in this monorepo: app/client
+#
+# One-time Codemagic UI secrets (Team / Application → Environment variables):
+# Group google_credentials:
+#   GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS = full Play Console service-account JSON
+# Group keystore_credentials (Android signing):
+#   CM_KEYSTORE = base64 of the .jks/.keystore file
+#   CM_KEYSTORE_PASSWORD / CM_KEY_PASSWORD / CM_KEY_ALIAS
+# Also invite inkapp@pc-api-…iam.gserviceaccount.com in Play Console → Users and permissions.
 
 workflows:
   ios-testflight:
@@ -74,3 +83,48 @@ workflows:
         auth: integration
         submit_to_testflight: true
         submit_to_app_store: false
+
+  android-google-play:
+    name: Android Google Play
+    max_build_duration: 120
+    instance_type: linux_x2
+    environment:
+      flutter: stable
+      groups:
+        - google_credentials
+        - keystore_credentials
+      vars:
+        PACKAGE_NAME: com.itapp2u.ink
+        CM_KEYSTORE_PATH: /tmp/keystore.keystore
+    scripts:
+      - name: Set up keystore
+        script: |
+          set -e
+          echo "$CM_KEYSTORE" | base64 --decode > "$CM_KEYSTORE_PATH"
+          KEYPROPS="$CM_BUILD_DIR/app/client/android/key.properties"
+          printf 'storePassword=%s\n' "$CM_KEYSTORE_PASSWORD" > "$KEYPROPS"
+          printf 'keyPassword=%s\n' "$CM_KEY_PASSWORD" >> "$KEYPROPS"
+          printf 'keyAlias=%s\n' "$CM_KEY_ALIAS" >> "$KEYPROPS"
+          printf 'storeFile=%s\n' "$CM_KEYSTORE_PATH" >> "$KEYPROPS"
+      - name: Get Flutter packages
+        script: |
+          cd app/client
+          flutter pub get
+      - name: Build App Bundle
+        script: |
+          cd app/client
+          flutter build appbundle --release
+    artifacts:
+      - app/client/build/app/outputs/**/*.aab
+      - app/client/build/app/outputs/**/mapping.txt
+    publishing:
+      email:
+        recipients:
+          - snir.shushan@gmail.com
+        notify:
+          success: true
+          failure: true
+      google_play:
+        credentials: $GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal
+        submit_as_draft: true

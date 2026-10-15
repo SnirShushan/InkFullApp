@@ -48,16 +48,16 @@ class PostDetailsController extends GetxController {
   }
 
   static sessionExpired({msg}) async {
-    if (Get.isSnackbarOpen) {
-      Get.closeAllSnackbars();
-    }
+    safeCloseSnackbars();
     await WebService.clearUserData();
-    displayMessageIcon(
-        message: msg.toString(),
-        snackposition: SnackPosition.BOTTOM,
-        color: errorColor,
-        imageData: AppAssets.errorIcon);
     Get.offAll(() => const LoginScreen());
+    Future.delayed(const Duration(milliseconds: 500), () {
+      displayMessageIcon(
+          message: msg?.toString() ?? 'alerts.session_expire',
+          snackposition: SnackPosition.BOTTOM,
+          color: errorColor,
+          imageData: AppAssets.errorIcon);
+    });
   }
 
   //get post details

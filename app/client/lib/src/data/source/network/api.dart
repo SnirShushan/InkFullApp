@@ -93,11 +93,6 @@ class ApiResponse {
           WebService.printMsg('API status=0: $msg');
           return false;
         }
-        try {
-          if (getx.Get.isSnackbarOpen) {
-            getx.Get.closeAllSnackbars();
-          }
-        } catch (_) {}
         displayMessageIcon(
             message: msg.toString(),
             color: errorColor,
@@ -115,26 +110,19 @@ class ApiResponse {
         return false;
       } else if (status.toString() == "3") {
         WebService.isSessionExpire = false;
-        try {
-          if (getx.Get.isSnackbarOpen) {
-            getx.Get.closeAllSnackbars();
-          }
-        } catch (_) {}
         displayMessageIcon(
             message: msg.toString(),
             color: errorColor,
             snackposition: SnackPosition.BOTTOM,
             imageData: AppAssets.errorIcon);
-        openStoreRedirectDialog(WebService.homeScaffoldKey.currentContext!);
+        final ctx = WebService.homeScaffoldKey.currentContext;
+        if (ctx != null) {
+          openStoreRedirectDialog(ctx);
+        }
 
         return false;
       } else if (status.toString() == "4") {
         Future.delayed(const Duration(seconds: 2), () {
-          try {
-            if (getx.Get.isSnackbarOpen) {
-              getx.Get.closeAllSnackbars();
-            }
-          } catch (_) {}
           displayMessageIcon(
               message: msg.toString(),
               color: errorColor,
@@ -157,23 +145,17 @@ class ApiResponse {
 
   static sessionExpired({msg}) async {
     WebService.isSessionExpire = true;
-    try {
-      getx.Get.closeAllSnackbars();
-    } catch (_) {}
+    safeCloseSnackbars();
     await WebService.clearUserData();
-    Future.delayed(const Duration(seconds: 2), () {
-      try {
-        displayMessageIcon(
-            message: msg.toString(),
-            color: errorColor,
-            imageData: AppAssets.errorIcon);
-        if (getx.Get.isSnackbarOpen) {
-          getx.Get.closeAllSnackbars();
-        }
-      } catch (_) {}
-    });
-
     getx.Get.offAll(() => const LoginScreen());
+    // Show after Login is mounted. Do not close again — that crashed
+    // with a disposed Snackbar AnimationController on iOS.
+    Future.delayed(const Duration(milliseconds: 500), () {
+      displayMessageIcon(
+          message: msg?.toString() ?? 'alerts.session_expire',
+          color: errorColor,
+          imageData: AppAssets.errorIcon);
+    });
   }
 
   static openStoreRedirectDialog(BuildContext context) => showModalBottomSheet(
@@ -245,9 +227,6 @@ class ApiResponse {
     );
     if (e.type == DioErrorType.connectTimeout) {
       Future.delayed(const Duration(seconds: 2), () {
-        if (getx.Get.isSnackbarOpen) {
-          getx.Get.closeAllSnackbars();
-        }
         displayMessageIcon(
             message: "txt.not_launch",
             snackposition: SnackPosition.BOTTOM,
@@ -256,35 +235,22 @@ class ApiResponse {
       });
     } else if (e.type == DioErrorType.sendTimeout) {
       Future.delayed(const Duration(seconds: 2), () {
-        if (getx.Get.isSnackbarOpen) {
-          getx.Get.closeAllSnackbars();
-        }
         displayMessageIcon(
             message: "alerts.network_error",
             snackposition: SnackPosition.BOTTOM,
             color: errorColor,
             imageData: AppAssets.errorIcon);
       });
-
-      if (getx.Get.isSnackbarOpen) {
-        getx.Get.closeAllSnackbars();
-      }
     } else if (e.type == DioErrorType.other) {
+      // Transient iOS socket teardown ("Bad file descriptor") when the app
+      // resumes — not a hard crash. Only show offline UI for real offline.
       if (e.error is SocketException) {
         noIntenetConnectionPopup();
         return false;
       }
-
-      if (getx.Get.isSnackbarOpen) {
-        getx.Get.closeAllSnackbars();
-      }
+      safeCloseSnackbars();
     } else {
       Future.delayed(const Duration(seconds: 2), () {
-        if (getx.Get.isSnackbarOpen) {
-          if (getx.Get.isSnackbarOpen) {
-            getx.Get.closeAllSnackbars();
-          }
-        }
         displayMessageIcon(
             message: e.message,
             snackposition: SnackPosition.BOTTOM,
