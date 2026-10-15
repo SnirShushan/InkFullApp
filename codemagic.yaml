@@ -110,6 +110,18 @@ workflows:
         script: |
           cd app/client
           flutter pub get
+      - name: Prepare Android SDK platforms
+        script: |
+          set -e
+          SDK="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/share/android-sdk}}"
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platforms;android-36" "build-tools;35.0.0" || true
+          # Codemagic may install API 37 as platforms/android-37.0; Gradle looks for android-37.
+          if [ -d "$SDK/platforms/android-37.0" ] && [ ! -e "$SDK/platforms/android-37" ]; then
+            ln -s "android-37.0" "$SDK/platforms/android-37"
+            echo "Linked $SDK/platforms/android-37 -> android-37.0"
+          fi
+          ls -la "$SDK/platforms" || true
       - name: Build App Bundle
         script: |
           cd app/client

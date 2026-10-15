@@ -26,6 +26,25 @@ subprojects {
     project.evaluationDependsOn(':app')
 }
 
+// Keep plugins on API 36 so CI does not require the misnamed android-37.0 SDK folder.
+subprojects { subproject ->
+    subproject.afterEvaluate {
+        def androidExt = subproject.extensions.findByName("android")
+        if (androidExt == null) {
+            return
+        }
+        try {
+            if (androidExt.hasProperty("compileSdk")) {
+                androidExt.compileSdk = 36
+            } else if (androidExt.hasProperty("compileSdkVersion")) {
+                androidExt.compileSdkVersion = 36
+            }
+        } catch (Throwable ignored) {
+            // Some AGP variants expose compileSdk as read-only until configured; ignore.
+        }
+    }
+}
+
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
 }
