@@ -38,7 +38,7 @@ if (keystorePropertiesFile.exists()) {
 android {
     namespace "com.itapp2u.ink"
     compileSdkVersion 36
-    ndkVersion "28.0.12433566"
+    ndkVersion flutter.ndkVersion
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
@@ -63,8 +63,6 @@ android {
         targetSdkVersion 36
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
-//        ndkVersion "25.1.8937393"
-        ndkVersion "28.0.12433566"
         multiDexEnabled true
         ndk {
             abiFilters "armeabi-v7a", "arm64-v8a", "x86_64"

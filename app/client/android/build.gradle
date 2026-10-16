@@ -26,21 +26,17 @@ subprojects {
     project.evaluationDependsOn(':app')
 }
 
-// Keep plugins on API 36 so CI does not require the misnamed android-37.0 SDK folder.
+// Pin plugin modules to API 36. Do not use afterEvaluate here — evaluationDependsOn(':app')
+// already evaluates subprojects, so afterEvaluate throws on Codemagic.
 subprojects { subproject ->
-    subproject.afterEvaluate {
-        def androidExt = subproject.extensions.findByName("android")
-        if (androidExt == null) {
-            return
-        }
+    subproject.pluginManager.withPlugin("com.android.library") {
         try {
-            if (androidExt.hasProperty("compileSdk")) {
-                androidExt.compileSdk = 36
-            } else if (androidExt.hasProperty("compileSdkVersion")) {
-                androidExt.compileSdkVersion = 36
-            }
+            subproject.android.compileSdk = 36
         } catch (Throwable ignored) {
-            // Some AGP variants expose compileSdk as read-only until configured; ignore.
+            try {
+                subproject.android.compileSdkVersion = 36
+            } catch (Throwable ignored2) {
+            }
         }
     }
 }
