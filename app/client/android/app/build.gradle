@@ -38,7 +38,8 @@ if (keystorePropertiesFile.exists()) {
 android {
     namespace "com.itapp2u.ink"
     compileSdkVersion 37
-    ndkVersion flutter.ndkVersion
+    // Stable NDK — avoid Codemagic pulling android-ndk-r28-beta.
+    ndkVersion "27.0.12077973"
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
