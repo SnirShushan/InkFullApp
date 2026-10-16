@@ -112,22 +112,50 @@ workflows:
           flutter pub get
       - name: Prepare Android SDK platforms
         script: |
-          set -e
+          set -euo pipefail
           SDK="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/share/android-sdk}}"
           export ANDROID_SDK_ROOT="$SDK"
           export ANDROID_HOME="$SDK"
-          yes | sdkmanager --licenses >/dev/null || true
-          sdkmanager "platforms;android-36" "build-tools;35.0.0" || true
-          # Pre-install API 37 and normalize folder name (Codemagic uses android-37.0).
-          sdkmanager "platforms;android-37" || true
-          if [ -d "$SDK/platforms/android-37.0" ] && [ ! -e "$SDK/platforms/android-37" ]; then
-            ln -sfn "android-37.0" "$SDK/platforms/android-37"
-            echo "Linked $SDK/platforms/android-37 -> android-37.0"
+          echo "Using Android SDK at: $SDK"
+          mkdir -p "$SDK/platforms"
+          # Prefer cmdline-tools sdkmanager on Codemagic mac images.
+          if [ -x "$SDK/cmdline-tools/latest/bin/sdkmanager" ]; then
+            SM="$SDK/cmdline-tools/latest/bin/sdkmanager"
+          elif command -v sdkmanager >/dev/null 2>&1; then
+            SM="$(command -v sdkmanager)"
+          else
+            SM="$(find "$SDK" -type f -name sdkmanager 2>/dev/null | head -n 1 || true)"
           fi
-          ls -la "$SDK/platforms" || true
+          if [ -z "${SM:-}" ] || [ ! -x "$SM" ]; then
+            echo "sdkmanager not found under $SDK"
+            ls -la "$SDK" || true
+            exit 1
+          fi
+          echo "sdkmanager: $SM"
+          yes | "$SM" --sdk_root="$SDK" --licenses >/dev/null || true
+          "$SM" --sdk_root="$SDK" --install "platforms;android-37" "platforms;android-36" "build-tools;35.0.0"
+          # Codemagic installs API 37 as platforms/android-37.0; Gradle requires android-37.
+          if [ ! -d "$SDK/platforms/android-37" ]; then
+            CANDIDATE="$(ls -d "$SDK/platforms"/android-37* 2>/dev/null | head -n 1 || true)"
+            if [ -n "$CANDIDATE" ]; then
+              ln -sfn "$(basename "$CANDIDATE")" "$SDK/platforms/android-37"
+              echo "Linked android-37 -> $(basename "$CANDIDATE")"
+            fi
+          fi
+          test -d "$SDK/platforms/android-37"
+          ls -la "$SDK/platforms"
       - name: Build App Bundle
         script: |
-          set -e
+          set -euo pipefail
+          SDK="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/share/android-sdk}}"
+          # Re-assert symlink in case a later SDK install renamed platforms.
+          if [ ! -d "$SDK/platforms/android-37" ]; then
+            CANDIDATE="$(ls -d "$SDK/platforms"/android-37* 2>/dev/null | head -n 1 || true)"
+            if [ -n "$CANDIDATE" ]; then
+              ln -sfn "$(basename "$CANDIDATE")" "$SDK/platforms/android-37"
+            fi
+          fi
+          test -d "$SDK/platforms/android-37"
           cd app/client
           flutter build appbundle --release
     artifacts:
